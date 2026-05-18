@@ -264,9 +264,7 @@ def test_db_path_defaults_from_mirror_user_in_production(tmp_path):
 # ``docs/project/decisions.md``).
 
 
-def test_resolve_mirror_home_falls_back_to_legacy_path_when_only_legacy_exists(
-    tmp_path, capsys
-):
+def test_resolve_mirror_home_falls_back_to_legacy_path_when_only_legacy_exists(tmp_path, capsys):
     legacy_home = tmp_path / ".mirror" / "testuser"
     legacy_home.mkdir(parents=True)
 
