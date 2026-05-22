@@ -23,8 +23,9 @@ single block. One source, four interfaces, one voice.
 3. **Silence when there is no signal.** If the mirror has nothing meaningful
    to say, the welcome is empty and nothing renders. The command must be safe
    to call in any state.
-4. **Local and cheap.** Welcome composition is pure SQLite reads. No LLM, no
-   network, no embeddings. Must run in well under 100 ms on a warm database.
+4. **Local and cheap.** Welcome composition uses SQLite reads and lightweight
+   local git inspection. No LLM, no network, no embeddings. Must run quickly on
+   a warm database.
 5. **First person.** The mirror speaks as the user. The closing invitation is
    not "How can I help you?" — it is `Where shall we begin?`.
 
@@ -32,11 +33,14 @@ single block. One source, four interfaces, one voice.
 
 ## Anatomy
 
-The welcome is **two lines** plus a closing invitation:
+The welcome is **three stable lines** plus an optional update notice and a
+closing invitation:
 
 ```
 ◇ Mirror · <user>
+Version <version>
 <N> journeys · <N> personas · <N> memories · <N> conversations · since <Month YYYY>
+[Update available: <N> commits behind <upstream> · run runtime update]
 
 → Where shall we begin?
 ```
@@ -44,12 +48,35 @@ The welcome is **two lines** plus a closing invitation:
 | Line | When it appears | Source |
 |------|-----------------|--------|
 | Header (`◇ Mirror · <user>`) | Always, if a Mirror home is resolvable | `resolve_mirror_home().name` |
+| Version (`Version <version>`) | Always, when header renders | installed package / `pyproject.toml` fallback |
 | Stats | Always, when header renders | counts from the database |
+| Update notice | Only when local git refs show the checkout is behind upstream | local `git rev-list`, no network |
 | Invitation (`→ Where shall we begin?`) | Always, when header renders | constant |
 
 If the header cannot be resolved (no `MIRROR_HOME`, no `MIRROR_USER`), the
 welcome is empty. There is no other path to empty output — a fresh database
 still shows the welcome, even when every counter is zero.
+
+### Version and update notice
+
+The welcome shows the installed Mirror Mind version so the user can immediately
+see which runtime they are using.
+
+The update notice is deliberately local. It does **not** call `git ls-remote`,
+fetch, or contact the network during startup. It appears only when the local
+branch is already known to be behind its configured upstream, usually because a
+previous `runtime update --check`, `runtime update`, or manual fetch refreshed
+refs. Fresh remote discovery remains the job of:
+
+```bash
+uv run python -m memory runtime update --check
+```
+
+or the full update pipeline:
+
+```bash
+uv run python -m memory runtime update
+```
 
 ### Why stats and not narrative
 
@@ -101,6 +128,7 @@ Behaviour:
 - Emits an empty string if `MIRROR_WELCOME=off` is set.
 - Emits an empty string if the Mirror home cannot be resolved.
 - Otherwise composes the welcome per the rules above.
+- Does not contact the network while checking version or update availability.
 
 Stdout is the rendering. There is no JSON variant. Runtimes must not parse —
 they just display the string verbatim.

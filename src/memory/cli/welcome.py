@@ -14,6 +14,7 @@ from pathlib import Path
 
 from memory import MemoryClient
 from memory.cli.common import db_path_from_mirror_home
+from memory.cli.runtime import inspect_git, inspect_git_update_plan, package_version
 from memory.config import resolve_mirror_home
 
 INVITATION = "→ Where shall we begin?"
@@ -73,21 +74,24 @@ def compose_welcome(mirror_home: str | Path | None = None) -> str:
 
     db_path = db_path_from_mirror_home(home_path)
     stats_line = _stats_line(db_path)
-    return _render(user=home_path.name, stats=stats_line)
+    version_line = _version_line()
+    update_line = _update_line()
+    return _render(user=home_path.name, stats=stats_line, version=version_line, update=update_line)
 
 
 # --------- renderers -----------------------------------------------------
 
 
-def _render(user: str, stats: str) -> str:
-    return "\n".join(
-        [
-            f"◇ Mirror · {user}",
-            stats,
-            "",
-            INVITATION,
-        ]
-    )
+def _render(user: str, stats: str, version: str, update: str | None = None) -> str:
+    lines = [
+        f"◇ Mirror · {user}",
+        f"Version {version}",
+        stats,
+    ]
+    if update:
+        lines.append(update)
+    lines.extend(["", INVITATION])
+    return "\n".join(lines)
 
 
 def _stats_line(db_path: Path | None) -> str:
@@ -99,7 +103,7 @@ def _stats_line(db_path: Path | None) -> str:
         personas = _count_identity_rows(mem, layer="persona")
         memories = _scalar(mem, "SELECT COUNT(*) FROM memories")
         conversations = _scalar(mem, "SELECT COUNT(*) FROM conversations")
-        first_started = _scalar(mem, "SELECT MIN(started_at) FROM conversations")
+        first_started = _scalar_text(mem, "SELECT MIN(started_at) FROM conversations")
 
     return _format_stats(
         journeys=journeys,
@@ -128,6 +132,24 @@ def _format_stats(
     return SEPARATOR.join(parts)
 
 
+def _version_line() -> str:
+    return package_version()
+
+
+def _update_line() -> str | None:
+    git = inspect_git(Path.cwd())
+    if git.repository is None:
+        return None
+    plan = inspect_git_update_plan(git)
+    if plan.ready and plan.action == "pull" and plan.behind:
+        plural = "s" if plan.behind != 1 else ""
+        upstream = plan.upstream or "upstream"
+        return (
+            f"Update available: {plan.behind} commit{plural} behind {upstream} · run runtime update"
+        )
+    return None
+
+
 # --------- helpers -------------------------------------------------------
 
 
@@ -148,9 +170,17 @@ def _scalar(mem: MemoryClient, sql: str, params: tuple = ()) -> int:
         return 0
     if isinstance(value, int):
         return value
-    if isinstance(value, str):
-        return value  # type: ignore[return-value]
     return int(value)
+
+
+def _scalar_text(mem: MemoryClient, sql: str, params: tuple = ()) -> str | None:
+    row = mem.store.conn.execute(sql, params).fetchone()
+    if row is None:
+        return None
+    value = row[0]
+    if value is None:
+        return None
+    return str(value)
 
 
 def _fmt_count(value: int) -> str:

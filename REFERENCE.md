@@ -134,7 +134,7 @@ Executes the safe update pipeline. Stages run in order and the first failure sto
 7. **migrations** — opens `MemoryClient` once to trigger migration application. Skipped with `--skip-migrations`.
 8. **post-update status** — reruns `runtime status` and expects `ready`.
 
-Failures print a recovery block with the backup path and previous commit when relevant. The pipeline does not roll back automatically: recovery is documented manual work.
+Failures print a recovery block with the backup path and previous commit when relevant. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. The pipeline does not roll back automatically: recovery is documented manual work.
 
 ### Clone role
 

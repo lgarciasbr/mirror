@@ -143,6 +143,7 @@ class RuntimeUpdateResult:
     backup_path: Path | None
     success: bool
     recovery: tuple[str, ...] = ()
+    installed_changes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1025,6 +1026,27 @@ def _git_fast_forward(upstream: str, cwd: Path) -> tuple[bool, str]:
     return True, ""
 
 
+def _git_installed_changes(
+    repository: Path, previous_commit: str | None, new_commit: str | None, *, limit: int = 8
+) -> tuple[str, ...]:
+    if not previous_commit or not new_commit or previous_commit == new_commit:
+        return ()
+    code, stdout, _stderr = _run_git(
+        [
+            "log",
+            "--oneline",
+            "--no-decorate",
+            "--reverse",
+            f"-{limit}",
+            f"{previous_commit}..{new_commit}",
+        ],
+        cwd=repository,
+    )
+    if code != 0 or not stdout:
+        return ()
+    return tuple(line.strip() for line in stdout.splitlines() if line.strip())
+
+
 def _apply_migrations(mirror_home_arg: str | Path | None) -> tuple[bool, str]:
     try:
         from memory.client import MemoryClient
@@ -1050,6 +1072,7 @@ def run_runtime_update(
     backup_path: Path | None = None
     previous_commit: str | None = None
     new_commit: str | None = None
+    installed_changes: tuple[str, ...] = ()
 
     report = build_runtime_status(mirror_home_arg=mirror_home_arg)
     if report.status != "ready":
@@ -1246,6 +1269,7 @@ def run_runtime_update(
             f"{previous_commit} -> {new_commit}" if new_commit else "completed",
         )
     )
+    installed_changes = _git_installed_changes(report.git.repository, previous_commit, new_commit)
 
     if migrate:
         ok, err = _apply_migrations(mirror_home_arg)
@@ -1263,6 +1287,7 @@ def run_runtime_update(
                 backup_path,
                 success=False,
                 recovery=tuple(recovery),
+                installed_changes=installed_changes,
             )
         stages.append(RuntimeUpdateStage("migrations", "pass"))
     else:
@@ -1283,6 +1308,7 @@ def run_runtime_update(
             backup_path,
             success=False,
             recovery=tuple(recovery),
+            installed_changes=installed_changes,
         )
     stages.append(RuntimeUpdateStage("post-update status", "pass"))
 
@@ -1292,6 +1318,7 @@ def run_runtime_update(
         new_commit,
         backup_path,
         success=True,
+        installed_changes=installed_changes,
     )
 
 
@@ -1310,6 +1337,11 @@ def render_runtime_update_result(result: RuntimeUpdateResult) -> str:
         lines.append(f"New commit: {result.new_commit}")
     if result.backup_path:
         lines.append(f"Backup: {result.backup_path}")
+    if result.installed_changes:
+        lines.append("")
+        lines.append("Installed changes:")
+        for change in result.installed_changes:
+            lines.append(f"- {change}")
     lines.append("")
     if result.success:
         lines.append("Update result: success")

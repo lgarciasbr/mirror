@@ -968,6 +968,10 @@ def test_run_runtime_update_runs_full_happy_path(monkeypatch, tmp_path):
         lambda path: BackupVerification(path, True, ("memory.db",)),
     )
     monkeypatch.setattr("memory.cli.runtime._git_fast_forward", lambda upstream, cwd: (True, ""))
+    monkeypatch.setattr(
+        "memory.cli.runtime._git_installed_changes",
+        lambda repository, previous_commit, new_commit: ("def5678 Add update UX",),
+    )
     monkeypatch.setattr("memory.cli.runtime._apply_migrations", lambda mirror_home_arg: (True, ""))
     monkeypatch.setattr(
         "memory.cli.runtime._run_git",
@@ -981,6 +985,7 @@ def test_run_runtime_update_runs_full_happy_path(monkeypatch, tmp_path):
     assert result.success is True
     assert result.backup_path == backup_path
     assert result.new_commit == "def5678"
+    assert result.installed_changes == ("def5678 Add update UX",)
     stage_names = [stage.name for stage in result.stages]
     assert stage_names == [
         "status gate",
@@ -1013,6 +1018,10 @@ def test_run_runtime_update_migrations_failure_includes_recovery(monkeypatch, tm
     )
     monkeypatch.setattr("memory.cli.runtime._git_fast_forward", lambda upstream, cwd: (True, ""))
     monkeypatch.setattr(
+        "memory.cli.runtime._git_installed_changes",
+        lambda repository, previous_commit, new_commit: ("def5678 Add update UX",),
+    )
+    monkeypatch.setattr(
         "memory.cli.runtime._run_git",
         lambda args, *, cwd: (
             (0, "def5678", "") if args == ["rev-parse", "--short", "HEAD"] else (0, "", "")
@@ -1028,6 +1037,7 @@ def test_run_runtime_update_migrations_failure_includes_recovery(monkeypatch, tm
     assert not result.success
     migrations_stage = next(stage for stage in result.stages if stage.name == "migrations")
     assert migrations_stage.state == "fail"
+    assert result.installed_changes == ("def5678 Add update UX",)
     assert any("Backup:" in entry for entry in result.recovery)
     assert any("git reset --hard" in entry for entry in result.recovery)
 
@@ -1069,6 +1079,7 @@ def test_render_runtime_update_result_success(tmp_path):
         new_commit="def5678",
         backup_path=backup,
         success=True,
+        installed_changes=("def5678 Add update UX", "fed9012 Improve release summary"),
     )
 
     rendered = render_runtime_update_result(result)
@@ -1077,6 +1088,9 @@ def test_render_runtime_update_result_success(tmp_path):
     assert "[✓] status gate" in rendered
     assert "[✓] fast-forward: abc1234 -> def5678" in rendered
     assert f"Backup: {backup}" in rendered
+    assert "Installed changes:" in rendered
+    assert "- def5678 Add update UX" in rendered
+    assert "- fed9012 Improve release summary" in rendered
     assert "Update result: success" in rendered
 
 

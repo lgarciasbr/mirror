@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from memory import MemoryClient
+from memory.cli.runtime import GitStatus, GitUpdatePlan
 from memory.config import default_db_path_for_home
 
 JOURNEY_ACTIVE = """# Sample journey
@@ -68,8 +69,13 @@ def test_welcome_empty_when_mirror_welcome_off(monkeypatch, tmp_path, capsys):
 # ---------- structure ---------------------------------------------------
 
 
-def test_welcome_has_three_visible_lines_and_blank_before_invitation(tmp_path, capsys):
+def test_welcome_has_version_stats_and_blank_before_invitation(monkeypatch, tmp_path, capsys):
     _mem(tmp_path, user="alisson-vale")
+    monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.7.0")
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git",
+        lambda start: GitStatus(None, None, None, None, "not a git repository"),
+    )
 
     from memory.cli.welcome import main
 
@@ -78,10 +84,11 @@ def test_welcome_has_three_visible_lines_and_blank_before_invitation(tmp_path, c
     out = capsys.readouterr().out
     lines = out.splitlines()
     assert lines[0] == "◇ Mirror · alisson-vale"
+    assert lines[1] == "Version 0.7.0"
     # Stats line is always present, even for an empty database.
-    assert "journeys" in lines[1]
-    assert lines[2] == ""
-    assert lines[3] == "→ Where shall we begin?"
+    assert "journeys" in lines[2]
+    assert lines[3] == ""
+    assert lines[4] == "→ Where shall we begin?"
 
 
 def test_welcome_ends_with_invitation(tmp_path, capsys):
@@ -269,3 +276,48 @@ def test_welcome_since_label_formats_month_year(tmp_path, capsys, month_iso, exp
     out = capsys.readouterr().out
     stats = next(line for line in out.splitlines() if "journeys" in line)
     assert expected in stats
+
+
+# ---------- version and update signal -----------------------------------
+
+
+def test_welcome_renders_update_available_from_local_refs(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+    monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.7.0")
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git",
+        lambda start: GitStatus(tmp_path, "main", "abc1234", False),
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git_update_plan",
+        lambda git: GitUpdatePlan("origin/main", 0, 2, True, "pull", "pull 2 commits"),
+    )
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(tmp_path / ".mirror" / "alisson-vale")])
+
+    out = capsys.readouterr().out
+    assert "Version 0.7.0" in out
+    assert "Update available: 2 commits behind origin/main · run runtime update" in out
+
+
+def test_welcome_does_not_render_update_line_when_refs_are_current(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+    monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.7.0")
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git",
+        lambda start: GitStatus(tmp_path, "main", "abc1234", False),
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git_update_plan",
+        lambda git: GitUpdatePlan("origin/main", 0, 0, True, "none", "already up to date"),
+    )
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(tmp_path / ".mirror" / "alisson-vale")])
+
+    out = capsys.readouterr().out
+    assert "Version 0.7.0" in out
+    assert "Update available" not in out

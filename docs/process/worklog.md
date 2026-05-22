@@ -12,6 +12,21 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-22 — Welcome version and update UX added
+
+Added installed version visibility to `python -m memory welcome`. The welcome now shows `Version <version>` and, when local git refs already show the checkout is behind upstream, renders a no-network update notice that points to `runtime update`.
+
+Enhanced `python -m memory runtime update` so successful installs that move to a new commit include an `Installed changes` summary from `git log <previous>..<new>`. This gives the user a compact post-install explanation even before formal release notes exist for every update.
+
+Verification:
+
+```bash
+PYTHONPATH=src uv run pytest tests/unit/memory/cli/test_welcome.py tests/unit/memory/cli/test_runtime.py
+uv run --extra dev ruff check src/ tests/
+uv run --extra dev ruff format --check src/ tests/
+uv run python -m memory welcome --mirror-home /Users/alissonvale/.mirror-minds/alisson-vale
+```
+
 ### 2026-05-22 — Documentation information architecture updated
 
 Completed CV9.E5.S2 using Ariad's documentation pattern as the reference: short narrative home, explicit Start Here paths, and the Process / Project / Product triad with a practical Reference layer. `docs/index.md` now routes new users, operators, contributors, and developers to the right surfaces.

@@ -30,6 +30,7 @@ over time.
 | [CV9.E3.S5](cv9-e3-s5-runtime-version-update-availability/index.md) | Runtime Version and Update Availability | ✅ Done |
 | [CV9.E3.S6](cv9-e3-s6-clone-role-guard/index.md) | Clone Role Guard | ✅ Done |
 | [CV9.E3.S7](cv9-e3-s7-safe-runtime-update-execution/index.md) | Safe Runtime Update Execution | ✅ Done |
+| [CV9.E3.S8](cv9-e3-s8-welcome-update-awareness/index.md) | Welcome Update Awareness | ✅ Done |
 
 ---
 
@@ -45,6 +46,9 @@ CV9.E3 is done:
   `.mirror-clone-role`, and Builder Mode refuses production clones by default.
 - Runtime update execution is conservative: status-gated, backup-first,
   verification-backed, fast-forward only, and manual-recovery oriented.
+- The welcome card shows the installed version and surfaces locally known update
+  availability without contacting the network.
+- Successful runtime updates summarize installed changes after the fast-forward.
 - `README`, `REFERENCE.md`, process docs, decisions, and roadmap entries reflect
   the onboarding and self-update flow accurately.
 
