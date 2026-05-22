@@ -329,6 +329,24 @@ def test_inspect_extension_health_reports_unknown_migration(tmp_path):
     assert health[0].unknown_migrations == ("001_legacy.sql",)
 
 
+def test_inspect_extension_health_reports_database_table_error(monkeypatch, tmp_path):
+    _write_command_extension(tmp_path)
+    db_path = tmp_path / "memory.db"
+    db_path.touch()
+
+    def raise_table_error(conn, table):
+        raise sqlite3.OperationalError("unable to open database file")
+
+    monkeypatch.setattr("memory.cli.runtime._table_exists", raise_table_error)
+
+    health = inspect_extension_health(tmp_path, db_path, True)
+
+    assert len(health) == 1
+    assert health[0].extension_id == "hello"
+    assert health[0].ready is False
+    assert "database unavailable: unable to open database file" == health[0].note
+
+
 def test_diagnose_runtime_reports_drift_findings():
     report = _report(
         core_migrations=CoreMigrationHealth(

@@ -18,6 +18,8 @@ Added installed version visibility to `python -m memory welcome`. The welcome no
 
 Enhanced `python -m memory runtime update` so successful installs that move to a new commit include an `Installed changes` summary from `git log <previous>..<new>`. This gives the user a compact post-install explanation even before formal release notes exist for every update.
 
+While applying the change to production, the previous self-update command exposed a status robustness bug: extension health inspection could raise `sqlite3.OperationalError` instead of reporting an attention-needed extension health state. The runtime status path now converts extension database table inspection failures into explicit extension health notes.
+
 Verification:
 
 ```bash

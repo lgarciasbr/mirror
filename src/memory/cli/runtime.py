@@ -389,7 +389,12 @@ def inspect_extension_health(
             if conn is None:
                 results.append(ExtensionHealth(extension_id, False, "database unavailable"))
                 continue
-            if not _table_exists(conn, "_ext_migrations"):
+            try:
+                has_ext_migration_table = _table_exists(conn, "_ext_migrations")
+            except sqlite3.Error as exc:
+                results.append(ExtensionHealth(extension_id, False, f"database unavailable: {exc}"))
+                continue
+            if not has_ext_migration_table:
                 migrations_dir = child / "migrations"
                 has_migrations = migrations_dir.exists() and any(migrations_dir.glob("*.sql"))
                 results.append(
