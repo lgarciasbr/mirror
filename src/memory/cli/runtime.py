@@ -77,6 +77,22 @@ class DriftFinding:
 
 
 @dataclass(frozen=True)
+class RuntimeVersionReport:
+    version: str
+    git: GitStatus
+
+
+@dataclass(frozen=True)
+class RuntimeUpdateAvailability:
+    version: str
+    upstream: str | None
+    local_commit: str | None
+    remote_commit: str | None
+    status: str
+    note: str | None = None
+
+
+@dataclass(frozen=True)
 class GitUpdatePlan:
     upstream: str | None
     ahead: int | None
@@ -456,6 +472,122 @@ def render_runtime_backup_created(
     return "\n".join(lines) + "\n"
 
 
+def build_runtime_version_report(start: Path | None = None) -> RuntimeVersionReport:
+    return RuntimeVersionReport(package_version(), inspect_git((start or Path.cwd()).resolve()))
+
+
+def render_runtime_version(report: RuntimeVersionReport) -> str:
+    lines: list[str] = ["Mirror runtime version", ""]
+    lines.append(f"Version: {report.version}")
+    lines.append(f"Repository: {report.git.repository if report.git.repository else 'unknown'}")
+    lines.append(f"Git branch: {report.git.branch or 'unknown'}")
+    lines.append(f"Git commit: {report.git.commit or 'unknown'}")
+    if report.git.error:
+        lines.append(f"Git status note: {report.git.error}")
+    return "\n".join(lines) + "\n"
+
+
+def _split_upstream(upstream: str) -> tuple[str, str] | None:
+    if "/" not in upstream:
+        return None
+    remote, branch = upstream.split("/", 1)
+    if not remote or not branch:
+        return None
+    return remote, branch
+
+
+def check_runtime_update_availability(start: Path | None = None) -> RuntimeUpdateAvailability:
+    git = inspect_git((start or Path.cwd()).resolve())
+    version = package_version()
+    if git.repository is None:
+        return RuntimeUpdateAvailability(
+            version, None, None, None, "unknown", "repository unavailable"
+        )
+
+    git_plan = inspect_git_update_plan(git)
+    if git_plan.upstream is None:
+        return RuntimeUpdateAvailability(
+            version, None, git.commit, None, "no_upstream", git_plan.note
+        )
+    if git_plan.ahead and git_plan.behind:
+        return RuntimeUpdateAvailability(
+            version, git_plan.upstream, git.commit, None, "diverged", git_plan.note
+        )
+    if git_plan.ahead and not git_plan.behind:
+        return RuntimeUpdateAvailability(
+            version, git_plan.upstream, git.commit, None, "local_ahead", git_plan.note
+        )
+
+    split = _split_upstream(git_plan.upstream)
+    if split is None:
+        return RuntimeUpdateAvailability(
+            version, git_plan.upstream, git.commit, None, "unknown", "unexpected upstream name"
+        )
+    remote, branch = split
+    code, remote_url, remote_err = _run_git(
+        ["config", "--get", f"remote.{remote}.url"], cwd=git.repository
+    )
+    if code != 0 or not remote_url:
+        return RuntimeUpdateAvailability(
+            version,
+            git_plan.upstream,
+            git.commit,
+            None,
+            "unknown",
+            remote_err or f"remote {remote} has no url",
+        )
+    code, output, ls_err = _run_git(
+        ["ls-remote", remote, f"refs/heads/{branch}"], cwd=git.repository
+    )
+    if code != 0 or not output:
+        return RuntimeUpdateAvailability(
+            version, git_plan.upstream, git.commit, None, "unknown", ls_err or "remote query failed"
+        )
+    parts = output.split()
+    if len(parts) < 2:
+        return RuntimeUpdateAvailability(
+            version,
+            git_plan.upstream,
+            git.commit,
+            None,
+            "unknown",
+            f"unexpected ls-remote output: {output}",
+        )
+    remote_commit = parts[0]
+    local_full_code, local_full, _err = _run_git(["rev-parse", "HEAD"], cwd=git.repository)
+    local_commit = local_full if local_full_code == 0 and local_full else git.commit
+    status = "up_to_date" if remote_commit.startswith(local_commit or "") else "update_available"
+    if local_commit and len(local_commit) < len(remote_commit):
+        status = "up_to_date" if remote_commit.startswith(local_commit) else "update_available"
+    elif local_commit:
+        status = "up_to_date" if remote_commit == local_commit else "update_available"
+    return RuntimeUpdateAvailability(
+        version, git_plan.upstream, local_commit, remote_commit, status
+    )
+
+
+def render_runtime_update_availability(report: RuntimeUpdateAvailability) -> str:
+    lines: list[str] = ["Mirror runtime update check", ""]
+    lines.append(f"Version: {report.version}")
+    lines.append(f"Current: {report.local_commit[:7] if report.local_commit else 'unknown'}")
+    if report.upstream:
+        remote = report.remote_commit[:7] if report.remote_commit else "unknown"
+        lines.append(f"Upstream: {report.upstream} @ {remote}")
+    else:
+        lines.append("Upstream: none")
+    lines.append(f"Availability: {report.status}")
+    if report.note:
+        lines.append(f"Reason: {report.note}")
+    if report.status == "update_available":
+        lines.append("")
+        lines.append("Preview:")
+        lines.append("uv run python -m memory runtime update --dry-run")
+    elif report.status == "up_to_date":
+        lines.append("")
+        lines.append("Next: no update needed")
+    return "\n".join(lines) + "\n"
+
+
 def inspect_git_update_plan(git: GitStatus) -> GitUpdatePlan:
     if git.repository is None:
         return GitUpdatePlan(None, None, None, False, "blocked", "repository unavailable")
@@ -809,10 +941,13 @@ def cmd_runtime(argv: list[str]) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     status_parser = subparsers.add_parser("status", help="Inspect runtime status")
     status_parser.add_argument("--mirror-home", dest="mirror_home")
+    version_parser = subparsers.add_parser("version", help="Show runtime version")
+    version_parser.add_argument("--start", dest="start")
     diagnose_parser = subparsers.add_parser("diagnose", help="Diagnose runtime drift")
     diagnose_parser.add_argument("--mirror-home", dest="mirror_home")
     update_parser = subparsers.add_parser("update", help="Plan a runtime update")
     update_parser.add_argument("--dry-run", action="store_true", dest="dry_run")
+    update_parser.add_argument("--check", action="store_true", dest="check")
     update_parser.add_argument("--mirror-home", dest="mirror_home")
     backup_parser = subparsers.add_parser("backup", help="Create or verify a runtime backup")
     backup_parser.add_argument("--mirror-home", dest="mirror_home")
@@ -824,6 +959,11 @@ def cmd_runtime(argv: list[str]) -> int:
         sys.stdout.write(render_runtime_status(report))
         return 0 if report.status == "ready" else 1
 
+    if args.command == "version":
+        start = Path(args.start).expanduser() if args.start else None
+        sys.stdout.write(render_runtime_version(build_runtime_version_report(start=start)))
+        return 0
+
     if args.command == "diagnose":
         report = build_runtime_status(mirror_home_arg=args.mirror_home)
         entries = inspect_git_worktree(report.git.repository)
@@ -832,8 +972,12 @@ def cmd_runtime(argv: list[str]) -> int:
         return 0 if not findings else 1
 
     if args.command == "update":
+        if args.check:
+            availability = check_runtime_update_availability()
+            sys.stdout.write(render_runtime_update_availability(availability))
+            return 0 if availability.status in {"up_to_date", "update_available"} else 1
         if not args.dry_run:
-            sys.stderr.write("runtime update currently supports --dry-run only\n")
+            sys.stderr.write("runtime update currently supports --dry-run or --check only\n")
             return 1
         dry_run = build_runtime_update_dry_run(mirror_home_arg=args.mirror_home)
         sys.stdout.write(render_runtime_update_dry_run(dry_run))

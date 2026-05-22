@@ -36,7 +36,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-shadow` | `$mm-shadow` | `/mm:shadow` | Surface and promote shadow-layer observations | `scan`, `apply`, `reject`, `list`, `show` |
 | `/mm-welcome` | `$mm-welcome` | `/mm:welcome` | Renders the state-aware welcome card on demand | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `python -m memory runtime` | — | — | Inspects Mirror runtime status, diagnoses drift, manages backups, and plans updates | `status [--mirror-home PATH]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `update --dry-run [--mirror-home PATH]` |
+| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, and update plans | `status [--mirror-home PATH]`, `version`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `update --dry-run [--mirror-home PATH]`, `update --check` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
 To inspect the local runtime state before an operational update:
@@ -64,7 +64,21 @@ uv run python -m memory runtime backup --verify PATH_TO_BACKUP.zip
 
 Runtime backup archives contain `memory.db` and SQLite sidecars (`memory.db-wal`, `memory.db-shm`) when present. Verification is structural: the zip must be readable, contain `memory.db`, and avoid unsafe archive paths. Recovery remains manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun runtime status.
 
-To plan a runtime update without mutating files, git refs, backups, migrations, or the database:
+To inspect the installed runtime version without contacting the network:
+
+```bash
+uv run python -m memory runtime version
+```
+
+To explicitly check the configured upstream for an available update without fetching or changing local refs:
+
+```bash
+uv run python -m memory runtime update --check
+```
+
+The check uses `git ls-remote` against the configured upstream branch. It may contact the network, but it does not fetch, pull, back up, migrate, or modify files.
+
+To plan a runtime update from local git refs without mutating files, git refs, backups, migrations, or the database:
 
 ```bash
 uv run python -m memory runtime update --dry-run

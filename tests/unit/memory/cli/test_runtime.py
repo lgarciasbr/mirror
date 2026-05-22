@@ -12,7 +12,10 @@ from memory.cli.runtime import (
     GitUpdatePlan,
     GitWorktreeEntry,
     RuntimeStatusReport,
+    RuntimeUpdateAvailability,
     RuntimeUpdateDryRun,
+    RuntimeVersionReport,
+    check_runtime_update_availability,
     cmd_runtime,
     diagnose_runtime,
     inspect_core_migrations,
@@ -21,6 +24,8 @@ from memory.cli.runtime import (
     render_runtime_backup_created,
     render_runtime_diagnosis,
     render_runtime_status,
+    render_runtime_update_availability,
+    render_runtime_version,
     render_runtime_update_dry_run,
     verify_backup_archive,
 )
@@ -380,6 +385,98 @@ def test_cmd_runtime_status_returns_nonzero_when_attention_needed(monkeypatch, c
     assert "Status: attention needed" in out
 
 
+def test_render_runtime_version():
+    rendered = render_runtime_version(
+        RuntimeVersionReport(
+            "0.7.0",
+            GitStatus(Path("/repo"), "main", "abc1234", False),
+        )
+    )
+
+    assert "Mirror runtime version" in rendered
+    assert "Version: 0.7.0" in rendered
+    assert "Git branch: main" in rendered
+    assert "Git commit: abc1234" in rendered
+
+
+def test_check_runtime_update_availability_reports_up_to_date(monkeypatch):
+    def fake_run_git(args, *, cwd):
+        if args[0] == "rev-parse" and args[1] == "--show-toplevel":
+            return 0, "/repo", ""
+        if args == ["branch", "--show-current"]:
+            return 0, "main", ""
+        if args == ["rev-parse", "--short", "HEAD"]:
+            return 0, "abc1234", ""
+        if args == ["status", "--porcelain"]:
+            return 0, "", ""
+        if args[:2] == ["rev-parse", "--abbrev-ref"]:
+            return 0, "origin/main", ""
+        if args[:2] == ["rev-list", "--left-right"]:
+            return 0, "0 0", ""
+        if args[:3] == ["config", "--get", "remote.origin.url"]:
+            return 0, "https://example.test/repo.git", ""
+        if args[:2] == ["ls-remote", "origin"]:
+            return 0, "abcdef1234567890\trefs/heads/main", ""
+        if args == ["rev-parse", "HEAD"]:
+            return 0, "abcdef1234567890", ""
+        raise AssertionError(args)
+
+    monkeypatch.setattr("memory.cli.runtime._run_git", fake_run_git)
+    monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.7.0")
+
+    report = check_runtime_update_availability(Path("/repo"))
+
+    assert report.status == "up_to_date"
+    assert report.remote_commit == "abcdef1234567890"
+
+
+def test_check_runtime_update_availability_reports_update_available(monkeypatch):
+    def fake_run_git(args, *, cwd):
+        if args[0] == "rev-parse" and args[1] == "--show-toplevel":
+            return 0, "/repo", ""
+        if args == ["branch", "--show-current"]:
+            return 0, "main", ""
+        if args == ["rev-parse", "--short", "HEAD"]:
+            return 0, "abc1234", ""
+        if args == ["status", "--porcelain"]:
+            return 0, "", ""
+        if args[:2] == ["rev-parse", "--abbrev-ref"]:
+            return 0, "origin/main", ""
+        if args[:2] == ["rev-list", "--left-right"]:
+            return 0, "0 1", ""
+        if args[:3] == ["config", "--get", "remote.origin.url"]:
+            return 0, "https://example.test/repo.git", ""
+        if args[:2] == ["ls-remote", "origin"]:
+            return 0, "def5678901234567\trefs/heads/main", ""
+        if args == ["rev-parse", "HEAD"]:
+            return 0, "abcdef1234567890", ""
+        raise AssertionError(args)
+
+    monkeypatch.setattr("memory.cli.runtime._run_git", fake_run_git)
+    monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.7.0")
+
+    report = check_runtime_update_availability(Path("/repo"))
+
+    assert report.status == "update_available"
+    assert report.upstream == "origin/main"
+
+
+def test_render_runtime_update_availability():
+    rendered = render_runtime_update_availability(
+        RuntimeUpdateAvailability(
+            "0.7.0",
+            "origin/main",
+            "abcdef1234567890",
+            "def5678901234567",
+            "update_available",
+        )
+    )
+
+    assert "Mirror runtime update check" in rendered
+    assert "Availability: update_available" in rendered
+    assert "runtime update --dry-run" in rendered
+
+
 def test_inspect_git_update_plan_reports_missing_upstream(monkeypatch):
     def fake_run_git(args, *, cwd):
         if args[:2] == ["rev-parse", "--abbrev-ref"]:
@@ -504,12 +601,44 @@ def test_cmd_runtime_diagnose_dispatches(monkeypatch, capsys):
     assert "Status: attention needed" in out
 
 
-def test_cmd_runtime_update_requires_dry_run(capsys):
+def test_cmd_runtime_update_requires_mode(capsys):
     rc = cmd_runtime(["update"])
 
     captured = capsys.readouterr()
     assert rc == 1
-    assert "runtime update currently supports --dry-run only" in captured.err
+    assert "runtime update currently supports --dry-run or --check only" in captured.err
+
+
+def test_cmd_runtime_version_dispatches(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "memory.cli.runtime.build_runtime_version_report",
+        lambda start=None: RuntimeVersionReport(
+            "0.7.0", GitStatus(Path("/repo"), "main", "abc1234", False)
+        ),
+    )
+
+    rc = cmd_runtime(["version"])
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Mirror runtime version" in out
+    assert "Version: 0.7.0" in out
+
+
+def test_cmd_runtime_update_check_dispatches(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "memory.cli.runtime.check_runtime_update_availability",
+        lambda: RuntimeUpdateAvailability(
+            "0.7.0", "origin/main", "abc1234", "def5678", "update_available"
+        ),
+    )
+
+    rc = cmd_runtime(["update", "--check"])
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Mirror runtime update check" in out
+    assert "Availability: update_available" in out
 
 
 def test_cmd_runtime_update_dry_run_dispatches(monkeypatch, capsys):

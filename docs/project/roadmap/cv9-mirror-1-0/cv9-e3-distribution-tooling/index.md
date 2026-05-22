@@ -27,7 +27,7 @@ over time.
 | [CV9.E3.S2](cv9-e3-s2-runtime-status-health/index.md) | Runtime Status Health Checks | ✅ Done |
 | [CV9.E3.S3](cv9-e3-s3-runtime-update-dry-run/index.md) | Runtime Update Dry Run | ✅ Done |
 | [CV9.E3.S4](cv9-e3-s4-runtime-backup-recovery/index.md) | Runtime Backup and Recovery Prerequisite | ✅ Done |
-| [CV9.E3.S5](cv9-e3-s5-runtime-version-update-availability/index.md) | Runtime Version and Update Availability | 🟡 Planned |
+| [CV9.E3.S5](cv9-e3-s5-runtime-version-update-availability/index.md) | Runtime Version and Update Availability | ✅ Done |
 | [CV9.E3.S6](cv9-e3-s6-safe-runtime-update-execution/index.md) | Safe Runtime Update Execution | 🟡 Planned |
 
 ---

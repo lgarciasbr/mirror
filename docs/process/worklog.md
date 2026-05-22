@@ -9,6 +9,20 @@ Update when a meaningful milestone is reached.
 
 ## Done
 
+### 2026-05-22 — Runtime version and update availability added
+
+Added `python -m memory runtime version` for offline local version visibility and `python -m memory runtime update --check` for explicit remote update discovery. The check uses the configured upstream branch and `git ls-remote`, so it may contact the network but does not fetch, pull, change refs, create backups, run migrations, or touch the database.
+
+Verification:
+
+```bash
+PYTHONPATH=src uv run pytest tests/unit/memory/cli/test_runtime.py tests/unit/memory/extensions/test_migrations.py
+uv run python -m memory runtime version
+uv run python -m memory runtime update --check
+```
+
+Result: targeted tests passed. Manual check reported the local runtime up to date with `origin/main`.
+
 ### 2026-05-22 — Runtime drift diagnosis and local repair policy added
 
 Integrated the local drift reconciliation work on top of the remote self-update track. `python -m memory runtime diagnose` now classifies repository drift, unknown core migration rows, unknown extension migration rows, pending migrations, checksum drift, and invalid extension manifests into repair-oriented findings without mutating files or the database.

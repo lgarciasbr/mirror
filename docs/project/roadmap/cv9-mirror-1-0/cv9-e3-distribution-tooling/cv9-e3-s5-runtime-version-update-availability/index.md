@@ -2,7 +2,7 @@
 
 # CV9.E3.S5 — Runtime Version and Update Availability
 
-**Status:** 🟡 Planned  
+**Status:** ✅ Done  
 **Epic:** CV9.E3 Distribution & Tooling
 
 ---
