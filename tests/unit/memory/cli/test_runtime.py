@@ -1,9 +1,11 @@
 """Tests for runtime status CLI."""
 
 import sqlite3
+import zipfile
 from pathlib import Path
 
 from memory.cli.runtime import (
+    BackupVerification,
     CoreMigrationHealth,
     ExtensionHealth,
     GitStatus,
@@ -14,8 +16,10 @@ from memory.cli.runtime import (
     inspect_core_migrations,
     inspect_extension_health,
     inspect_git_update_plan,
+    render_runtime_backup_created,
     render_runtime_status,
     render_runtime_update_dry_run,
+    verify_backup_archive,
 )
 from memory.db.migrations import MIGRATIONS
 from memory.extensions.migrations import run_migrations
@@ -430,3 +434,116 @@ def test_cmd_runtime_update_dry_run_returns_nonzero_when_blocked(monkeypatch, ca
     out = capsys.readouterr().out
     assert rc == 1
     assert "Dry-run result: blocked" in out
+
+
+def test_verify_backup_archive_accepts_memory_db_zip(tmp_path):
+    backup_path = tmp_path / "memory.zip"
+    with zipfile.ZipFile(backup_path, "w") as zf:
+        zf.writestr("memory.db", "db")
+        zf.writestr("memory.db-wal", "wal")
+
+    verification = verify_backup_archive(backup_path)
+
+    assert verification == BackupVerification(backup_path, True, ("memory.db", "memory.db-wal"))
+
+
+def test_verify_backup_archive_rejects_missing_file(tmp_path):
+    backup_path = tmp_path / "missing.zip"
+
+    verification = verify_backup_archive(backup_path)
+
+    assert verification == BackupVerification(backup_path, False, (), "backup file not found")
+
+
+def test_verify_backup_archive_rejects_non_zip(tmp_path):
+    backup_path = tmp_path / "not.zip"
+    backup_path.write_text("not a zip", encoding="utf-8")
+
+    verification = verify_backup_archive(backup_path)
+
+    assert verification == BackupVerification(
+        backup_path, False, (), "backup file is not a readable zip"
+    )
+
+
+def test_verify_backup_archive_rejects_zip_without_memory_db(tmp_path):
+    backup_path = tmp_path / "memory.zip"
+    with zipfile.ZipFile(backup_path, "w") as zf:
+        zf.writestr("notes.txt", "no")
+
+    verification = verify_backup_archive(backup_path)
+
+    assert verification.valid is False
+    assert verification.note == "memory.db missing from backup"
+
+
+def test_verify_backup_archive_rejects_unsafe_entries(tmp_path):
+    backup_path = tmp_path / "memory.zip"
+    with zipfile.ZipFile(backup_path, "w") as zf:
+        zf.writestr("memory.db", "db")
+        zf.writestr("../escape", "bad")
+
+    verification = verify_backup_archive(backup_path)
+
+    assert verification.valid is False
+    assert verification.note == "unsafe archive entry: ../escape"
+
+
+def test_render_runtime_backup_created_includes_recovery_route(tmp_path):
+    backup_path = tmp_path / "backups" / "memory.zip"
+    verification = BackupVerification(backup_path, True, ("memory.db",))
+
+    rendered = render_runtime_backup_created(
+        backup_path=backup_path, mirror_home=tmp_path, verification=verification
+    )
+
+    assert "Mirror runtime backup" in rendered
+    assert "Verification result: valid" in rendered
+    assert "Manual recovery route:" in rendered
+    assert "Recovery is manual" in rendered
+
+
+def test_cmd_runtime_backup_creates_and_verifies_archive(tmp_path, capsys):
+    db_path = tmp_path / "memory.db"
+    db_path.write_text("db content", encoding="utf-8")
+
+    rc = cmd_runtime(["backup", "--mirror-home", str(tmp_path)])
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Mirror runtime backup" in out
+    assert "Verification result: valid" in out
+    assert list((tmp_path / "backups").glob("memory_*.zip"))
+
+
+def test_cmd_runtime_backup_missing_database_returns_nonzero(tmp_path, capsys):
+    rc = cmd_runtime(["backup", "--mirror-home", str(tmp_path)])
+
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "Database not found" in captured.err
+    assert not (tmp_path / "backups").exists()
+
+
+def test_cmd_runtime_backup_verify_dispatches(tmp_path, capsys):
+    backup_path = tmp_path / "memory.zip"
+    with zipfile.ZipFile(backup_path, "w") as zf:
+        zf.writestr("memory.db", "db")
+
+    rc = cmd_runtime(["backup", "--verify", str(backup_path)])
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Mirror runtime backup verification" in out
+    assert "Verification result: valid" in out
+
+
+def test_cmd_runtime_backup_verify_returns_nonzero_for_invalid_archive(tmp_path, capsys):
+    backup_path = tmp_path / "bad.zip"
+    backup_path.write_text("bad", encoding="utf-8")
+
+    rc = cmd_runtime(["backup", "--verify", str(backup_path)])
+
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "Verification result: invalid" in out

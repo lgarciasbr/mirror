@@ -36,7 +36,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-shadow` | `$mm-shadow` | `/mm:shadow` | Surface and promote shadow-layer observations | `scan`, `apply`, `reject`, `list`, `show` |
 | `/mm-welcome` | `$mm-welcome` | `/mm:welcome` | Renders the state-aware welcome card on demand | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `python -m memory runtime` | — | — | Inspects Mirror runtime status and plans runtime updates | `status [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH]` |
+| `python -m memory runtime` | — | — | Inspects Mirror runtime status, backups, and update plans | `status [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `update --dry-run [--mirror-home PATH]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
 To inspect the local runtime state before an operational update:
@@ -46,6 +46,15 @@ uv run python -m memory runtime status
 ```
 
 The command reports version, repository, git state, mirror home, database, core migration health, installed extensions, extension health, Python version, and environment. It exits with attention needed when the current state is not safe enough for update planning, for example when the git tree is dirty, the mirror home is not configured, core migrations are missing, or installed extension migrations have pending or drifted files.
+
+To create and structurally verify a runtime backup before an operational update:
+
+```bash
+uv run python -m memory runtime backup [--mirror-home PATH]
+uv run python -m memory runtime backup --verify PATH_TO_BACKUP.zip
+```
+
+Runtime backup archives contain `memory.db` and SQLite sidecars (`memory.db-wal`, `memory.db-shm`) when present. Verification is structural: the zip must be readable, contain `memory.db`, and avoid unsafe archive paths. Recovery remains manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun runtime status.
 
 To plan a runtime update without mutating files, git refs, backups, migrations, or the database:
 

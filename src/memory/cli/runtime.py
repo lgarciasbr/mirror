@@ -6,10 +6,12 @@ import argparse
 import sqlite3
 import subprocess
 import sys
+import zipfile
 from dataclasses import dataclass
 from importlib import metadata
 from pathlib import Path
 
+from memory.cli.backup import backup as create_backup
 from memory.cli.extensions import ExtensionValidationError, load_extension_manifest
 from memory.config import (
     MEMORY_ENV,
@@ -19,6 +21,14 @@ from memory.config import (
 )
 from memory.db.migrations import MIGRATIONS
 from memory.extensions.migrations import ExtensionMigrationError, inspect_migration_files
+
+
+@dataclass(frozen=True)
+class BackupVerification:
+    backup_path: Path
+    valid: bool
+    entries: tuple[str, ...]
+    note: str | None = None
 
 
 @dataclass(frozen=True)
@@ -329,6 +339,68 @@ def build_runtime_status(
     )
 
 
+def verify_backup_archive(backup_path: Path) -> BackupVerification:
+    if not backup_path.exists():
+        return BackupVerification(backup_path, False, (), "backup file not found")
+    try:
+        with zipfile.ZipFile(backup_path) as zf:
+            entries = tuple(sorted(zf.namelist()))
+    except zipfile.BadZipFile:
+        return BackupVerification(backup_path, False, (), "backup file is not a readable zip")
+
+    for entry in entries:
+        entry_path = Path(entry)
+        if entry_path.is_absolute() or ".." in entry_path.parts:
+            return BackupVerification(backup_path, False, entries, f"unsafe archive entry: {entry}")
+    if "memory.db" not in entries:
+        return BackupVerification(backup_path, False, entries, "memory.db missing from backup")
+    allowed = {"memory.db", "memory.db-wal", "memory.db-shm"}
+    unexpected = tuple(entry for entry in entries if entry not in allowed)
+    if unexpected:
+        return BackupVerification(
+            backup_path, False, entries, f"unexpected archive entries: {', '.join(unexpected)}"
+        )
+    return BackupVerification(backup_path, True, entries)
+
+
+def render_backup_verification(verification: BackupVerification) -> str:
+    lines: list[str] = []
+    lines.append("Mirror runtime backup verification")
+    lines.append("")
+    lines.append(f"Backup: {verification.backup_path}")
+    if verification.entries:
+        lines.append(f"Entries: {', '.join(verification.entries)}")
+    if verification.note:
+        lines.append(f"Verification note: {verification.note}")
+    lines.append(f"Verification result: {'valid' if verification.valid else 'invalid'}")
+    return "\n".join(lines) + "\n"
+
+
+def render_runtime_backup_created(
+    *, backup_path: Path, mirror_home: Path, verification: BackupVerification
+) -> str:
+    lines: list[str] = []
+    lines.append("Mirror runtime backup")
+    lines.append("")
+    lines.append(f"Mirror home: {mirror_home}")
+    lines.append(f"Backup: {backup_path}")
+    lines.append(f"Verification result: {'valid' if verification.valid else 'invalid'}")
+    if verification.entries:
+        lines.append(f"Entries: {', '.join(verification.entries)}")
+    if verification.note:
+        lines.append(f"Verification note: {verification.note}")
+    lines.append("")
+    lines.append("Manual recovery route:")
+    lines.append("  1. Stop active runtime sessions that could write to the database.")
+    lines.append("  2. Move current memory.db, memory.db-wal, and memory.db-shm aside.")
+    lines.append("  3. Extract memory.db and sidecars from this backup into the Mirror home.")
+    lines.append("  4. Run runtime status against the Mirror home.")
+    lines.append("  5. Do not retry update execution until status is ready.")
+    lines.append("")
+    lines.append("Recovery is manual in this version; no files were restored.")
+    return "\n".join(lines) + "\n"
+
+
 def inspect_git_update_plan(git: GitStatus) -> GitUpdatePlan:
     if git.repository is None:
         return GitUpdatePlan(None, None, None, False, "blocked", "repository unavailable")
@@ -528,6 +600,9 @@ def cmd_runtime(argv: list[str]) -> int:
     update_parser = subparsers.add_parser("update", help="Plan a runtime update")
     update_parser.add_argument("--dry-run", action="store_true", dest="dry_run")
     update_parser.add_argument("--mirror-home", dest="mirror_home")
+    backup_parser = subparsers.add_parser("backup", help="Create or verify a runtime backup")
+    backup_parser.add_argument("--mirror-home", dest="mirror_home")
+    backup_parser.add_argument("--verify", dest="verify")
     args = parser.parse_args(argv)
 
     if args.command == "status":
@@ -542,6 +617,30 @@ def cmd_runtime(argv: list[str]) -> int:
         dry_run = build_runtime_update_dry_run(mirror_home_arg=args.mirror_home)
         sys.stdout.write(render_runtime_update_dry_run(dry_run))
         return 0 if dry_run.ready else 1
+
+    if args.command == "backup":
+        if args.verify:
+            verification = verify_backup_archive(Path(args.verify).expanduser())
+            sys.stdout.write(render_backup_verification(verification))
+            return 0 if verification.valid else 1
+        try:
+            mirror_home = (
+                Path(args.mirror_home).expanduser() if args.mirror_home else resolve_mirror_home()
+            )
+        except ValueError as exc:
+            sys.stderr.write(f"{exc}\n")
+            return 1
+        backup_path = create_backup(silent=True, mirror_home=mirror_home)
+        if backup_path is None:
+            sys.stderr.write(f"Database not found: {default_db_path_for_home(mirror_home)}\n")
+            return 1
+        verification = verify_backup_archive(backup_path)
+        sys.stdout.write(
+            render_runtime_backup_created(
+                backup_path=backup_path, mirror_home=mirror_home, verification=verification
+            )
+        )
+        return 0 if verification.valid else 1
 
     parser.print_help()
     return 1

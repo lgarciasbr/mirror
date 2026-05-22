@@ -9,6 +9,14 @@ Update when a meaningful milestone is reached.
 
 ## Done
 
+### 2026-05-22 — Runtime backup and recovery prerequisite added
+
+Added `python -m memory runtime backup` and `python -m memory runtime backup --verify PATH` as the backup/recovery prerequisite for future self-update execution. Runtime backup reuses the existing database backup implementation, structurally verifies the resulting archive, and prints the manual recovery route without restoring files automatically.
+
+Verification checks that backup archives are readable zip files, contain `memory.db`, include only safe relative entries, and reject missing, malformed, or unsafe archives. Recovery remains manual by design in this story.
+
+Verification: focused runtime and backup tests passed, ruff check and format check passed, story-scoped mypy passed for `src/memory/cli/runtime.py`, and isolated manual validation used a temporary Mirror home.
+
 ### 2026-05-22 — Runtime update dry-run added
 
 Added `python -m memory runtime update --dry-run` as the planning step before any self-update execution. The command reuses runtime status as its safety gate, inspects the local branch's configured upstream without fetching or mutating refs, and reports whether the runtime is already up to date, behind upstream, ahead of upstream, diverged, missing an upstream, or blocked by unsafe current state.

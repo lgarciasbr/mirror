@@ -64,8 +64,10 @@ Commands:
                        Usage: python -m memory shadow <scan|apply|reject|list|show> [args]
   web                  Run the local Mirror Web Console
                        Usage: python -m memory web [--host 127.0.0.1] [--port 8765]
-  runtime              Inspect Mirror runtime status and plan runtime updates
+  runtime              Inspect Mirror runtime status, backups, and update plans
                        Usage: python -m memory runtime status [--mirror-home PATH]
+                              python -m memory runtime backup [--mirror-home PATH]
+                              python -m memory runtime backup --verify PATH
                               python -m memory runtime update --dry-run [--mirror-home PATH]
   welcome              Render the state-aware welcome card for the current Mirror home
                        Usage: python -m memory welcome [--mirror-home PATH]
