@@ -131,6 +131,23 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### Mirror self-update and runtime health
+
+**Source:** `mirror-self-update` journey, Ariad coherent update policy, Maestro onboarding/update work  
+**Surfaced:** 2026-05-22
+
+Mirror should eventually be able to diagnose its installed state and safely update itself when new releases are available. This is an operational update problem, not just a git command: it involves repository state, local database, migrations, installed extensions, generated runtime skills, backup, validation, and recovery.
+
+First slice delivered: `python -m memory runtime status` reports Mirror version, repository, git state, mirror home, database, installed extensions, Python version, and environment.
+
+Possible next slices:
+
+- `runtime status` health expansion for migrations and extension install state.
+- Clean extension reinstall support for `memory extensions install`.
+- `runtime update --dry-run` that plans update steps without writing.
+- Backup and recovery route before applying runtime or migration changes.
+- Release discovery once local status and dry-run planning are reliable.
+
 ### Surface silent failures in runtime extensions
 
 **Source:** [Troubleshooting: Pi logger fix](../../process/troubleshooting.md#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)  

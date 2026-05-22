@@ -64,6 +64,8 @@ Commands:
                        Usage: python -m memory shadow <scan|apply|reject|list|show> [args]
   web                  Run the local Mirror Web Console
                        Usage: python -m memory web [--host 127.0.0.1] [--port 8765]
+  runtime              Inspect Mirror runtime status
+                       Usage: python -m memory runtime status [--mirror-home PATH]
   welcome              Render the state-aware welcome card for the current Mirror home
                        Usage: python -m memory welcome [--mirror-home PATH]
 """
@@ -223,6 +225,11 @@ def main() -> None:
         from memory.web.server import main as _web_main
 
         _web_main(sys.argv[2:])
+
+    elif command == "runtime":
+        from memory.cli.runtime import cmd_runtime
+
+        sys.exit(cmd_runtime(sys.argv[2:]))
 
     elif command == "welcome":
         from memory.cli.welcome import main as _welcome_main

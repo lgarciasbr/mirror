@@ -9,6 +9,21 @@ Update when a meaningful milestone is reached.
 
 ## Done
 
+### 2026-05-22 — Runtime status command added
+
+Added `python -m memory runtime status` as the first self-update prerequisite. The command is read-only and reports Mirror version, repository path, git branch, commit, dirty tree state, mirror home, database path, installed extensions, Python version, and `MEMORY_ENV`.
+
+This matters because self-update work must start from a known state. A dirty tree, missing mirror home, missing database, or non-git checkout now surfaces as `Status: attention needed` before any update mechanism exists.
+
+Verification:
+
+```bash
+uv run pytest tests/unit/memory/cli/test_runtime.py tests/unit/memory/test_main.py
+uv run python -m memory runtime status
+```
+
+Result: 14 targeted tests passed. Manual status returned `attention needed` while the working tree was dirty, as expected.
+
 ### 2026-05-19 — CV9.E5.S1 complete: Development process and prospective versioning
 
 Adopted the Mirror Mind development process and prospective versioning model.

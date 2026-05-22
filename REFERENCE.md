@@ -36,7 +36,16 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-shadow` | `$mm-shadow` | `/mm:shadow` | Surface and promote shadow-layer observations | `scan`, `apply`, `reject`, `list`, `show` |
 | `/mm-welcome` | `$mm-welcome` | `/mm:welcome` | Renders the state-aware welcome card on demand | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
+| `python -m memory runtime` | — | — | Inspects Mirror runtime status before operational updates | `status [--mirror-home PATH]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
+
+To inspect the local runtime state before an operational update:
+
+```bash
+uv run python -m memory runtime status
+```
+
+The command reports version, repository, git state, mirror home, database, installed extensions, Python version, and environment. It exits with attention needed when the current state is not safe enough for update planning, for example when the git tree is dirty or the mirror home is not configured.
 
 To list the active personas for the current user:
 

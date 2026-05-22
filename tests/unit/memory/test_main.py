@@ -40,6 +40,15 @@ def test_web_dispatches():
     mock_web_main.assert_called_once_with(["--port", "9999"])
 
 
+def test_runtime_dispatches():
+    with patch("memory.cli.runtime.cmd_runtime", return_value=0) as mock_runtime:
+        with pytest.raises(SystemExit) as exc_info:
+            _run_main(["runtime", "status"])
+
+    assert exc_info.value.code == 0
+    mock_runtime.assert_called_once_with(["status"])
+
+
 def test_unknown_top_level_command_exits(capsys):
     with pytest.raises(SystemExit) as exc_info:
         _run_main(["nosuchcommand"])

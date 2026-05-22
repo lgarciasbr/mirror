@@ -11,6 +11,21 @@ resolved.
 
 ## Completed Decisions
 
+### Mirror self-update begins with runtime status
+
+**Date:** 2026-05-22
+**Reference:** [Ariad coherent update policy](https://github.com/mirror-mind-ai/ariad/blob/main/docs/method/explicit-policies.md), [Runtime status command](../../REFERENCE.md#commands)
+
+Mirror self-update work starts with a read-only runtime status command, not with an update executor.
+
+Rationale: Ariad's coherent update policy requires the current state to be visible before operational updates proceed. Mirror must know its version, repository state, mirror home, database, extensions, Python runtime, and environment before it can safely plan or execute a future self-update.
+
+Consequences:
+
+- `python -m memory runtime status` is the first slice of the self-update track.
+- Dirty git state, missing mirror home, missing database, or missing repository information are reported as `attention needed`.
+- Future update planning should build on this status surface before adding backup, release discovery, migration execution, or rollback behavior.
+
 ### Development process and versioning are explicit and prospective from CV9.E5 onward
 
 **Date:** 2026-05-19
