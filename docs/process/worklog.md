@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-23 — Release-note skill parity completed
+
+Completed CV9.E3.S14. Release notes are now discoverable across supported runtime skill surfaces: Pi keeps `/mm-release-notes`, Gemini/Codex shared skills expose `mm-release-notes` through `.agents/skills`, and Claude Code has `/mm:release-notes`. Help surfaces, `AGENTS.md`, and `REFERENCE.md` now list the command.
+
+No runtime core behavior changed. The skills remain thin wrappers around `uv run python -m memory runtime release-notes [latest|vX.Y.Z]` and preserve the rule to show output verbatim unless the user asks for a summary.
+
+Validation: structural skill checks passed; `runtime release-notes latest` and `runtime release-notes v0.8.0` both rendered `v0.8.0 — Stable Self-Update Foundation`; 82 targeted runtime tests passed; ruff, format check, and `git diff --check` passed.
+
+The Ariad visualization experiment adopted the inline taxonomy-card grammar: `🟪[CV9]`, `🟦[E3]`, `🟩[S14]`, with method state shown separately through `✓`, `◉`, `○`, and `✕`.
+
 ### 2026-05-23 — Release-aware stable update notices added
 
 Completed CV9.E3.S13. Stable-channel update surfaces now prefer release language when local refs contain newer release notes: dry-run can show the target release version, title, digest, and preview/update commands, while successful stable updates include an `Installed release` block after fast-forward. `runtime update --check` remains conservative and non-mutating: it can report an available remote commit through `git ls-remote`, but it does not fetch release-note files and says so when details are unavailable.

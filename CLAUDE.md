@@ -118,6 +118,7 @@ Rules: `◇` plus persona name on its own line; voice stays first person and uni
 - `mm-consult` — ask other LLMs through OpenRouter — `.pi/skills/mm-consult/SKILL.md`
 - `mm-backup` — memory database backup — `.pi/skills/mm-backup/SKILL.md`
 - `mm-welcome` — render the state-aware welcome card on demand — `.pi/skills/mm-welcome/SKILL.md`
+- `mm-release-notes` — show Mirror Mind release notes — `.pi/skills/mm-release-notes/SKILL.md`
 - `mm-help` — list available commands — `.pi/skills/mm-help/SKILL.md`
 
 Full command reference: [REFERENCE.md](REFERENCE.md)

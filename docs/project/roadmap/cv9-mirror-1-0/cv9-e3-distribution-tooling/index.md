@@ -36,7 +36,7 @@ over time.
 | [CV9.E3.S11](cv9-e3-s11-release-channel-operations-docs/index.md) | Release Channel Operations Docs | ✅ Done |
 | [CV9.E3.S12](cv9-e3-s12-first-stable-release-publication/index.md) | First Stable Release Publication | ✅ Done |
 | [CV9.E3.S13](cv9-e3-s13-release-aware-update-notices/index.md) | Release-Aware Update Notices | ✅ Done |
-| CV9.E3.S14 | Release Notes Skill Parity | 🟡 Planned |
+| [CV9.E3.S14](cv9-e3-s14-release-notes-skill-parity/index.md) | Release Notes Skill Parity | ✅ Done |
 | CV9.E3.S15 | Release Promotion Checklist / Doctor | 🟡 Planned |
 | CV9.E3.S16 | Stable Promotion Execution Path | 🟡 Planned |
 | CV9.E3.S17 | Fresh User Stable Update Smoke | 🟡 Planned |
