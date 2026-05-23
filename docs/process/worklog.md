@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-23 — v0.9.0 release candidate prepared
+
+Prepared `v0.9.0 — Self-Update Done` as the release candidate for the CV9.E3 S13–S17 arc. Bumped package version to `0.9.0`, added `docs/releases/v0.9.0.md`, and listed the release in `docs/releases/index.md`.
+
+Release-note smoke renders `v0.9.0` as latest. `runtime release-doctor --target v0.9.0` now passes version, release note, heading, and release index checks, while correctly failing on the dirty tree until the release candidate commit is made. Tag creation and stable promotion remain next steps after commit and final validation.
+
+Validation: 98 targeted runtime tests passed; ruff, format check, story-scoped mypy, and `git diff --check` passed.
+
 ### 2026-05-23 — Stable promotion execution path added
 
 Completed CV9.E3.S16. Added `python -m memory runtime release-promote --target vX.Y.Z [--dry-run] [--push]` as the controlled stable promotion path. Promotion runs the release doctor first and blocks on failures, creates a missing release tag at `HEAD`, reuses tags already at `HEAD`, refuses mismatched tags, creates or fast-forwards local `stable` only when safe, and publishes only when `--push` is explicit.
