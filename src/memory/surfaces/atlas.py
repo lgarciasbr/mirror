@@ -171,7 +171,7 @@ class AtlasSurface:
 
 
 def _is_self_identity(row: Identity) -> bool:
-    if row.layer in {"persona", "ego", "journey"}:
+    if row.layer in {"persona", "ego", "journey", "journey_path"}:
         return False
     if row.key in {"journey_path"}:
         return False
