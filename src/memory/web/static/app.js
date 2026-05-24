@@ -72,7 +72,7 @@ function renderAtlas(surface) {
   return `
     <section class="surface-intro atlas-hero">
       <p class="eyebrow">Atlas</p>
-      <h2>How your Mirror sees you today</h2>
+      <h2>How your Mirror reflects you today</h2>
       <p>${escapeHtml(surface.synthesis || 'Atlas is ready for Mirror visibility.')}</p>
     </section>
     <div class="atlas-map" aria-label="Atlas psyche map">${regions}</div>

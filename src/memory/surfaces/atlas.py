@@ -79,13 +79,17 @@ class AtlasSurface:
     def _shadow_region(self) -> AtlasRegion:
         rows = self.identity.store.get_identity_by_layer("shadow")
         cards = tuple(_identity_card(row) for row in rows)
+        if not cards:
+            cards = (_shadow_placeholder_card(),)
         return AtlasRegion(
             id="shadow",
             title="Shadow",
-            description="Tensions, avoidances, contradictions, and integration candidates.",
+            description="What asks to be integrated.",
             cards=cards,
-            empty_state=None if cards else "No structural shadow observations are available yet.",
-            metadata=_region_metadata("shadow", cards),
+            empty_state=None,
+            metadata=_region_metadata(
+                "shadow", cards, partial=not self.identity.store.get_identity_by_layer("shadow")
+            ),
         )
 
     def _memories_region(self) -> AtlasRegion:
@@ -214,6 +218,24 @@ def _ego_card(rows: list[Identity]) -> SurfaceCard:
     )
 
 
+def _shadow_placeholder_card() -> SurfaceCard:
+    return SurfaceCard(
+        id="shadow",
+        kind="identity",
+        title="Tension",
+        description="What asks to be integrated.",
+        href="/objects/identity/shadow",
+        status="shadow",
+        metadata={
+            "layer": "shadow",
+            "icon": "◐",
+            "icon_kind": "glyph",
+            "display_label": "Tension",
+            "chips": ("Patterns", "Avoidance", "Contradictions"),
+        },
+    )
+
+
 def _persona_card(row: Identity) -> SurfaceCard:
     return SurfaceCard(
         id=row.key,
@@ -261,6 +283,8 @@ def _title_for_identity(row: Identity) -> str:
 def _chips_for_identity(row: Identity) -> tuple[str, ...]:
     if row.layer == "self":
         return ("Purpose", "Principles", "Values")
+    if row.layer == "shadow":
+        return ("Patterns", "Avoidance", "Contradictions")
     return ()
 
 
@@ -274,7 +298,7 @@ def _identity_description(row: Identity) -> str:
     if row.layer == "self":
         return "Who you really are."
     if row.layer == "shadow":
-        return "A structural shadow observation: tension, avoidance, contradiction, or integration material."
+        return "What asks to be integrated."
     if row.layer == "journey":
         return "A remembered field of becoming or work that shapes Mirror context."
     return "A structural identity layer that shapes how the Mirror understands and responds."

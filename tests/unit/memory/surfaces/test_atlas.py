@@ -29,6 +29,7 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     identity_region = next(region for region in home.regions if region.id == "self")
     memories_region = next(region for region in home.regions if region.id == "memories")
     personas_region = next(region for region in home.regions if region.id == "personas")
+    shadow_region = next(region for region in home.regions if region.id == "shadow")
 
     assert identity_region.title == "Self"
     assert identity_region.description == "Who you really are."
@@ -54,6 +55,14 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     assert personas_region.cards[0].kind == "persona"
     assert personas_region.cards[0].title == "Engineer"
     assert personas_region.metadata == {"atlas_role": "personas", "data_readiness": "real"}
+    assert shadow_region.title == "Shadow"
+    assert shadow_region.cards[0].title == "Tension"
+    assert shadow_region.cards[0].description == "What asks to be integrated."
+    assert shadow_region.cards[0].metadata["chips"] == (
+        "Patterns",
+        "Avoidance",
+        "Contradictions",
+    )
 
 
 def test_atlas_home_represents_empty_regions(
@@ -80,5 +89,11 @@ def test_atlas_home_represents_empty_regions(
         "shadow",
         "memories",
     }
-    assert all(region.empty_state for region in home.regions)
-    assert all(region.metadata["data_readiness"] == "empty" for region in home.regions)
+    assert all(region.empty_state for region in home.regions if region.id != "shadow")
+    assert all(
+        region.metadata["data_readiness"] == "empty"
+        for region in home.regions
+        if region.id != "shadow"
+    )
+    shadow_region = next(region for region in home.regions if region.id == "shadow")
+    assert shadow_region.metadata["data_readiness"] == "partial"
