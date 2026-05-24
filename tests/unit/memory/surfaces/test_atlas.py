@@ -55,7 +55,13 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     assert personas_region.cards[0].kind == "persona"
     assert personas_region.cards[0].title == "Engineer"
     assert "layer" not in personas_region.cards[0].metadata
-    assert personas_region.metadata == {"atlas_role": "personas", "data_readiness": "real"}
+    assert personas_region.metadata == {
+        "atlas_role": "personas",
+        "data_readiness": "real",
+        "icon": "☷",
+        "motif": "Team",
+        "chips": ("Lenses", "Roles", "Voices"),
+    }
     assert shadow_region.title == "Shadow"
     assert shadow_region.cards[0].title == "Tension"
     assert shadow_region.cards[0].description == "What asks to be integrated."

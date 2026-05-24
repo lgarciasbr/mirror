@@ -70,10 +70,15 @@ class AtlasSurface:
         return AtlasRegion(
             id="personas",
             title="Personas",
-            description="Specialized lenses that activate by context.",
+            description="The team of lenses that can join the work.",
             cards=cards,
             empty_state=None if cards else "No personas are available yet.",
-            metadata=_region_metadata("personas", cards),
+            metadata={
+                **_region_metadata("personas", cards),
+                "icon": "☷",
+                "motif": "Team",
+                "chips": ("Lenses", "Roles", "Voices"),
+            },
         )
 
     def _shadow_region(self) -> AtlasRegion:

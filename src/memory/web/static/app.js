@@ -116,11 +116,17 @@ function renderAtlasRegion(region) {
 
 function renderPersonaRegion(region) {
   const people = (region.cards || []).map(renderPersonaToken).join('');
+  const chips = (region.metadata?.chips || [])
+    .map((chip) => `<span>${escapeHtml(chip)}</span>`)
+    .join('');
   return `
     <section class="atlas-region atlas-personas persona-team">
-      <div class="team-copy">
-        <h3>${escapeHtml(region.title)}</h3>
+      <div class="team-copy concept-side">
+        <div class="concept-icon" aria-label="${escapeHtml(region.title)}">${escapeHtml(region.metadata?.icon || '☷')}</div>
+        <p class="concept-kicker">${escapeHtml(region.title)}</p>
+        <h3>${escapeHtml(region.metadata?.motif || 'Team')}</h3>
         <p>${escapeHtml(region.description)}</p>
+        ${chips ? `<div class="variant-list concept-chips" aria-label="Concepts">${chips}</div>` : ''}
       </div>
       ${people ? `<div class="persona-orbit" aria-label="Persona team">${people}</div>` : `<p class="empty-state">${escapeHtml(region.empty_state || 'No personas are available yet.')}</p>`}
     </section>

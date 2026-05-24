@@ -333,10 +333,17 @@ input {
 
 .persona-team {
   display: grid;
-  grid-template-columns: minmax(180px, 0.28fr) 1fr;
+  grid-template-columns: minmax(220px, 0.28fr) 1fr;
   gap: 20px;
   align-items: center;
   overflow: hidden;
+}
+
+.concept-side {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
 }
 
 .persona-orbit {
