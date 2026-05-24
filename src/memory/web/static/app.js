@@ -93,21 +93,52 @@ function renderWorkspace(surface) {
 
 function renderAtlasRegion(region) {
   const role = region.metadata?.atlas_role || 'support';
+  if (['self', 'ego', 'shadow'].includes(role)) {
+    return renderConceptRegion(region, role);
+  }
+
   const readiness = region.metadata?.data_readiness || 'unknown';
-  const cards = (region.cards || []).slice(0, 3).map(renderCard).join('');
+  const cards = (region.cards || []).slice(0, 6).map(renderCard).join('');
   return `
     <section class="atlas-region atlas-${escapeHtml(role)} readiness-${escapeHtml(readiness)}">
       <div>
-        <div class="region-heading">
-          <p class="eyebrow">${escapeHtml(region.id)}</p>
-          <span class="readiness-badge">${escapeHtml(readiness)}</span>
-        </div>
         <h3>${escapeHtml(region.title)}</h3>
         <p>${escapeHtml(region.description)}</p>
       </div>
       ${cards ? `<div class="card-grid atlas-cards">${cards}</div>` : `<p class="empty-state">${escapeHtml(region.empty_state || 'Nothing to show yet.')}</p>`}
     </section>
   `;
+}
+
+function renderConceptRegion(region, role) {
+  const card = (region.cards || [])[0];
+  const icon = card?.metadata?.icon || conceptFallbackIcon(role);
+  const title = card?.title || region.title;
+  const description = card?.description || region.description;
+  const chips = (card?.metadata?.chips || [])
+    .map((chip) => `<span>${escapeHtml(chip)}</span>`)
+    .join('');
+  const variants = (card?.metadata?.variants || [])
+    .map((variant) => `<span>${escapeHtml(variant.label || variant.key)}</span>`)
+    .join('');
+  return `
+    <section class="atlas-region atlas-concept atlas-${escapeHtml(role)}">
+      <div class="concept-icon" aria-label="${escapeHtml(region.title)}">${escapeHtml(icon)}</div>
+      <p class="concept-kicker">${escapeHtml(region.title)}</p>
+      <h3>${escapeHtml(title)}</h3>
+      <p>${escapeHtml(description)}</p>
+      ${chips ? `<div class="variant-list concept-chips" aria-label="Concepts">${chips}</div>` : ''}
+      ${variants ? `<div class="variant-list concept-chips" aria-label="Available layers">${variants}</div>` : ''}
+      ${!card && region.empty_state ? `<p class="empty-state">${escapeHtml(region.empty_state)}</p>` : ''}
+    </section>
+  `;
+}
+
+function conceptFallbackIcon(role) {
+  if (role === 'self') return '♛';
+  if (role === 'ego') return '◉';
+  if (role === 'shadow') return '◐';
+  return '◇';
 }
 
 function renderWorkspaceSection(section) {

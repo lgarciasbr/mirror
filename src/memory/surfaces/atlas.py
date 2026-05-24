@@ -44,7 +44,7 @@ class AtlasSurface:
         rows = self.identity.store.get_identity_by_layer("self")
         cards = tuple(_identity_card(row) for row in rows)
         return AtlasRegion(
-            id="identity",
+            id="self",
             title="Self",
             description="Who you really are.",
             cards=cards,

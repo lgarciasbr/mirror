@@ -267,6 +267,13 @@ input {
     var(--panel);
 }
 
+.atlas-concept {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+}
+
 .atlas-region::before {
   content: "";
   position: absolute;
@@ -285,6 +292,25 @@ input {
 .atlas-self {
   grid-area: self;
   min-height: 170px;
+}
+
+.concept-icon {
+  color: var(--accent);
+  font-size: 42px;
+  line-height: 1;
+}
+
+.concept-kicker {
+  margin: 8px 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.concept-chips {
+  justify-content: center;
 }
 
 .atlas-ego {

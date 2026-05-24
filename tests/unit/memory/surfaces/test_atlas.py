@@ -26,7 +26,7 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     home = surfaces.atlas_home()
 
     ego_region = next(region for region in home.regions if region.id == "ego")
-    identity_region = next(region for region in home.regions if region.id == "identity")
+    identity_region = next(region for region in home.regions if region.id == "self")
     memories_region = next(region for region in home.regions if region.id == "memories")
     personas_region = next(region for region in home.regions if region.id == "personas")
 
@@ -74,7 +74,7 @@ def test_atlas_home_represents_empty_regions(
     home = surfaces.atlas_home()
 
     assert {region.id for region in home.regions} == {
-        "identity",
+        "self",
         "ego",
         "personas",
         "shadow",
