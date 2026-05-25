@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E2.S5 preference coherence validated
+
+Closed the CV13.E2 story arc with final multi-Mirror/preference coherence. The
+web surface now validates end-to-end that Mirror switching, display name, avatar,
+and theme preferences remain scoped to each active Mirror home. The Mirror menu
+also reads each Mirror's web profile so the selector shows the user's chosen
+display name and avatar while keeping the technical directory name as detail.
+
+Validation: focused preference/mirror/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, and Navigator browser
+validation accepted the final cross-Mirror behavior and menu presentation.
+
 ### 2026-05-25 — CV13.E2.S4 theme preference validated
 
 Added a Mirror-scoped theme preference to the local web surface. Preferences now

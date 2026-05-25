@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from memory.config import DEFAULT_USER_HOMES_DIR, default_db_path_for_home
+from memory.web.preferences import WebPreferenceStore
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,8 @@ class MirrorSummary:
     path: str
     is_current: bool
     database_exists: bool
+    display_name: str
+    avatar_symbol: str
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -23,6 +26,8 @@ class MirrorSummary:
             "path": self.path,
             "isCurrent": self.is_current,
             "databaseExists": self.database_exists,
+            "displayName": self.display_name,
+            "avatarSymbol": self.avatar_symbol,
         }
 
 
@@ -78,9 +83,12 @@ class MirrorRegistry:
         return default_db_path_for_home(path).exists()
 
     def _summary(self, mirror_home: Path) -> MirrorSummary:
+        profile = WebPreferenceStore(mirror_home).read().profile
         return MirrorSummary(
             name=mirror_home.name,
             path=str(mirror_home),
             is_current=self.mirror_home is not None and mirror_home == self.mirror_home,
             database_exists=default_db_path_for_home(mirror_home).exists(),
+            display_name=profile.display_name,
+            avatar_symbol=profile.avatar_symbol,
         )

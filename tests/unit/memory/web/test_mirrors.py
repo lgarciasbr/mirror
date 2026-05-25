@@ -19,8 +19,29 @@ def test_registry_lists_local_mirror_homes_with_current_first(tmp_path: Path) ->
     assert [mirror.name for mirror in mirrors] == ["alisson-vale", "sandbox"]
     assert mirrors[0].is_current is True
     assert mirrors[0].database_exists is True
+    assert mirrors[0].display_name == "alisson-vale"
+    assert mirrors[0].avatar_symbol == "◇"
     assert mirrors[1].is_current is False
     assert mirrors[1].database_exists is True
+
+
+def test_registry_includes_web_profile_preferences(tmp_path: Path) -> None:
+    root = tmp_path / ".mirror-minds"
+    current = root / "current"
+    current.mkdir(parents=True)
+    (current / "memory.db").write_text("", encoding="utf-8")
+    (current / "web").mkdir()
+    (current / "web" / "preferences.json").write_text(
+        '{"profile": {"display_name": "Navigator", "avatar_symbol": "✦"}}',
+        encoding="utf-8",
+    )
+
+    mirrors = MirrorRegistry(current, user_homes_dir=root).list_mirrors()
+
+    assert mirrors[0].display_name == "Navigator"
+    assert mirrors[0].avatar_symbol == "✦"
+    assert mirrors[0].to_dict()["displayName"] == "Navigator"
+    assert mirrors[0].to_dict()["avatarSymbol"] == "✦"
 
 
 def test_registry_returns_selectable_home_only_for_discovered_database(tmp_path: Path) -> None:

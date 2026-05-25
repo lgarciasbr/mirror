@@ -69,6 +69,8 @@ def test_shell_api_reports_workspace_default_and_mirror_name(tmp_path: Path) -> 
     assert payload["theme"] == "system"
     assert payload["preferencesPath"].endswith("/web/preferences.json")
     assert payload["mirrors"][0]["name"] == "mirror-home"
+    assert payload["mirrors"][0]["displayName"] == "mirror-home"
+    assert payload["mirrors"][0]["avatarSymbol"] == "◇"
     assert payload["mirrors"][0]["isCurrent"] is True
     assert payload["mirrors"][1]["name"] == "sandbox"
     assert payload["defaultPerspective"] == "workspace"
@@ -95,6 +97,7 @@ def test_mirrors_api_lists_local_mirrors_read_only(tmp_path: Path) -> None:
 
     assert status == 200
     assert [mirror["name"] for mirror in payload] == ["mirror-home", "other"]
+    assert payload[0]["displayName"] == "mirror-home"
     assert payload[0]["isCurrent"] is True
     assert payload[1]["databaseExists"] is True
 
@@ -195,6 +198,49 @@ def test_theme_preferences_api_persists_to_active_mirror_home(tmp_path: Path) ->
     assert '"theme": "light"' in (beta_home / "web" / "preferences.json").read_text(
         encoding="utf-8"
     )
+
+
+def test_shell_keeps_profile_and_theme_isolated_across_mirror_switches(tmp_path: Path) -> None:
+    root = tmp_path / ".mirror-minds"
+    alpha_home = root / "alpha"
+    beta_home = root / "beta"
+    with MemoryClient(db_path=alpha_home / "memory.db") as mem:
+        mem.identity.set_identity("ego", "identity", "# Alpha Ego\nAlpha voice")
+    with MemoryClient(db_path=beta_home / "memory.db") as mem:
+        mem.identity.set_identity("ego", "identity", "# Beta Ego\nBeta voice")
+
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=alpha_home,
+        db_path=alpha_home / "memory.db",
+    )
+    try:
+        server.request(
+            "POST", "/api/preferences/profile", {"displayName": "Alpha", "avatarSymbol": "A"}
+        )
+        server.request("POST", "/api/preferences/theme", {"theme": "dark"})
+        server.request("POST", "/api/mirrors/select", {"name": "beta"})
+        beta_default_status, beta_default = server.request("GET", "/api/shell")
+        server.request(
+            "POST", "/api/preferences/profile", {"displayName": "Beta", "avatarSymbol": "B"}
+        )
+        server.request("POST", "/api/preferences/theme", {"theme": "light"})
+        server.request("POST", "/api/mirrors/select", {"name": "alpha"})
+        alpha_status, alpha = server.request("GET", "/api/shell")
+        server.request("POST", "/api/mirrors/select", {"name": "beta"})
+        beta_status, beta = server.request("GET", "/api/shell")
+    finally:
+        server.close()
+
+    assert beta_default_status == 200
+    assert beta_default["profile"] == {"displayName": "beta", "avatarSymbol": "◇"}
+    assert beta_default["theme"] == "system"
+    assert alpha_status == 200
+    assert alpha["profile"] == {"displayName": "Alpha", "avatarSymbol": "A"}
+    assert alpha["theme"] == "dark"
+    assert beta_status == 200
+    assert beta["profile"] == {"displayName": "Beta", "avatarSymbol": "B"}
+    assert beta["theme"] == "light"
 
 
 def test_theme_preferences_api_rejects_invalid_theme(tmp_path: Path) -> None:

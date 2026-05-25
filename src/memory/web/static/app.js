@@ -61,10 +61,10 @@ function renderMirrorSelector(mirrors) {
   const options = mirrors.map((mirror) => `
     <li>
       <button type="button" class="mirror-option ${mirror.isCurrent ? 'active' : ''}" data-mirror-name="${escapeHtml(mirror.name)}" ${mirror.isCurrent ? 'disabled' : ''}>
-        <span class="mirror-option-mark" aria-hidden="true">${mirror.isCurrent ? '◆' : '◇'}</span>
+        <span class="mirror-option-mark" aria-hidden="true">${escapeHtml(mirror.avatarSymbol || (mirror.isCurrent ? '◆' : '◇'))}</span>
         <span>
-          <span class="mirror-option-name">${escapeHtml(mirror.name)}</span>
-          <small>${mirror.isCurrent ? 'current Mirror' : 'select this Mirror'}</small>
+          <span class="mirror-option-name">${escapeHtml(mirror.displayName || mirror.name)}</span>
+          <small>${escapeHtml(mirror.name)} · ${mirror.isCurrent ? 'current Mirror' : 'select this Mirror'}</small>
         </span>
       </button>
     </li>
