@@ -12,6 +12,17 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.11.0 release candidate prepared
+
+Prepared `v0.11.0 — Read-only Web Refinement` as the minor release candidate for
+CV13.E1. The release packages the completed S1–S5 arc: Workspace-first shell,
+three-letter persona tokens, memory category drilldown, read-only memory search,
+and refined Workspace conversation cards.
+
+This uses `v0.11.0` rather than the earlier `v1.1` planning label because CV9 has
+not yet closed the first prospective major boundary. Under the versioning rule,
+closing an epic before `v1.0.0` increments the current minor version.
+
 ### 2026-05-25 — CV13.E1.S5 conversation card refinement validated
 
 Completed the fifth CV13.E1 read-only refinement story. Conversation cards in

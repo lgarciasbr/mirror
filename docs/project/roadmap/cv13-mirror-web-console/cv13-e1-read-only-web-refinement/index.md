@@ -2,8 +2,8 @@
 
 # CV13.E1 — Read-only Web Refinement
 
-**Status:** 🟢 In Progress
-**Release target:** v1.1 planning label
+**Status:** ✅ Done
+**Release target:** v0.11.0 — Read-only Web Refinement
 **User-visible outcome:** The existing local web app becomes calmer, Workspace-first, and more useful for browsing the current Mirror without introducing writes or background operations.
 
 ---
