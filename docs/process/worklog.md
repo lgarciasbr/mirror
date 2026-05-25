@@ -12,6 +12,19 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.0 release candidate prepared
+
+Prepared `v0.10.0 — Web Visibility` as the minor release candidate for the
+completed CV9.E6 epic. Bumped package version to `0.10.0`, added
+`docs/releases/v0.10.0.md`, and listed it in the release index.
+
+Release-note smoke renders `v0.10.0` correctly. `runtime release-doctor --target
+v0.10.0` passes repository, version, release note, heading, and release index
+checks, while correctly failing on the dirty tree until the release candidate
+commit is made. Validation: 183 targeted tests passed; ruff lint and format
+checks passed; `node --check src/memory/web/static/app.js` passed; `git diff
+--check` passed.
+
 ### 2026-05-25 — CV9.E6 Web Visibility validated and closed
 
 Completed CV9.E6.S6 and closed the Web Visibility epic. The read-only web
