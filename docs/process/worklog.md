@@ -12,6 +12,13 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.13 pending-notes ref refresh validation stub prepared
+
+Prepared `v0.10.13 — Pending Notes Ref Refresh Validation Stub` after production
+was updated to v0.10.12. This minimal version/release-note release exists to
+validate that `show pending release notes` now fetches stable and renders a newly
+published release without manual git commands.
+
 ### 2026-05-25 — v0.10.12 release candidate prepared
 
 Prepared `v0.10.12 — Pending Release Notes Ref Refresh` to publish the fix for

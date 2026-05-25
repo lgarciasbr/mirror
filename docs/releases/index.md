@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.10.13 — Pending Notes Ref Refresh Validation Stub](v0.10.13.md) — minimal stable release used to validate v0.10.12 pending-notes ref refresh.
 - [v0.10.12 — Pending Release Notes Ref Refresh](v0.10.12.md) — patch release that safely fetches stable refs before rendering cumulative pending release notes.
 - [v0.10.11 — Pending Notes Prompt Validation Stub](v0.10.11.md) — minimal stable release used to validate v0.10.10 welcome pending-notes prompt routing.
 - [v0.10.10 — Pending Release Notes Prompt](v0.10.10.md) — patch release that routes welcome update prompts to cumulative pending release notes.
