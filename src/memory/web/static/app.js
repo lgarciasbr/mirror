@@ -38,9 +38,15 @@ async function boot() {
 
 function applyShell(shell) {
   shellState = shell;
+  applyTheme(shell.theme || 'system');
   if (mirrorName) mirrorName.textContent = shell.profile?.displayName || shell.mirror?.name || 'Local Mirror';
   renderMirrorSelector(shell.mirrors || []);
   showWarning(shell.warning);
+}
+
+function applyTheme(theme) {
+  const selected = ['light', 'dark'].includes(theme) ? theme : 'system';
+  document.documentElement.dataset.theme = selected;
 }
 
 function showWarning(message) {
@@ -173,11 +179,32 @@ function renderPreferences() {
             <span>Avatar symbol</span>
             <input name="avatarSymbol" value="${escapeHtml(profile.avatarSymbol || '◇')}" maxlength="4" />
           </label>
-          <p class="empty-state">Theme, color mode, and richer avatar choices arrive in the next story.</p>
           <button type="submit">Save profile</button>
         </form>
       </article>
+      <article class="preferences-card">
+        <p class="eyebrow">Appearance</p>
+        <h3>Theme</h3>
+        <form class="theme-options" data-theme-form>
+          ${renderThemeOption('system', 'System', 'Follow your operating system.')}
+          ${renderThemeOption('light', 'Light', 'Use the warm light surface.')}
+          ${renderThemeOption('dark', 'Dark', 'Use the low-light surface.')}
+        </form>
+      </article>
     </section>
+  `;
+}
+
+function renderThemeOption(value, label, description) {
+  const checked = (shellState?.theme || 'system') === value ? 'checked' : '';
+  return `
+    <label class="theme-option">
+      <input type="radio" name="theme" value="${escapeHtml(value)}" ${checked} />
+      <span>
+        <strong>${escapeHtml(label)}</strong>
+        <small>${escapeHtml(description)}</small>
+      </span>
+    </label>
   `;
 }
 
@@ -936,6 +963,19 @@ content.addEventListener('submit', async (event) => {
   if (mirrorName) mirrorName.textContent = result.profile?.displayName || shellState.mirror?.name || 'Local Mirror';
   renderMirrorSelector(shellState.mirrors || []);
   showWarning(result.warning || 'Profile preferences saved.');
+});
+
+content.addEventListener('change', async (event) => {
+  const input = event.target.closest('[data-theme-form] input[name="theme"]');
+  if (!input) return;
+  const result = await fetchJson('/api/preferences/theme', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme: input.value }),
+  });
+  shellState.theme = result.theme;
+  applyTheme(result.theme);
+  showWarning(result.warning || 'Theme preference saved.');
 });
 
 document.querySelectorAll('[data-search-form]').forEach((form) => {

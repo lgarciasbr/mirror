@@ -8,8 +8,11 @@ from pathlib import Path
 from typing import Any, Literal
 
 Perspective = Literal["atlas", "workspace"]
+ThemePreference = Literal["system", "light", "dark"]
 DEFAULT_PERSPECTIVE: Perspective = "workspace"
 VALID_PERSPECTIVES: tuple[Perspective, ...] = ("atlas", "workspace")
+DEFAULT_THEME: ThemePreference = "system"
+VALID_THEMES: tuple[ThemePreference, ...] = ("system", "light", "dark")
 DEFAULT_AVATAR_SYMBOL = "◇"
 
 
@@ -26,6 +29,7 @@ class WebProfile:
 class PreferenceRead:
     default_perspective: Perspective | None
     profile: WebProfile
+    theme: ThemePreference
     warning: str | None = None
 
 
@@ -48,10 +52,15 @@ class WebPreferenceStore:
             return PreferenceRead(
                 default_perspective=DEFAULT_PERSPECTIVE,
                 profile=default_profile,
+                theme=DEFAULT_THEME,
                 warning="Mirror home is not configured; preferences cannot be persisted.",
             )
         if not path.exists():
-            return PreferenceRead(default_perspective=DEFAULT_PERSPECTIVE, profile=default_profile)
+            return PreferenceRead(
+                default_perspective=DEFAULT_PERSPECTIVE,
+                profile=default_profile,
+                theme=DEFAULT_THEME,
+            )
 
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -59,16 +68,20 @@ class WebPreferenceStore:
             return PreferenceRead(
                 default_perspective=DEFAULT_PERSPECTIVE,
                 profile=default_profile,
+                theme=DEFAULT_THEME,
                 warning=f"Preferences could not be read: {exc}",
             )
 
         value = payload.get("default_perspective") if isinstance(payload, dict) else None
-        profile = self._profile_from_payload(payload if isinstance(payload, dict) else {})
+        safe_payload = payload if isinstance(payload, dict) else {}
+        profile = self._profile_from_payload(safe_payload)
+        theme = self._theme_from_payload(safe_payload)
         if value in VALID_PERSPECTIVES:
-            return PreferenceRead(default_perspective=value, profile=profile)
+            return PreferenceRead(default_perspective=value, profile=profile, theme=theme)
         return PreferenceRead(
             default_perspective=DEFAULT_PERSPECTIVE,
             profile=profile,
+            theme=theme,
             warning="Default perspective preference is invalid; falling back to Workspace.",
         )
 
@@ -77,6 +90,14 @@ class WebPreferenceStore:
             raise ValueError("default_perspective must be 'atlas' or 'workspace'")
         payload = self._read_payload_for_write()
         payload["default_perspective"] = perspective
+        self._write_payload(payload)
+        return self.read()
+
+    def write_theme(self, theme: str) -> PreferenceRead:
+        if theme not in VALID_THEMES:
+            raise ValueError("theme must be 'system', 'light', or 'dark'")
+        payload = self._read_payload_for_write()
+        payload["theme"] = theme
         self._write_payload(payload)
         return self.read()
 
@@ -102,6 +123,10 @@ class WebPreferenceStore:
     def _default_profile(self) -> WebProfile:
         name = self.mirror_home.name if self.mirror_home is not None else "Mirror"
         return WebProfile(display_name=name, avatar_symbol=DEFAULT_AVATAR_SYMBOL)
+
+    def _theme_from_payload(self, payload: dict[str, Any]) -> ThemePreference:
+        theme = payload.get("theme")
+        return theme if theme in VALID_THEMES else DEFAULT_THEME
 
     def _profile_from_payload(self, payload: dict[str, Any]) -> WebProfile:
         default = self._default_profile()

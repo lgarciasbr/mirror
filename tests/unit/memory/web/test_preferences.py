@@ -11,6 +11,7 @@ def test_preference_store_reads_missing_default_as_workspace(tmp_path: Path) -> 
     assert preference.default_perspective == "workspace"
     assert preference.profile.display_name == tmp_path.name
     assert preference.profile.avatar_symbol == "◇"
+    assert preference.theme == "system"
     assert preference.warning is None
 
 
@@ -24,6 +25,27 @@ def test_preference_store_writes_default_to_user_home(tmp_path: Path) -> None:
     assert (tmp_path / "web" / "preferences.json").read_text(encoding="utf-8") == (
         '{\n  "default_perspective": "atlas"\n}\n'
     )
+
+
+def test_preference_store_writes_theme_to_user_home(tmp_path: Path) -> None:
+    store = WebPreferenceStore(tmp_path)
+
+    preference = store.write_theme("dark")
+
+    assert preference.theme == "dark"
+    assert store.read().theme == "dark"
+    assert '"theme": "dark"' in (tmp_path / "web" / "preferences.json").read_text(encoding="utf-8")
+
+
+def test_preference_store_rejects_invalid_theme(tmp_path: Path) -> None:
+    store = WebPreferenceStore(tmp_path)
+
+    try:
+        store.write_theme("sepia")
+    except ValueError as exc:
+        assert "theme" in str(exc)
+    else:
+        raise AssertionError("invalid theme should fail")
 
 
 def test_preference_store_writes_profile_to_user_home(tmp_path: Path) -> None:

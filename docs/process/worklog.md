@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E2.S4 theme preference validated
+
+Added a Mirror-scoped theme preference to the local web surface. Preferences now
+support `system`, `light`, and `dark`, serialize through `/api/shell`, persist in
+`<mirror-home>/web/preferences.json`, and apply immediately through the document
+root while leaving `system` delegated to the operating system color preference.
+
+Validation: focused preference/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, and Navigator browser
+validation accepted dark, light, system, reload persistence, and per-Mirror
+scoping.
+
 ### 2026-05-25 — CV13.E2.S3 profile preferences validated
 
 Added a Preferences perspective scoped to the active Mirror. The page shows the

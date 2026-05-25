@@ -12,7 +12,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #171512;
     --panel: #211e19;
     --panel-strong: #2d261e;
@@ -22,6 +22,22 @@
     --accent: #d4a76a;
     --warning: #f0bd62;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171512;
+  --panel: #211e19;
+  --panel-strong: #2d261e;
+  --text: #f3eadb;
+  --muted: #b9aa96;
+  --border: #3a3329;
+  --accent: #d4a76a;
+  --warning: #f0bd62;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 * {
@@ -296,7 +312,7 @@ input {
 
 .preferences-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-top: 18px;
 }
@@ -338,7 +354,8 @@ input {
   overflow-wrap: anywhere;
 }
 
-.preferences-form {
+.preferences-form,
+.theme-options {
   display: grid;
   gap: 14px;
 }
@@ -361,6 +378,31 @@ input {
   color: var(--text);
   cursor: pointer;
   font-weight: 750;
+}
+
+.theme-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 14px;
+  padding: 11px;
+  cursor: pointer;
+}
+
+.theme-option:has(input:checked) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--accent-soft);
+}
+
+.theme-option span {
+  display: grid;
+  gap: 2px;
+}
+
+.theme-option small {
+  color: var(--muted);
 }
 
 .warning {

@@ -66,6 +66,7 @@ def test_shell_api_reports_workspace_default_and_mirror_name(tmp_path: Path) -> 
     assert payload["mirror"]["name"] == "mirror-home"
     assert payload["mirror"]["path"].endswith("/.mirror-minds/mirror-home")
     assert payload["profile"] == {"displayName": "mirror-home", "avatarSymbol": "◇"}
+    assert payload["theme"] == "system"
     assert payload["preferencesPath"].endswith("/web/preferences.json")
     assert payload["mirrors"][0]["name"] == "mirror-home"
     assert payload["mirrors"][0]["isCurrent"] is True
@@ -159,6 +160,57 @@ def test_select_mirror_api_rejects_undiscovered_names_and_paths(tmp_path: Path) 
     assert "discovered local Mirrors" in missing["error"]
     assert "discovered local Mirrors" in path["error"]
     assert "discovered local Mirrors" in backup["error"]
+
+
+def test_theme_preferences_api_persists_to_active_mirror_home(tmp_path: Path) -> None:
+    root = tmp_path / ".mirror-minds"
+    alpha_home = root / "alpha"
+    beta_home = root / "beta"
+    with MemoryClient(db_path=alpha_home / "memory.db") as mem:
+        mem.identity.set_identity("ego", "identity", "# Alpha Ego\nAlpha voice")
+    with MemoryClient(db_path=beta_home / "memory.db") as mem:
+        mem.identity.set_identity("ego", "identity", "# Beta Ego\nBeta voice")
+
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=alpha_home,
+        db_path=alpha_home / "memory.db",
+    )
+    try:
+        status, payload = server.request("POST", "/api/preferences/theme", {"theme": "dark"})
+        server.request("POST", "/api/mirrors/select", {"name": "beta"})
+        beta_status, beta_payload = server.request(
+            "POST", "/api/preferences/theme", {"theme": "light"}
+        )
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload["theme"] == "dark"
+    assert beta_status == 200
+    assert beta_payload["theme"] == "light"
+    assert '"theme": "dark"' in (alpha_home / "web" / "preferences.json").read_text(
+        encoding="utf-8"
+    )
+    assert '"theme": "light"' in (beta_home / "web" / "preferences.json").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_theme_preferences_api_rejects_invalid_theme(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request("POST", "/api/preferences/theme", {"theme": "sepia"})
+    finally:
+        server.close()
+
+    assert status == 400
+    assert "theme" in payload["error"]
 
 
 def test_profile_preferences_api_persists_to_active_mirror_home(tmp_path: Path) -> None:
