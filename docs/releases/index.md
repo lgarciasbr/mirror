@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.10.5 — Cumulative Release Notes](v0.10.5.md) — patch release that lists every pending release note for users more than one version behind.
 - [v0.10.4 — Pi Startup Lifecycle](v0.10.4.md) — patch release that fully detaches Pi startup maintenance so the startup counter can complete.
 - [v0.10.3 — Pi Startup Maintenance](v0.10.3.md) — patch release that moves expensive Pi conversation maintenance out of the blocking startup path.
 - [v0.10.2 — Fresh Release Awareness](v0.10.2.md) — patch release that refreshes visible welcome update notices when stable advances again inside the cache window.

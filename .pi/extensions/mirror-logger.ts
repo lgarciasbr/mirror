@@ -19,7 +19,7 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -65,17 +65,14 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
-	function shellQuote(value: string): string {
-		return `'${value.replace(/'/g, `'"'"'`)}'`;
-	}
-
 	function runPyBackground(args: string[], label: string): void {
+		let logFd: number | undefined;
 		try {
-			const command = ["uv", "run", "python", ...args].map(shellQuote).join(" ");
-			const logTarget = shellQuote(LOG_FILE);
-			const child = spawn("sh", ["-c", `${command} >> ${logTarget} 2>&1`], {
+			mkdirSync(MIRROR_DIR, { recursive: true });
+			logFd = openSync(LOG_FILE, "a");
+			const child = spawn("uv", ["run", "python", ...args], {
 				cwd: process.cwd(),
-				stdio: "ignore",
+				stdio: ["ignore", logFd, logFd],
 				detached: true,
 			});
 			child.unref();
@@ -83,6 +80,14 @@ export default function (pi: ExtensionAPI) {
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
 			log("ERROR", `${label} failed: ${message.slice(0, 500)}`);
+		} finally {
+			if (logFd !== undefined) {
+				try {
+					closeSync(logFd);
+				} catch {
+					// Ignore close failure.
+				}
+			}
 		}
 	}
 
@@ -305,16 +310,19 @@ export default function (pi: ExtensionAPI) {
 		const combined = assistantTexts.join("\n\n---\n\n");
 		const content = truncate(combined);
 
-		await runPy([
-			"-m",
-			"memory",
-			"conversation-logger",
+		runPyBackground(
+			[
+				"-m",
+				"memory",
+				"conversation-logger",
+				"log-assistant",
+				sessionId,
+				content,
+				"--interface",
+				"pi",
+			],
 			"log-assistant",
-			sessionId,
-			content,
-			"--interface",
-			"pi",
-		]);
+		);
 	});
 
 	// --- 4. session_shutdown → close conversation + backup ---

@@ -12,6 +12,34 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.5 release candidate prepared
+
+Prepared `v0.10.5 — Cumulative Release Notes` after adding
+`runtime release-notes pending`. The command lists every release newer than the
+current runtime version, supports `--from <version>` for explicit comparisons,
+and supports `--ref <git-ref>` for reading notes from a selected source such as
+`origin/stable` or `HEAD`.
+
+Validation: focused runtime CLI tests passed; ruff lint and format checks passed;
+`node --check .pi/extensions/mirror-logger.ts` passed; `git diff --check` passed;
+smoke CLI confirmed `pending --from 0.10.2 --ref HEAD` renders v0.10.3 and
+v0.10.4, while current-version pending renders none.
+
+### 2026-05-25 — Pi response counter root cause narrowed
+
+After `v0.10.4`, production and mirror-dev still showed the counter continuing.
+Reading Pi's source clarified the remaining issue: `AgentSession._handleAgentEvent`
+awaits extension `agent_end` handlers before emitting `agent_end` to the
+interactive UI. The UI only stops the working loader/counter in its own
+`agent_end` handler. Therefore any blocking Mirror work inside the extension's
+`agent_end` handler keeps Pi visually "working" even after the model response is
+complete.
+
+Mirror's `agent_end` handler was awaiting `conversation-logger log-assistant`.
+Changed assistant logging to detached fire-and-forget, like startup maintenance,
+so Pi can receive `agent_end` immediately and stop the counter while memory
+persistence continues in the background.
+
 ### 2026-05-25 — v0.10.4 release candidate prepared
 
 Production validation of `v0.10.3` confirmed Mirror now opens quickly, but Pi's

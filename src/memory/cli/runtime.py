@@ -150,6 +150,13 @@ class RuntimeReleaseNote:
 
 
 @dataclass(frozen=True)
+class RuntimeReleaseNotesBundle:
+    notes: tuple[RuntimeReleaseNote, ...]
+    current_version: str | None = None
+    source: str | None = None
+
+
+@dataclass(frozen=True)
 class ReleaseDoctorCheck:
     name: str
     state: str
@@ -378,26 +385,54 @@ def _release_note_from_text(path: Path, text: str) -> RuntimeReleaseNote:
     )
 
 
-def read_release_note(
-    version: str = "latest", start: Path | None = None
-) -> RuntimeReleaseNote | None:
+def read_release_notes(start: Path | None = None) -> tuple[RuntimeReleaseNote, ...]:
     notes_dir = _release_notes_dir(start)
     if not notes_dir.exists():
-        return None
-    candidates = sorted(
-        notes_dir.glob("v*.md"),
-        key=lambda path: _parse_semver(path.stem),
-        reverse=True,
-    )
-    if version != "latest":
-        wanted = version if version.startswith("v") else f"v{version}"
-        candidates = [notes_dir / f"{wanted}.md"]
-    for path in candidates:
+        return ()
+    notes: list[RuntimeReleaseNote] = []
+    for path in sorted(notes_dir.glob("v*.md"), key=lambda path: _parse_semver(path.stem)):
         if not path.exists() or not path.is_file():
             continue
         text = path.read_text(encoding="utf-8")
-        return _release_note_from_text(path, text)
-    return None
+        notes.append(_release_note_from_text(path, text))
+    return tuple(notes)
+
+
+def read_release_note(
+    version: str = "latest", start: Path | None = None
+) -> RuntimeReleaseNote | None:
+    notes = read_release_notes(start=start)
+    if version == "latest":
+        return notes[-1] if notes else None
+    wanted = version if version.startswith("v") else f"v{version}"
+    return next((note for note in notes if note.version == wanted), None)
+
+
+def read_release_notes_from_ref(
+    ref: str, start: Path | None = None
+) -> tuple[RuntimeReleaseNote, ...]:
+    start_path = (start or Path.cwd()).resolve()
+    repository = _resolve_repo_root(start_path) or start_path
+    code, stdout, _stderr = _run_git(
+        ["ls-tree", "-r", "--name-only", ref, "docs/releases"], cwd=repository
+    )
+    if code != 0 or not stdout:
+        return ()
+    names = sorted(
+        (
+            line.strip()
+            for line in stdout.splitlines()
+            if re.search(r"docs/releases/v\d+\.\d+\.\d+\.md$", line.strip())
+        ),
+        key=lambda name: _parse_semver(Path(name).stem),
+    )
+    notes: list[RuntimeReleaseNote] = []
+    for selected in names:
+        code, text, _stderr = _run_git(["show", f"{ref}:{selected}"], cwd=repository)
+        if code != 0 or not text:
+            continue
+        notes.append(_release_note_from_text(Path(selected), text))
+    return tuple(notes)
 
 
 def read_release_note_from_ref(
@@ -454,6 +489,52 @@ def render_release_note(note: RuntimeReleaseNote | None) -> str:
         lines.append("Highlights:")
         for highlight in note.highlights:
             lines.append(f"- {highlight}")
+    return "\n".join(lines) + "\n"
+
+
+def build_pending_release_notes(
+    *,
+    current_version: str | None = None,
+    ref: str = "origin/stable",
+    start: Path | None = None,
+) -> RuntimeReleaseNotesBundle:
+    start_path = (start or Path.cwd()).resolve()
+    repository = _resolve_repo_root(start_path) or start_path
+    normalized_current = _normalize_version(
+        current_version or _version_from_pyproject(repository) or metadata.version("mirror")
+    )
+    notes = tuple(
+        note
+        for note in read_release_notes_from_ref(ref, start=repository)
+        if _parse_semver(note.version) > _parse_semver(normalized_current)
+    )
+    return RuntimeReleaseNotesBundle(
+        notes=notes,
+        current_version=f"v{normalized_current}",
+        source=ref,
+    )
+
+
+def render_release_notes_bundle(bundle: RuntimeReleaseNotesBundle) -> str:
+    lines = ["Mirror runtime release notes", ""]
+    if bundle.current_version:
+        lines.append(f"Current version: {bundle.current_version}")
+    if bundle.source:
+        lines.append(f"Source: {bundle.source}")
+    if not bundle.notes:
+        lines.append("Pending releases: none")
+        return "\n".join(lines) + "\n"
+
+    lines.append(f"Pending releases: {len(bundle.notes)}")
+    for note in bundle.notes:
+        lines.append("")
+        lines.append(f"## {note.version} — {note.title}")
+        if note.digest:
+            lines.append(note.digest)
+        if note.highlights:
+            lines.append("Highlights:")
+            for highlight in note.highlights:
+                lines.append(f"- {highlight}")
     return "\n".join(lines) + "\n"
 
 
@@ -2312,6 +2393,8 @@ def cmd_runtime(argv: list[str]) -> int:
         "release-notes", help="Show Mirror runtime release notes"
     )
     release_notes_parser.add_argument("version", nargs="?", default="latest")
+    release_notes_parser.add_argument("--from", dest="from_version")
+    release_notes_parser.add_argument("--ref", default="origin/stable")
     release_doctor_parser = subparsers.add_parser(
         "release-doctor", help="Inspect release promotion readiness"
     )
@@ -2399,7 +2482,14 @@ def cmd_runtime(argv: list[str]) -> int:
         return 0 if result.success else 1
 
     if args.command == "release-notes":
-        sys.stdout.write(render_release_note(read_release_note(args.version)))
+        if args.version == "pending":
+            bundle = build_pending_release_notes(
+                current_version=args.from_version,
+                ref=args.ref,
+            )
+            sys.stdout.write(render_release_notes_bundle(bundle))
+        else:
+            sys.stdout.write(render_release_note(read_release_note(args.version)))
         return 0
 
     if args.command == "release-doctor":

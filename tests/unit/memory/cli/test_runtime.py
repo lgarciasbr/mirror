@@ -1637,6 +1637,73 @@ def test_cmd_runtime_release_notes_dispatches(monkeypatch, tmp_path, capsys):
     assert "Release: v0.8.0 — Runtime Update Awareness" in capsys.readouterr().out
 
 
+def test_runtime_pending_release_notes_filters_after_current(monkeypatch, tmp_path):
+    from memory.cli.runtime import (
+        RuntimeReleaseNote,
+        build_pending_release_notes,
+        render_release_notes_bundle,
+    )
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    monkeypatch.setattr("memory.cli.runtime._resolve_repo_root", lambda start: repo)
+    monkeypatch.setattr("memory.cli.runtime._version_from_pyproject", lambda repository: "0.10.1")
+    monkeypatch.setattr(
+        "memory.cli.runtime.read_release_notes_from_ref",
+        lambda ref, start=None: (
+            RuntimeReleaseNote(
+                "v0.10.1", "Welcome Startup Clarity", Path("docs/releases/v0.10.1.md")
+            ),
+            RuntimeReleaseNote(
+                "v0.10.2",
+                "Fresh Release Awareness",
+                Path("docs/releases/v0.10.2.md"),
+                digest="Fresh release summary.",
+                highlights=("Refreshes stale update notices.",),
+            ),
+            RuntimeReleaseNote(
+                "v0.10.3",
+                "Pi Startup Maintenance",
+                Path("docs/releases/v0.10.3.md"),
+                digest="Startup maintenance summary.",
+            ),
+        ),
+    )
+
+    bundle = build_pending_release_notes(ref="origin/stable", start=repo)
+
+    assert [note.version for note in bundle.notes] == ["v0.10.2", "v0.10.3"]
+    rendered = render_release_notes_bundle(bundle)
+    assert "Current version: v0.10.1" in rendered
+    assert "Pending releases: 2" in rendered
+    assert "## v0.10.2 — Fresh Release Awareness" in rendered
+    assert "- Refreshes stale update notices." in rendered
+    assert "## v0.10.3 — Pi Startup Maintenance" in rendered
+
+
+def test_cmd_runtime_release_notes_pending_uses_from_version(monkeypatch, tmp_path, capsys):
+    from memory.cli.runtime import RuntimeReleaseNote
+
+    monkeypatch.setattr("memory.cli.runtime._resolve_repo_root", lambda start: tmp_path)
+    monkeypatch.setattr("memory.cli.runtime._version_from_pyproject", lambda repository: "0.10.4")
+    monkeypatch.setattr(
+        "memory.cli.runtime.read_release_notes_from_ref",
+        lambda ref, start=None: (
+            RuntimeReleaseNote("v0.10.4", "Pi Startup Lifecycle", tmp_path / "v0.10.4.md"),
+            RuntimeReleaseNote("v0.10.5", "Cumulative Notes", tmp_path / "v0.10.5.md"),
+        ),
+    )
+
+    rc = cmd_runtime(["release-notes", "pending", "--from", "0.10.3", "--ref", "origin/stable"])
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "Current version: v0.10.3" in out
+    assert "Pending releases: 2" in out
+    assert "## v0.10.4 — Pi Startup Lifecycle" in out
+    assert "## v0.10.5 — Cumulative Notes" in out
+
+
 # CV9.E3.S15 — Release Promotion Checklist / Doctor
 
 
