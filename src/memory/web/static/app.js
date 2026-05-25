@@ -123,6 +123,11 @@ async function showView(view, { updateHash = true } = {}) {
     return;
   }
 
+  if (view === 'configuration') {
+    await renderConfiguration();
+    return;
+  }
+
   if (view === 'docs') {
     await renderDocsFrame();
     return;
@@ -192,6 +197,45 @@ function renderPreferences() {
         </form>
       </article>
     </section>
+  `;
+}
+
+async function renderConfiguration() {
+  const overview = await fetchJson('/api/configuration/overview');
+  currentPath.textContent = 'Configuration';
+  const sections = (overview.sections || []).map(renderConfigurationSection).join('');
+  content.innerHTML = `
+    <section class="surface-intro surface-line configuration-hero">
+      <p><strong>${escapeHtml(overview.title || 'Configuration overview')}:</strong> ${escapeHtml(overview.description || 'Read-only local Mirror configuration.')}</p>
+    </section>
+    <section class="configuration-shell">${sections}</section>
+  `;
+}
+
+function renderConfigurationSection(section) {
+  const items = (section.items || []).map(renderConfigurationItem).join('');
+  return `
+    <article class="configuration-card">
+      <p class="eyebrow">${escapeHtml(section.id)}</p>
+      <h3>${escapeHtml(section.title)}</h3>
+      <p>${escapeHtml(section.description || '')}</p>
+      <dl class="configuration-list">${items}</dl>
+    </article>
+  `;
+}
+
+function renderConfigurationItem(item) {
+  const exists = item.exists === true ? 'exists' : item.exists === false ? 'missing' : 'neutral';
+  const status = item.exists === true ? 'Found' : item.exists === false ? 'Missing' : 'Info';
+  return `
+    <div class="configuration-item configuration-${exists}">
+      <dt>${escapeHtml(item.label)}</dt>
+      <dd>
+        <code>${escapeHtml(item.value)}</code>
+        <small>${escapeHtml(item.description || '')}</small>
+      </dd>
+      <span>${status}</span>
+    </div>
   `;
 }
 
@@ -931,7 +975,7 @@ document.querySelectorAll('[data-choose]').forEach((button) => {
 
 tabs.forEach((tab) => {
   tab.addEventListener('click', () => {
-    if (tab.dataset.view === 'docs' || tab.dataset.view === 'preferences') {
+    if (['docs', 'preferences', 'configuration'].includes(tab.dataset.view)) {
       showView(tab.dataset.view);
       return;
     }
@@ -1008,7 +1052,7 @@ window.addEventListener('popstate', async (event) => {
 
 function viewFromHash() {
   const hash = window.location.hash.replace(/^#/, '');
-  if (['workspace', 'atlas', 'docs', 'preferences'].includes(hash)) return hash;
+  if (['workspace', 'atlas', 'docs', 'preferences', 'configuration'].includes(hash)) return hash;
   return null;
 }
 

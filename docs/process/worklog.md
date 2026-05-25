@@ -12,6 +12,19 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E3.S1 configuration overview validated
+
+Started the `v0.13.0 — Configuration Console` branch with a read-only,
+non-sensitive configuration overview. The web app now has a Configuration tab
+backed by `/api/configuration/overview`, showing active Mirror paths, local
+directories, and user-facing runtime defaults such as memory search model,
+memory extraction model, LLM audit logging, and conversation routing.
+
+Validation: focused configuration/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, and Navigator browser
+validation accepted the read-only page, path status, absence of secrets, and
+explanatory labels.
+
 ### 2026-05-25 — v0.12.0 release candidate prepared
 
 Prepared `v0.12.0 — Multi-Mirror and Preferences` as the minor release candidate

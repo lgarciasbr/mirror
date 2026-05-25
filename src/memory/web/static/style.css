@@ -310,38 +310,48 @@ input {
   background: var(--accent-soft);
 }
 
-.preferences-shell {
+.preferences-shell,
+.configuration-shell {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-top: 18px;
 }
 
-.preferences-card {
+.preferences-card,
+.configuration-card {
   border: 1px solid var(--border);
   border-radius: 22px;
   padding: 20px;
   background: var(--panel);
 }
 
-.preferences-card h3 {
+.preferences-card h3,
+.configuration-card h3 {
   margin: 0 0 12px;
 }
 
-.preferences-facts {
+.configuration-card p:not(.eyebrow) {
+  color: var(--muted);
+}
+
+.preferences-facts,
+.configuration-list {
   display: grid;
   gap: 10px;
   margin: 0;
 }
 
 .preferences-facts div,
-.preferences-form label {
+.preferences-form label,
+.configuration-item {
   display: grid;
   gap: 4px;
 }
 
 .preferences-facts dt,
-.preferences-form span {
+.preferences-form span,
+.configuration-item dt {
   color: var(--muted);
   font-size: 12px;
   font-weight: 750;
@@ -349,9 +359,42 @@ input {
   text-transform: uppercase;
 }
 
-.preferences-facts dd {
+.preferences-facts dd,
+.configuration-item dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.configuration-item {
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.configuration-item code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.configuration-item small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.configuration-item > span {
+  width: max-content;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.configuration-missing > span {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--warning);
 }
 
 .preferences-form,

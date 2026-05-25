@@ -350,6 +350,26 @@ def test_default_perspective_api_rejects_invalid_perspective(tmp_path: Path) -> 
     assert "atlas" in payload["error"]
 
 
+def test_configuration_overview_api_serializes_active_mirror_context(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        mem.identity.set_identity("ego", "identity", "# Ego\nOperational voice")
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request("GET", "/api/configuration/overview")
+    finally:
+        server.close()
+
+    assert status == 200
+    sections = {section["id"]: section for section in payload["sections"]}
+    mirror_items = {item["label"]: item for item in sections["mirror-home"]["items"]}
+    assert mirror_items["Mirror home"]["value"] == str(mirror_home.resolve())
+    assert mirror_items["Database"]["value"] == str(db_path.resolve())
+    assert "OPENROUTER" not in str(payload)
+
+
 def test_surface_apis_serialize_core_surface_read_models(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
     db_path = mirror_home / "memory.db"
