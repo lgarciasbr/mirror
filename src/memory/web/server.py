@@ -14,7 +14,7 @@ from memory.cli.common import db_path_from_mirror_home
 from memory.config import resolve_mirror_home
 from memory.web.docs import DocsBrowser
 from memory.web.mirrors import MirrorRegistry
-from memory.web.preferences import VALID_PERSPECTIVES, WebPreferenceStore
+from memory.web.preferences import DEFAULT_AVATAR_SYMBOL, VALID_PERSPECTIVES, WebPreferenceStore
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -103,6 +103,9 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/preferences/default-perspective":
             self._write_default_perspective()
             return
+        if parsed.path == "/api/preferences/profile":
+            self._write_profile()
+            return
         self._send_json({"error": "Not found"}, status=404)
 
     def log_message(self, format: str, *args: object) -> None:
@@ -128,6 +131,8 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
                 "name": mirrors.current_name(),
                 "path": str(mirrors.mirror_home) if mirrors.mirror_home else None,
             },
+            "profile": preference.profile.to_dict(),
+            "preferencesPath": str(self._preferences().path) if self._preferences().path else None,
             "mirrors": [mirror.to_dict() for mirror in mirrors.list_mirrors()],
             "defaultPerspective": preference.default_perspective,
             "validPerspectives": list(VALID_PERSPECTIVES),
@@ -168,6 +173,31 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         self._send_json(
             {
                 "defaultPerspective": preference.default_perspective,
+                "profile": preference.profile.to_dict(),
+                "warning": preference.warning,
+            }
+        )
+
+    def _write_profile(self) -> None:
+        try:
+            payload = self._read_json_body()
+            display_name = payload.get("displayName")
+            avatar_symbol = payload.get("avatarSymbol", DEFAULT_AVATAR_SYMBOL)
+            if not isinstance(display_name, str) or not isinstance(avatar_symbol, str):
+                raise ValueError("displayName and avatarSymbol must be strings")
+            preference = self._preferences().write_profile(display_name, avatar_symbol)
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+        except OSError as exc:
+            self._send_json(
+                {"error": f"Profile preferences could not be written: {exc}"}, status=500
+            )
+            return
+
+        self._send_json(
+            {
+                "profile": preference.profile.to_dict(),
                 "warning": preference.warning,
             }
         )

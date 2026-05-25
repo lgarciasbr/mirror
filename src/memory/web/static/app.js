@@ -12,6 +12,7 @@ let currentDocPath = null;
 let docsLoaded = false;
 let activeView = 'workspace';
 let selectedWorkspaceJourney = null;
+let shellState = null;
 
 function closeMirrorSelectorOnOutsideClick(event) {
   if (!mirrorSelector || mirrorSelector.hidden || mirrorSelector.contains(event.target)) return;
@@ -21,10 +22,8 @@ function closeMirrorSelectorOnOutsideClick(event) {
 
 async function boot() {
   const shell = await fetchJson('/api/shell');
-  if (mirrorName) mirrorName.textContent = shell.mirror?.name || 'Local Mirror';
-  renderMirrorSelector(shell.mirrors || []);
+  applyShell(shell);
   document.addEventListener('click', closeMirrorSelectorOnOutsideClick);
-  showWarning(shell.warning);
 
   if (!shell.defaultPerspective) {
     chooser.hidden = true;
@@ -37,6 +36,13 @@ async function boot() {
   }
 }
 
+function applyShell(shell) {
+  shellState = shell;
+  if (mirrorName) mirrorName.textContent = shell.profile?.displayName || shell.mirror?.name || 'Local Mirror';
+  renderMirrorSelector(shell.mirrors || []);
+  showWarning(shell.warning);
+}
+
 function showWarning(message) {
   warning.hidden = !message;
   warning.textContent = message || '';
@@ -45,6 +51,7 @@ function showWarning(message) {
 function renderMirrorSelector(mirrors) {
   if (!mirrorSelector || !mirrors.length) return;
   const current = mirrors.find((mirror) => mirror.isCurrent) || mirrors[0];
+  const profile = shellState?.profile || {};
   const options = mirrors.map((mirror) => `
     <li>
       <button type="button" class="mirror-option ${mirror.isCurrent ? 'active' : ''}" data-mirror-name="${escapeHtml(mirror.name)}" ${mirror.isCurrent ? 'disabled' : ''}>
@@ -60,8 +67,8 @@ function renderMirrorSelector(mirrors) {
   mirrorSelector.innerHTML = `
     <details>
       <summary>
-        <span class="user-avatar" aria-hidden="true">◇</span>
-        <span class="mirror-selector-name">${escapeHtml(current.name || 'Local Mirror')}</span>
+        <span class="user-avatar" aria-hidden="true">${escapeHtml(profile.avatarSymbol || '◇')}</span>
+        <span class="mirror-selector-name">${escapeHtml(profile.displayName || current.name || 'Local Mirror')}</span>
         <span class="mirror-selector-count">(${escapeHtml(mirrors.length)})</span>
       </summary>
       <div class="mirror-menu">
@@ -79,9 +86,7 @@ async function selectMirror(name) {
     body: JSON.stringify({ name }),
   });
   selectedWorkspaceJourney = null;
-  if (mirrorName) mirrorName.textContent = shell.mirror?.name || 'Local Mirror';
-  renderMirrorSelector(shell.mirrors || []);
-  showWarning(shell.warning);
+  applyShell(shell);
   await showView(activeView, { updateHash: false });
 }
 
@@ -107,6 +112,11 @@ async function showView(view, { updateHash = true } = {}) {
     window.history.replaceState({ view }, '', `#${view}`);
   }
 
+  if (view === 'preferences') {
+    await renderPreferences();
+    return;
+  }
+
   if (view === 'docs') {
     await renderDocsFrame();
     return;
@@ -129,6 +139,45 @@ function renderAtlas(surface) {
       <p><strong>How your Mirror reflects you today:</strong> ${escapeHtml(surface.synthesis || 'Identity map is ready for Mirror visibility.')}</p>
     </section>
     <div class="atlas-map" aria-label="Identity map">${regions}</div>
+  `;
+}
+
+function renderPreferences() {
+  const profile = shellState?.profile || {};
+  const mirror = shellState?.mirror || {};
+  const mirrors = shellState?.mirrors || [];
+  currentPath.textContent = 'Preferences';
+  content.innerHTML = `
+    <section class="surface-intro surface-line preferences-hero">
+      <p><strong>How this web session identifies your Mirror:</strong> profile preferences are stored locally for the active Mirror and do not change structural identity.</p>
+    </section>
+    <section class="preferences-shell">
+      <article class="preferences-card">
+        <p class="eyebrow">Active Mirror</p>
+        <h3>${escapeHtml(mirror.name || 'Local Mirror')}</h3>
+        <dl class="preferences-facts">
+          <div><dt>Mirror home</dt><dd>${escapeHtml(mirror.path || 'Not configured')}</dd></div>
+          <div><dt>Local Mirrors</dt><dd>${escapeHtml(mirrors.length)} discovered</dd></div>
+          <div><dt>Preferences file</dt><dd>${escapeHtml(shellState?.preferencesPath || 'Not persisted')}</dd></div>
+        </dl>
+      </article>
+      <article class="preferences-card">
+        <p class="eyebrow">Web profile</p>
+        <h3>Header identity</h3>
+        <form class="preferences-form" data-profile-form>
+          <label>
+            <span>Display name</span>
+            <input name="displayName" value="${escapeHtml(profile.displayName || mirror.name || 'Mirror')}" maxlength="80" />
+          </label>
+          <label>
+            <span>Avatar symbol</span>
+            <input name="avatarSymbol" value="${escapeHtml(profile.avatarSymbol || '◇')}" maxlength="4" />
+          </label>
+          <p class="empty-state">Theme, color mode, and richer avatar choices arrive in the next story.</p>
+          <button type="submit">Save profile</button>
+        </form>
+      </article>
+    </section>
   `;
 }
 
@@ -855,8 +904,8 @@ document.querySelectorAll('[data-choose]').forEach((button) => {
 
 tabs.forEach((tab) => {
   tab.addEventListener('click', () => {
-    if (tab.dataset.view === 'docs') {
-      showView('docs');
+    if (tab.dataset.view === 'docs' || tab.dataset.view === 'preferences') {
+      showView(tab.dataset.view);
       return;
     }
     chooseDefault(tab.dataset.view);
@@ -868,6 +917,25 @@ mirrorSelector?.addEventListener('click', async (event) => {
   if (!option || option.disabled) return;
   event.preventDefault();
   await selectMirror(option.dataset.mirrorName);
+});
+
+content.addEventListener('submit', async (event) => {
+  const form = event.target.closest('[data-profile-form]');
+  if (!form) return;
+  event.preventDefault();
+  const data = new FormData(form);
+  const result = await fetchJson('/api/preferences/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      displayName: String(data.get('displayName') || ''),
+      avatarSymbol: String(data.get('avatarSymbol') || ''),
+    }),
+  });
+  shellState.profile = result.profile;
+  if (mirrorName) mirrorName.textContent = result.profile?.displayName || shellState.mirror?.name || 'Local Mirror';
+  renderMirrorSelector(shellState.mirrors || []);
+  showWarning(result.warning || 'Profile preferences saved.');
 });
 
 document.querySelectorAll('[data-search-form]').forEach((form) => {
@@ -900,7 +968,7 @@ window.addEventListener('popstate', async (event) => {
 
 function viewFromHash() {
   const hash = window.location.hash.replace(/^#/, '');
-  if (['workspace', 'atlas', 'docs'].includes(hash)) return hash;
+  if (['workspace', 'atlas', 'docs', 'preferences'].includes(hash)) return hash;
   return null;
 }
 

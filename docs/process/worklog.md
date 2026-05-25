@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E2.S3 profile preferences validated
+
+Added a Preferences perspective scoped to the active Mirror. The page shows the
+current Mirror context, local preference file path, and a small web-profile form
+for display name and avatar symbol. Saved values are stored in
+`<mirror-home>/web/preferences.json`, update the header, and remain separate per
+Mirror without mutating structural identity.
+
+Validation: focused preference/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, and Navigator browser
+validation accepted the page and storage boundary.
+
 ### 2026-05-25 — CV13.E2.S2 local Mirror switching validated
 
 Completed safe local Mirror switching from the web selector. The browser submits
