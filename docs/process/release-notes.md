@@ -33,11 +33,13 @@ uv run python -m memory runtime release-notes pending --from 0.9.0 --ref origin/
 ```
 
 `pending` compares the installed runtime version to a git ref, defaulting to
-`origin/stable`, and renders every newer release note in order. `--from` is the
-safe way to simulate an older installed version during support or smoke tests;
-do not edit package metadata or downgrade a production checkout just to test
-release-note output. `--ref HEAD` is useful before publishing; `--ref
-origin/stable` is the user-facing stable channel after the ref has been fetched.
+`origin/stable`, and renders every newer release note in order. Before rendering,
+it safely fetches the target remote-tracking ref when the ref looks like
+`remote/branch`; this does not merge, checkout, migrate, or modify the working
+tree. `--from` is the safe way to simulate an older installed version during
+support or smoke tests; do not edit package metadata or downgrade a production
+checkout just to test release-note output. `--ref HEAD --no-fetch` is useful
+before publishing; `--ref origin/stable` is the user-facing stable channel.
 
 ## Location
 

@@ -347,7 +347,7 @@ def _remote_tag_for_commit(upstream: str, remote_commit: str) -> str | None:
         if len(parts) < 2:
             continue
         commit, ref = parts[0], parts[1]
-        if commit != remote_commit or ref.endswith("^{}"):
+        if not _commits_match(commit, remote_commit) or ref.endswith("^{}"):
             continue
         tag = ref.rsplit("/", 1)[-1]
         if tag.startswith("v"):
@@ -370,6 +370,10 @@ def _local_release_title(version: str | None) -> str | None:
         if line.startswith(prefix):
             return line.removeprefix(prefix).strip()
     return None
+
+
+def _commits_match(candidate: str, target: str) -> bool:
+    return candidate == target or candidate.startswith(target) or target.startswith(candidate)
 
 
 def _semver_key(version: str) -> tuple[int, int, int]:

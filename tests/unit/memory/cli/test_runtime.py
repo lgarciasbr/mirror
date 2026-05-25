@@ -1684,6 +1684,11 @@ def test_runtime_pending_release_notes_filters_after_current(monkeypatch, tmp_pa
     repo.mkdir()
     monkeypatch.setattr("memory.cli.runtime._resolve_repo_root", lambda start: repo)
     monkeypatch.setattr("memory.cli.runtime._version_from_pyproject", lambda repository: "0.10.1")
+    fetched: list[tuple[str, Path]] = []
+    monkeypatch.setattr(
+        "memory.cli.runtime._fetch_release_notes_ref",
+        lambda ref, repository: fetched.append((ref, repository)),
+    )
     monkeypatch.setattr(
         "memory.cli.runtime.read_release_notes_from_ref",
         lambda ref, start=None: (
@@ -1708,6 +1713,7 @@ def test_runtime_pending_release_notes_filters_after_current(monkeypatch, tmp_pa
 
     bundle = build_pending_release_notes(ref="origin/stable", start=repo)
 
+    assert fetched == [("origin/stable", repo)]
     assert [note.version for note in bundle.notes] == ["v0.10.2", "v0.10.3"]
     rendered = render_release_notes_bundle(bundle)
     assert "Current version: v0.10.1" in rendered
@@ -1722,6 +1728,7 @@ def test_cmd_runtime_release_notes_pending_uses_from_version(monkeypatch, tmp_pa
 
     monkeypatch.setattr("memory.cli.runtime._resolve_repo_root", lambda start: tmp_path)
     monkeypatch.setattr("memory.cli.runtime._version_from_pyproject", lambda repository: "0.10.4")
+    monkeypatch.setattr("memory.cli.runtime._fetch_release_notes_ref", lambda ref, repository: None)
     monkeypatch.setattr(
         "memory.cli.runtime.read_release_notes_from_ref",
         lambda ref, start=None: (

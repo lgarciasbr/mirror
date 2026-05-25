@@ -75,7 +75,7 @@ Commands:
                               python -m memory runtime update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]
                               python -m memory runtime update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]
                               python -m memory runtime release-notes [latest|vX.Y.Z]
-                              python -m memory runtime release-notes pending [--from vX.Y.Z] [--ref REF]
+                              python -m memory runtime release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]
                               python -m memory runtime release-doctor --target vX.Y.Z [--stable REF]
                               python -m memory runtime release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]
   welcome              Render the state-aware welcome card for the current Mirror home

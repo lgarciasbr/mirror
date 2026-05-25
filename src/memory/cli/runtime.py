@@ -492,17 +492,28 @@ def render_release_note(note: RuntimeReleaseNote | None) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _fetch_release_notes_ref(ref: str, repository: Path) -> None:
+    split = _split_upstream(ref)
+    if split is None:
+        return
+    remote, branch = split
+    _run_git(["fetch", remote, branch], cwd=repository)
+
+
 def build_pending_release_notes(
     *,
     current_version: str | None = None,
     ref: str = "origin/stable",
     start: Path | None = None,
+    fetch: bool = True,
 ) -> RuntimeReleaseNotesBundle:
     start_path = (start or Path.cwd()).resolve()
     repository = _resolve_repo_root(start_path) or start_path
     normalized_current = _normalize_version(
         current_version or _version_from_pyproject(repository) or metadata.version("mirror")
     )
+    if fetch:
+        _fetch_release_notes_ref(ref, repository)
     notes = tuple(
         note
         for note in read_release_notes_from_ref(ref, start=repository)
@@ -2422,6 +2433,7 @@ def cmd_runtime(argv: list[str]) -> int:
     release_notes_parser.add_argument("version", nargs="?", default="latest")
     release_notes_parser.add_argument("--from", dest="from_version")
     release_notes_parser.add_argument("--ref", default="origin/stable")
+    release_notes_parser.add_argument("--no-fetch", action="store_true", dest="no_fetch")
     release_doctor_parser = subparsers.add_parser(
         "release-doctor", help="Inspect release promotion readiness"
     )
@@ -2513,6 +2525,7 @@ def cmd_runtime(argv: list[str]) -> int:
             bundle = build_pending_release_notes(
                 current_version=args.from_version,
                 ref=args.ref,
+                fetch=not args.no_fetch,
             )
             sys.stdout.write(render_release_notes_bundle(bundle))
         else:

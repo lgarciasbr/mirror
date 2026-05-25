@@ -37,7 +37,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-welcome` | `$mm-welcome` | `/mm:welcome` | Renders the state-aware welcome card on demand | no arguments |
 | `/mm-release-notes` | `$mm-release-notes` | `/mm:release-notes` | Shows Mirror Mind release notes | `[latest|vX.Y.Z]` |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
+| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
 | `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
@@ -130,7 +130,7 @@ uv run python -m memory runtime release-notes [latest|vX.Y.Z]
 uv run python -m memory runtime release-notes pending [--from vX.Y.Z] [--ref origin/stable]
 ```
 
-Reads narrative release notes from `docs/releases/`. `latest` and explicit versions read the checked-out files. `pending` reads release notes from a git ref, defaults to `origin/stable`, and lists every release newer than the installed runtime version. Use `--from` to simulate an older installed version or support a user report without mutating package metadata. Use `--ref HEAD` for local smoke tests before a release is published, or `--ref origin/stable` for the user-facing stable channel after fetching/updating refs.
+Reads narrative release notes from `docs/releases/`. `latest` and explicit versions read the checked-out files. `pending` reads release notes from a git ref, defaults to `origin/stable`, fetches that ref safely before rendering, and lists every release newer than the installed runtime version. The fetch updates only remote-tracking refs; it does not merge, checkout, migrate, or modify the working tree. Use `--from` to simulate an older installed version or support a user report without mutating package metadata. Use `--ref HEAD --no-fetch` for local smoke tests before a release is published, or `--ref origin/stable` for the user-facing stable channel.
 
 Examples:
 
@@ -139,6 +139,7 @@ uv run python -m memory runtime release-notes latest
 uv run python -m memory runtime release-notes v0.10.5
 uv run python -m memory runtime release-notes pending
 uv run python -m memory runtime release-notes pending --from 0.9.0 --ref origin/stable
+uv run python -m memory runtime release-notes pending --from 0.9.0 --ref HEAD --no-fetch
 ```
 
 ### Release promotion doctor

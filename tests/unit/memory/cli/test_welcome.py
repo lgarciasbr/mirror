@@ -380,6 +380,45 @@ def test_welcome_refreshes_remote_update_cache_and_renders_version(monkeypatch, 
     assert cache["version"] == "v0.9.0"
 
 
+def test_welcome_resolves_tag_when_remote_commit_is_short(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+    home = tmp_path / ".mirror" / "alisson-vale"
+    monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.10.10")
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.check_runtime_update_availability",
+        lambda channel=None: RuntimeUpdateAvailability(
+            "0.10.10",
+            "origin/stable",
+            "abc",
+            "682b0cf",
+            "update_available",
+            update_channel=UpdateChannel("stable", None),
+        ),
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git",
+        lambda start: GitStatus(tmp_path, "main", "abc", False),
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome._run_git",
+        lambda args, *, cwd: (
+            0,
+            "682b0cf9bdc63f905c4da81076971587ed8cdbc0\trefs/tags/v0.10.11",
+            "",
+        ),
+    )
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(home)])
+
+    out = capsys.readouterr().out
+    assert "New Version Available: v0.10.11" in out
+
+
 def test_welcome_refreshes_fresh_up_to_date_cache_when_stable_may_have_advanced(
     monkeypatch, tmp_path, capsys
 ):

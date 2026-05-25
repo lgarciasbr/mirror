@@ -12,6 +12,24 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.12 release candidate prepared
+
+Prepared `v0.10.12 — Pending Release Notes Ref Refresh` to publish the fix for
+stale local stable refs in `runtime release-notes pending`. The command now
+safely fetches remote-tracking refs before rendering pending notes, with
+`--no-fetch` available for local `HEAD` smoke tests. The release also includes
+welcome tag matching for short remote commits.
+
+### 2026-05-25 — Pending release notes ref refresh prepared
+
+Production validation of v0.10.11 showed the welcome prompt and skill routing now
+work, but `runtime release-notes pending` returned none because it read the local
+`origin/stable` ref while welcome had detected the newer remote stable commit
+without fetching. Prepared a fix so pending release notes safely fetch
+remote-tracking refs before rendering. Also adjusted welcome tag resolution so a
+short remote commit from update awareness can match full tag hashes and show the
+version label instead of `on stable`.
+
 ### 2026-05-25 — v0.10.11 pending-notes validation stub prepared
 
 Prepared `v0.10.11 — Pending Notes Prompt Validation Stub` after production was
