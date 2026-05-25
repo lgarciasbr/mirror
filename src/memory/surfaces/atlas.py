@@ -382,12 +382,8 @@ def _icon_for_identity(row: Identity) -> str:
 
 
 def _initials(value: str) -> str:
-    words = [word for word in value.replace("/", " ").replace("-", " ").split() if word]
-    if not words:
-        return "?"
-    if len(words) == 1:
-        return words[0][:2].upper()
-    return "".join(word[0] for word in words[:2]).upper()
+    token = "".join(character for character in value if character.isalnum())[:3].upper()
+    return token or "?"
 
 
 def _preview(content: str, *, limit: int = 140) -> str:

@@ -30,6 +30,7 @@ Initial backlog:
 | Code | Story | User-visible outcome | Status |
 |------|-------|----------------------|--------|
 | [CV13.E1.S1](cv13-e1-s1-workspace-first-shell-cleanup/index.md) | Workspace-first shell cleanup | Workspace opens first, Identity is second, the perspective badge is removed, and journey views stop showing task noise | ✅ Done |
+| [CV13.E1.S2](cv13-e1-s2-three-letter-persona-tokens/index.md) | Three-letter persona tokens | Persona icons in the Identity map use stable three-letter tokens instead of shorter two-letter initials | ✅ Done |
 
 ---
 

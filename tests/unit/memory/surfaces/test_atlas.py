@@ -15,6 +15,9 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     identity_service.set_identity("journey_path", "ariad", "# Ariad Path\nPath snapshot")
     identity_service.set_identity("journey", "mirror-mind", "# Mirror Mind\n**Status:** active")
     identity_service.set_identity("persona", "engineer", "# Engineer\nBuilds reliable systems")
+    identity_service.set_identity(
+        "persona", "product-designer", "# Product Designer\nShapes product experience"
+    )
     memory_service.add_memory(title="Choice", content="A decision", memory_type="decision")
     memory_service.add_memory(title="Seed", content="An idea", memory_type="ideia")
 
@@ -59,10 +62,12 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     assert ego_region.cards[0].metadata["variants"] == ({"key": "identity", "label": "Self-image"},)
     assert ego_region.metadata == {"atlas_role": "ego", "data_readiness": "real"}
     assert personas_region.empty_state is None
-    assert personas_region.cards[0].id == "engineer"
-    assert personas_region.cards[0].kind == "persona"
-    assert personas_region.cards[0].title == "Engineer"
-    assert "layer" not in personas_region.cards[0].metadata
+    persona_cards = {card.id: card for card in personas_region.cards}
+    assert persona_cards["engineer"].kind == "persona"
+    assert persona_cards["engineer"].title == "Engineer"
+    assert persona_cards["engineer"].metadata["icon"] == "ENG"
+    assert persona_cards["product-designer"].metadata["icon"] == "PRO"
+    assert "layer" not in persona_cards["engineer"].metadata
     assert personas_region.metadata == {
         "atlas_role": "personas",
         "data_readiness": "real",
