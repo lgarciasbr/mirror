@@ -12,6 +12,22 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.15 release candidate prepared
+
+Prepared `v0.10.15 — Update Action Routing` to publish the new `mm-update` skill
+and documentation updates. The release makes the welcome action `update my
+Mirror` route to the safe runtime updater instead of prompting for clarification
+between code updates and identity/memory edits.
+
+### 2026-05-25 — Update-my-Mirror routing prepared
+
+Production validation showed the welcome action `update my Mirror` was still too
+ambiguous for the agent: it asked whether to update code or identity instead of
+running the safe runtime updater. Added an `mm-update` skill that routes natural
+language update requests to `uv run python -m memory runtime update` and instructs
+agents not to replace it with manual git or migration commands. Documented the
+skill in AGENTS, command reference, and help.
+
 ### 2026-05-25 — v0.10.14 release candidate prepared
 
 Production validated the full release-awareness cycle: welcome detected a new

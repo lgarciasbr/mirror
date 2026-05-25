@@ -72,4 +72,5 @@ Show the user the available commands (same on Pi and Gemini CLI):
 | `/mm-backup` | Backs up the memory database |
 | `/mm-seed` | Seeds identity files from the active user home into the database |
 | `/mm-release-notes [latest|vX.Y.Z]` | Shows Mirror Mind release notes |
+| `/mm-update` | Updates the local Mirror runtime through the safe updater |
 | `/mm-help` | Shows this list |
