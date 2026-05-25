@@ -239,7 +239,7 @@ export default function (pi: ExtensionAPI) {
 
 		if (ctx.hasUI) {
 			if (welcome) {
-				ctx.ui.notify(welcome, welcome.includes("New Version Available") ? "warning" : "info");
+				ctx.ui.notify(welcome, "info");
 			}
 			const compactStatus = (await runPy(["-m", "memory", "welcome", "--status-line"])).trim();
 			const status = compactStatus || summary || "◇ Mirror · ?";

@@ -373,7 +373,7 @@ def test_welcome_refreshes_remote_update_cache_and_renders_version(monkeypatch, 
     main(["--mirror-home", str(home)])
 
     out = capsys.readouterr().out
-    assert "New Version Available: v0.9.0" in out
+    assert "✨ New Version Available: v0.9.0" in out
     assert 'Ask: "what\'s new in this update?" or "update my Mirror"' in out
     cache = json.loads((home / "runtime" / "update-check.json").read_text(encoding="utf-8"))
     assert cache["availability"] == "update_available"
@@ -416,7 +416,7 @@ def test_welcome_resolves_tag_when_remote_commit_is_short(monkeypatch, tmp_path,
     main(["--mirror-home", str(home)])
 
     out = capsys.readouterr().out
-    assert "New Version Available: v0.10.11" in out
+    assert "✨ New Version Available: v0.10.11" in out
 
 
 def test_welcome_refreshes_fresh_up_to_date_cache_when_stable_may_have_advanced(
@@ -465,7 +465,7 @@ def test_welcome_refreshes_fresh_up_to_date_cache_when_stable_may_have_advanced(
     main(["--mirror-home", str(home)])
 
     out = capsys.readouterr().out
-    assert "New Version Available: v0.8.1" in out
+    assert "✨ New Version Available: v0.8.1" in out
     cache = json.loads(cache_path.read_text(encoding="utf-8"))
     assert cache["availability"] == "update_available"
     assert cache["remote_commit"] == "def"
@@ -516,7 +516,7 @@ def test_welcome_refreshes_fresh_update_cache_when_stable_advances(monkeypatch, 
     main(["--mirror-home", str(home)])
 
     out = capsys.readouterr().out
-    assert "New Version Available: v0.10.1" in out
+    assert "✨ New Version Available: v0.10.1" in out
     cache = json.loads(cache_path.read_text(encoding="utf-8"))
     assert cache["remote_commit"] == "new"
     assert cache["version"] == "v0.10.1"

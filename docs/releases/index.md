@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.10.17 — Update Notice Tone](v0.10.17.md) — patch release that makes update notices informational and prefixes them with ✨.
 - [v0.10.16 — Update Action Routing Validation Stub](v0.10.16.md) — minimal stable release used to validate v0.10.15 update-action routing.
 - [v0.10.15 — Update Action Routing](v0.10.15.md) — patch release that routes `update my Mirror` to the safe runtime updater.
 - [v0.10.14 — Update Prompt Wording](v0.10.14.md) — patch release that changes the welcome update prompt to "what's new in this update?".

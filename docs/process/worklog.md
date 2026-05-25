@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.17 release candidate prepared
+
+Production validated `update my Mirror` routing. Prepared `v0.10.17 — Update
+Notice Tone` to remove the yellow warning tone from new-version welcome
+notifications. The welcome now prefixes available updates with ✨ and the Pi
+extension sends the welcome notification as informational even when an update is
+available.
+
 ### 2026-05-25 — v0.10.16 update-action routing validation stub prepared
 
 Prepared `v0.10.16 — Update Action Routing Validation Stub` after production was
