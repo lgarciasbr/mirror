@@ -23,6 +23,25 @@ def test_registry_lists_local_mirror_homes_with_current_first(tmp_path: Path) ->
     assert mirrors[1].database_exists is True
 
 
+def test_registry_returns_selectable_home_only_for_discovered_database(tmp_path: Path) -> None:
+    root = tmp_path / ".mirror-minds"
+    current = root / "current"
+    other = root / "other"
+    backups = root / "backups"
+    current.mkdir(parents=True)
+    other.mkdir()
+    backups.mkdir()
+    (current / "memory.db").write_text("", encoding="utf-8")
+    (other / "memory.db").write_text("", encoding="utf-8")
+
+    registry = MirrorRegistry(current, user_homes_dir=root)
+
+    assert registry.selectable_home("other") == other.resolve()
+    assert registry.selectable_home("backups") is None
+    assert registry.selectable_home("../other") is None
+    assert registry.selectable_home("missing") is None
+
+
 def test_registry_includes_current_home_when_root_does_not_exist(tmp_path: Path) -> None:
     current = tmp_path / "custom-home"
 

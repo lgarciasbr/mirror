@@ -21,43 +21,29 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 class MirrorWebHandler(BaseHTTPRequestHandler):
     browser: DocsBrowser
-    preferences: WebPreferenceStore
-    mirrors: MirrorRegistry
+    mirror_home: Path | None
     db_path: Path | None
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
 
         if parsed.path == "/api/shell":
-            preference = self.preferences.read()
-            mirrors = self.mirrors.list_mirrors()
-            payload = {
-                "mirror": {
-                    "name": self.mirrors.current_name(),
-                    "path": str(self.mirrors.mirror_home) if self.mirrors.mirror_home else None,
-                },
-                "mirrors": [mirror.to_dict() for mirror in mirrors],
-                "defaultPerspective": preference.default_perspective,
-                "validPerspectives": list(VALID_PERSPECTIVES),
-                "docsAvailable": True,
-                "warning": preference.warning,
-            }
-            self._send_json(payload)
+            self._send_json(self._shell_payload())
             return
 
         if parsed.path == "/api/mirrors":
-            self._send_json([mirror.to_dict() for mirror in self.mirrors.list_mirrors()])
+            self._send_json([mirror.to_dict() for mirror in self._mirrors().list_mirrors()])
             return
 
         if parsed.path == "/api/surface/atlas":
-            with MemoryClient(db_path=self.db_path) as mem:
+            with MemoryClient(db_path=self._db_path()) as mem:
                 self._send_json(mem.surfaces.atlas_home().to_dict())
             return
 
         if parsed.path == "/api/surface/workspace":
             query = parse_qs(parsed.query)
             journey_id = query.get("journey", [None])[0]
-            with MemoryClient(db_path=self.db_path) as mem:
+            with MemoryClient(db_path=self._db_path()) as mem:
                 self._send_json(mem.surfaces.workspace_home(journey_id=journey_id).to_dict())
             return
 
@@ -65,7 +51,7 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             query = parse_qs(parsed.query)
             kind = query.get("kind", [""])[0]
             object_id = query.get("id", [""])[0]
-            with MemoryClient(db_path=self.db_path) as mem:
+            with MemoryClient(db_path=self._db_path()) as mem:
                 detail = mem.surfaces.object_detail(kind, object_id)
             if detail is None:
                 self._send_json({"error": "Object not found"}, status=404)
@@ -76,7 +62,7 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/surface/memories":
             query = parse_qs(parsed.query)
             category = query.get("category", [""])[0]
-            with MemoryClient(db_path=self.db_path) as mem:
+            with MemoryClient(db_path=self._db_path()) as mem:
                 self._send_json(mem.surfaces.memory_category(category).to_dict())
             return
 
@@ -84,7 +70,7 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             query = parse_qs(parsed.query)
             search_query = query.get("q", [""])[0]
             perspective = query.get("perspective", [None])[0]
-            with MemoryClient(db_path=self.db_path) as mem:
+            with MemoryClient(db_path=self._db_path()) as mem:
                 self._send_json(mem.surfaces.search(search_query, perspective).to_dict())
             return
 
@@ -111,14 +97,65 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path != "/api/preferences/default-perspective":
-            self._send_json({"error": "Not found"}, status=404)
+        if parsed.path == "/api/mirrors/select":
+            self._select_mirror()
+            return
+        if parsed.path == "/api/preferences/default-perspective":
+            self._write_default_perspective()
+            return
+        self._send_json({"error": "Not found"}, status=404)
+
+    def log_message(self, format: str, *args: object) -> None:
+        return
+
+    def _mirrors(self) -> MirrorRegistry:
+        return MirrorRegistry(self.__class__.mirror_home)
+
+    def _preferences(self) -> WebPreferenceStore:
+        return WebPreferenceStore(self.__class__.mirror_home)
+
+    def _db_path(self) -> Path | None:
+        mirror_home = self.__class__.mirror_home
+        if mirror_home is None:
+            return self.__class__.db_path
+        return db_path_from_mirror_home(mirror_home)
+
+    def _shell_payload(self) -> dict[str, object]:
+        mirrors = self._mirrors()
+        preference = self._preferences().read()
+        return {
+            "mirror": {
+                "name": mirrors.current_name(),
+                "path": str(mirrors.mirror_home) if mirrors.mirror_home else None,
+            },
+            "mirrors": [mirror.to_dict() for mirror in mirrors.list_mirrors()],
+            "defaultPerspective": preference.default_perspective,
+            "validPerspectives": list(VALID_PERSPECTIVES),
+            "docsAvailable": True,
+            "warning": preference.warning,
+        }
+
+    def _select_mirror(self) -> None:
+        try:
+            payload = self._read_json_body()
+            name = payload.get("name")
+            if not isinstance(name, str):
+                raise ValueError("Mirror name is required.")
+            mirror_home = self._mirrors().selectable_home(name)
+            if mirror_home is None:
+                raise ValueError("Mirror must be one of the discovered local Mirrors.")
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
             return
 
+        self.__class__.mirror_home = mirror_home
+        self._send_json(self._shell_payload())
+
+    def _write_default_perspective(self) -> None:
         try:
             payload = self._read_json_body()
             perspective = payload.get("defaultPerspective")
-            preference = self.preferences.write_default_perspective(perspective)
+            preference = self._preferences().write_default_perspective(perspective)
         except (json.JSONDecodeError, ValueError, TypeError) as exc:
             self._send_json({"error": str(exc)}, status=400)
             return
@@ -134,9 +171,6 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
                 "warning": preference.warning,
             }
         )
-
-    def log_message(self, format: str, *args: object) -> None:
-        return
 
     def _read_json_body(self) -> dict[str, object]:
         length = int(self.headers.get("Content-Length", "0"))
@@ -177,15 +211,13 @@ def create_handler(
     db_path: Path | None = None,
 ) -> type[MirrorWebHandler]:
     browser = DocsBrowser(root=root)
-    preferences = WebPreferenceStore(mirror_home)
-    mirrors = MirrorRegistry(mirror_home)
+    resolved_mirror_home = Path(mirror_home).expanduser().resolve() if mirror_home else None
 
     class Handler(MirrorWebHandler):
         pass
 
     Handler.browser = browser
-    Handler.preferences = preferences
-    Handler.mirrors = mirrors
+    Handler.mirror_home = resolved_mirror_home
     Handler.db_path = db_path
     return Handler
 

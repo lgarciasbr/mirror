@@ -46,12 +46,14 @@ function renderMirrorSelector(mirrors) {
   if (!mirrorSelector || !mirrors.length) return;
   const current = mirrors.find((mirror) => mirror.isCurrent) || mirrors[0];
   const options = mirrors.map((mirror) => `
-    <li class="mirror-option ${mirror.isCurrent ? 'active' : ''}">
-      <span class="mirror-option-mark" aria-hidden="true">${mirror.isCurrent ? '◆' : '◇'}</span>
-      <span>
-        <span class="mirror-option-name">${escapeHtml(mirror.name)}</span>
-        <small>${mirror.databaseExists ? 'memory.db available' : 'no memory.db yet'}</small>
-      </span>
+    <li>
+      <button type="button" class="mirror-option ${mirror.isCurrent ? 'active' : ''}" data-mirror-name="${escapeHtml(mirror.name)}" ${mirror.isCurrent ? 'disabled' : ''}>
+        <span class="mirror-option-mark" aria-hidden="true">${mirror.isCurrent ? '◆' : '◇'}</span>
+        <span>
+          <span class="mirror-option-name">${escapeHtml(mirror.name)}</span>
+          <small>${mirror.isCurrent ? 'current Mirror' : 'select this Mirror'}</small>
+        </span>
+      </button>
     </li>
   `).join('');
   mirrorSelector.hidden = false;
@@ -63,11 +65,24 @@ function renderMirrorSelector(mirrors) {
         <span class="mirror-selector-count">(${escapeHtml(mirrors.length)})</span>
       </summary>
       <div class="mirror-menu">
-        <p class="mirror-menu-note">Local Mirrors found near the current home. Switching arrives in the next story.</p>
+        <p class="mirror-menu-note">Local Mirrors found near the current home. Choose one to switch this web session.</p>
         <ul>${options}</ul>
       </div>
     </details>
   `;
+}
+
+async function selectMirror(name) {
+  const shell = await fetchJson('/api/mirrors/select', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  selectedWorkspaceJourney = null;
+  if (mirrorName) mirrorName.textContent = shell.mirror?.name || 'Local Mirror';
+  renderMirrorSelector(shell.mirrors || []);
+  showWarning(shell.warning);
+  await showView(activeView, { updateHash: false });
 }
 
 async function chooseDefault(perspective) {
@@ -846,6 +861,13 @@ tabs.forEach((tab) => {
     }
     chooseDefault(tab.dataset.view);
   });
+});
+
+mirrorSelector?.addEventListener('click', async (event) => {
+  const option = event.target.closest('[data-mirror-name]');
+  if (!option || option.disabled) return;
+  event.preventDefault();
+  await selectMirror(option.dataset.mirrorName);
 });
 
 document.querySelectorAll('[data-search-form]').forEach((form) => {

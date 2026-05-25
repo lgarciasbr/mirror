@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E2.S2 local Mirror switching validated
+
+Completed safe local Mirror switching from the web selector. The browser submits
+only a discovered Mirror name, the server validates that name against local
+Mirror homes with `memory.db`, rejects path traversal and non-Mirror directories,
+and reloads surfaces from the selected Mirror database for the running web
+session.
+
+Validation: focused web tests passed, ruff checks passed, `node --check` passed,
+`git diff --check` passed, and Navigator browser validation confirmed switching,
+active marker updates, content reload, no path input, and filtering.
+
 ### 2026-05-25 — CV13.E2.S1 mirror selector foundation validated
 
 Started the `v0.12.0 — Multi-Mirror and Preferences` branch with a read-only

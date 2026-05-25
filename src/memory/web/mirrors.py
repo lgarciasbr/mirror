@@ -63,6 +63,15 @@ class MirrorRegistry:
         mirrors.sort(key=lambda mirror: (not mirror.is_current, mirror.name.lower()))
         return mirrors
 
+    def selectable_home(self, name: str) -> Path | None:
+        if not name or Path(name).name != name:
+            return None
+        for mirror in self.list_mirrors():
+            if mirror.name != name or not mirror.database_exists:
+                continue
+            return Path(mirror.path)
+        return None
+
     def _is_candidate_mirror_home(self, path: Path) -> bool:
         if not path.is_dir() or path.name.startswith("."):
             return False

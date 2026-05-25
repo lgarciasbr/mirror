@@ -28,8 +28,8 @@ Initial backlog:
 | Code | Story | User-visible outcome | Status |
 |------|-------|----------------------|--------|
 | [CV13.E2.S1](cv13-e2-s1-mirror-selector-foundation/index.md) | Mirror selector foundation | The header shows the active Mirror and a read-only list of local Mirrors discovered near the current Mirror home | ✅ Done |
-| CV13.E2.S2 | Switch local Mirror | The user can switch to another discovered local Mirror without entering arbitrary paths | 🟢 In Progress |
-| CV13.E2.S3 | Profile/preferences page | The user has a dedicated page for profile-like web preferences scoped to the current Mirror | 🟡 Planned |
+| [CV13.E2.S2](cv13-e2-s2-switch-local-mirror/index.md) | Switch local Mirror | The user can switch to another discovered local Mirror without entering arbitrary paths | ✅ Done |
+| CV13.E2.S3 | Profile/preferences page | The user has a dedicated page for profile-like web preferences scoped to the current Mirror | 🟢 In Progress |
 | CV13.E2.S4 | Theme preference | The user can choose light, dark, or system theme and have it persist locally | 🟡 Planned |
 | CV13.E2.S5 | Preference coherence and validation | The multi-Mirror/preference slice is validated across local Mirrors and prepared as v0.12.0 | 🟡 Planned |
 

@@ -96,6 +96,69 @@ def test_mirrors_api_lists_local_mirrors_read_only(tmp_path: Path) -> None:
     assert payload[1]["databaseExists"] is True
 
 
+def test_select_mirror_api_switches_active_mirror_and_surface_data(tmp_path: Path) -> None:
+    root = tmp_path / ".mirror-minds"
+    alpha_home = root / "alpha"
+    beta_home = root / "beta"
+    alpha_db = alpha_home / "memory.db"
+    beta_db = beta_home / "memory.db"
+    with MemoryClient(db_path=alpha_db) as mem:
+        mem.identity.set_identity("ego", "identity", "# Alpha Ego\nAlpha voice")
+    with MemoryClient(db_path=beta_db) as mem:
+        mem.identity.set_identity("ego", "identity", "# Beta Ego\nBeta voice")
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=alpha_home, db_path=alpha_db)
+    try:
+        initial_status, initial = server.request(
+            "GET", "/api/surface/object?kind=identity&id=ego%3Aidentity"
+        )
+        select_status, shell = server.request("POST", "/api/mirrors/select", {"name": "beta"})
+        selected_status, selected = server.request(
+            "GET", "/api/surface/object?kind=identity&id=ego%3Aidentity"
+        )
+    finally:
+        server.close()
+
+    assert initial_status == 200
+    assert select_status == 200
+    assert selected_status == 200
+    assert initial["content"] == "# Alpha Ego\nAlpha voice"
+    assert shell["mirror"]["name"] == "beta"
+    assert shell["mirrors"][0]["name"] == "beta"
+    assert shell["mirrors"][0]["isCurrent"] is True
+    assert selected["content"] == "# Beta Ego\nBeta voice"
+
+
+def test_select_mirror_api_rejects_undiscovered_names_and_paths(tmp_path: Path) -> None:
+    root = tmp_path / ".mirror-minds"
+    alpha_home = root / "alpha"
+    beta_home = root / "beta"
+    backup_home = root / "backups"
+    with MemoryClient(db_path=alpha_home / "memory.db") as mem:
+        mem.identity.set_identity("ego", "identity", "# Alpha Ego\nAlpha voice")
+    beta_home.mkdir()
+    backup_home.mkdir()
+
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=alpha_home,
+        db_path=alpha_home / "memory.db",
+    )
+    try:
+        missing_status, missing = server.request("POST", "/api/mirrors/select", {"name": "beta"})
+        path_status, path = server.request("POST", "/api/mirrors/select", {"name": "../alpha"})
+        backup_status, backup = server.request("POST", "/api/mirrors/select", {"name": "backups"})
+    finally:
+        server.close()
+
+    assert missing_status == 400
+    assert path_status == 400
+    assert backup_status == 400
+    assert "discovered local Mirrors" in missing["error"]
+    assert "discovered local Mirrors" in path["error"]
+    assert "discovered local Mirrors" in backup["error"]
+
+
 def test_default_perspective_api_persists_to_user_home(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
     server = WebTestServer(

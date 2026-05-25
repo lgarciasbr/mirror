@@ -179,14 +179,24 @@ input {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 8px;
+  width: 100%;
   border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
   border-radius: 12px;
   padding: 9px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
 }
 
+.mirror-option:hover:not(:disabled),
 .mirror-option.active {
   border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
   background: var(--accent-soft);
+}
+
+.mirror-option:disabled {
+  cursor: default;
 }
 
 .mirror-option span:last-child {
