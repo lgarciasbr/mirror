@@ -45,6 +45,18 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             self._send_json(operation_catalog())
             return
 
+        if parsed.path == "/api/operations/runs":
+            query = parse_qs(parsed.query)
+            raw_limit = query.get("limit", ["20"])[0]
+            try:
+                limit = int(raw_limit)
+            except ValueError:
+                self._send_json({"error": "limit must be an integer"}, status=400)
+                return
+            with MemoryClient(db_path=self._db_path()) as mem:
+                self._send_json([run.to_dict() for run in mem.operation_runs.recent(limit)])
+            return
+
         if parsed.path == "/api/conversations/detail":
             query = parse_qs(parsed.query)
             conversation_id = query.get("id", [""])[0]
@@ -165,12 +177,40 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             parameters = payload.get("parameters", {})
             if not isinstance(parameters, dict):
                 raise ValueError("parameters must be an object")
-            result = run_operation(
-                operation_id,
-                mirror_home=self.__class__.mirror_home,
-                start=self.browser.root,
-                parameters=parameters,
+            catalog_entry = next(
+                (operation for operation in operation_catalog() if operation["id"] == operation_id),
+                None,
             )
+            if catalog_entry is None:
+                raise ValueError(f"Unknown operation: {operation_id}")
+            allowed_parameters = {
+                parameter["name"] for parameter in catalog_entry.get("parameters", [])
+            }
+            extra_parameters = set(parameters) - allowed_parameters
+            if extra_parameters:
+                raise ValueError(
+                    f"Unsupported parameters for {operation_id}: {', '.join(sorted(extra_parameters))}"
+                )
+            with MemoryClient(db_path=self._db_path()) as mem:
+                run = mem.operation_runs.start(operation_id, parameters)
+                try:
+                    result = run_operation(
+                        operation_id,
+                        mirror_home=self.__class__.mirror_home,
+                        start=self.browser.root,
+                        parameters=parameters,
+                    )
+                except (ValueError, TypeError) as exc:
+                    failed = mem.operation_runs.fail(run.id, error=str(exc))
+                    self._send_json({"runId": failed.id, "error": str(exc)}, status=400)
+                    return
+                completed = mem.operation_runs.complete(
+                    run.id,
+                    outcome=str(result.get("outcome", "completed")),
+                    summary=list(result.get("summary", [])),
+                    result=dict(result.get("result", {})),
+                )
+                result["runId"] = completed.id
         except (json.JSONDecodeError, ValueError, TypeError) as exc:
             self._send_json({"error": str(exc)}, status=400)
             return

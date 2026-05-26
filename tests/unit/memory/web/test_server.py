@@ -120,6 +120,7 @@ def test_operations_run_api_executes_runtime_health_only(tmp_path: Path) -> None
             "/api/operations/run",
             {"operationId": "runtime-health"},
         )
+        runs_status, runs = server.request("GET", "/api/operations/runs")
     finally:
         server.close()
 
@@ -128,7 +129,13 @@ def test_operations_run_api_executes_runtime_health_only(tmp_path: Path) -> None
     assert payload["status"] == "completed"
     assert payload["outcome"] == "attention needed"
     assert payload["result"]["mirrorHome"] == str(mirror_home.resolve())
-    assert payload["result"]["database"]["exists"] is False
+    assert payload["result"]["database"]["exists"] is True
+    assert payload["runId"]
+
+    assert runs_status == 200
+    assert runs[0]["id"] == payload["runId"]
+    assert runs[0]["operationId"] == "runtime-health"
+    assert runs[0]["status"] == "completed"
 
 
 def test_operations_run_api_rejects_unknown_and_command_like_requests(tmp_path: Path) -> None:
@@ -153,8 +160,8 @@ def test_operations_run_api_rejects_unknown_and_command_like_requests(tmp_path: 
 
 def test_operations_run_api_executes_database_backup(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
-    mirror_home.mkdir()
-    (mirror_home / "memory.db").write_text("database", encoding="utf-8")
+    with MemoryClient(db_path=mirror_home / "memory.db"):
+        pass
     server = WebTestServer(
         root=make_docs_root(tmp_path),
         mirror_home=mirror_home,
@@ -176,7 +183,36 @@ def test_operations_run_api_executes_database_backup(tmp_path: Path) -> None:
     assert backup_path.exists()
     assert backup_path.parent == mirror_home.resolve() / "backups"
     assert payload["result"]["verification"]["valid"] is True
-    assert payload["result"]["verification"]["entries"] == ["memory.db"]
+    assert "memory.db" in payload["result"]["verification"]["entries"]
+
+
+def test_operations_run_api_records_known_operation_failures(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    with MemoryClient(db_path=mirror_home / "memory.db"):
+        pass
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/operations/run",
+            {"operationId": "database-backup", "parameters": {"verify": "yes"}},
+        )
+        runs_status, runs = server.request("GET", "/api/operations/runs")
+    finally:
+        server.close()
+
+    assert status == 400
+    assert payload["runId"]
+    assert "must be a boolean" in payload["error"]
+    assert runs_status == 200
+    assert runs[0]["id"] == payload["runId"]
+    assert runs[0]["status"] == "failed"
+    assert runs[0]["parameters"] == {"verify": "yes"}
+    assert "must be a boolean" in runs[0]["error"]
 
 
 def test_operations_run_api_rejects_unsupported_backup_parameters(tmp_path: Path) -> None:

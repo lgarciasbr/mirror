@@ -200,6 +200,24 @@ CREATE INDEX IF NOT EXISTS idx_llm_calls_conversation ON llm_calls(conversation_
 CREATE INDEX IF NOT EXISTS idx_llm_calls_role ON llm_calls(role);
 CREATE INDEX IF NOT EXISTS idx_llm_calls_called_at ON llm_calls(called_at);
 
+CREATE TABLE IF NOT EXISTS operation_runs (
+    id TEXT PRIMARY KEY,
+    operation_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    outcome TEXT,
+    parameters_json TEXT NOT NULL,
+    summary_json TEXT,
+    result_json TEXT,
+    error TEXT,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_operation_runs_operation ON operation_runs(operation_id);
+CREATE INDEX IF NOT EXISTS idx_operation_runs_started ON operation_runs(started_at);
+CREATE INDEX IF NOT EXISTS idx_operation_runs_status ON operation_runs(status);
+
 -- Extension subsystem bookkeeping.
 --
 -- _ext_migrations tracks which SQL migration files have been applied per

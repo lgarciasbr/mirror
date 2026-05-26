@@ -309,6 +309,35 @@ def _migrate_create_consolidations(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_create_operation_runs(conn: sqlite3.Connection) -> None:
+    """Create the operation_runs table introduced for web operation audit evidence."""
+    if _table_exists(conn, "operation_runs"):
+        return
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS operation_runs (
+            id TEXT PRIMARY KEY,
+            operation_id TEXT NOT NULL,
+            status TEXT NOT NULL,
+            outcome TEXT,
+            parameters_json TEXT NOT NULL,
+            summary_json TEXT,
+            result_json TEXT,
+            error TEXT,
+            started_at TEXT NOT NULL,
+            completed_at TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_operation_runs_operation
+            ON operation_runs(operation_id);
+        CREATE INDEX IF NOT EXISTS idx_operation_runs_started
+            ON operation_runs(started_at);
+        CREATE INDEX IF NOT EXISTS idx_operation_runs_status
+            ON operation_runs(status);
+        """
+    )
+
+
 MigrationApply = Callable[[sqlite3.Connection], None]
 
 
@@ -323,6 +352,7 @@ MIGRATIONS: list[tuple[str, MigrationApply]] = [
     ("008_create_memories_fts", _migrate_create_memories_fts),
     ("009_memories_reinforcement_columns", _migrate_memories_reinforcement_columns),
     ("010_create_consolidations", _migrate_create_consolidations),
+    ("011_create_operation_runs", _migrate_create_operation_runs),
 ]
 
 
