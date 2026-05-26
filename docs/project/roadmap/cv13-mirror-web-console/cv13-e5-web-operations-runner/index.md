@@ -30,7 +30,7 @@ This epic introduces a guarded operations layer: operations are named, allowlist
 | [CV13.E5.S3](cv13-e5-s3-backup-operation/index.md) | Backup operation | The user can create and verify a local Mirror database backup through an explicit operation flow | ✅ Done |
 | [CV13.E5.S4](cv13-e5-s4-conversation-repair-dry-run-and-apply/index.md) | Conversation repair dry-run and apply | The user can preview and approve a bounded repair for conversations missing journey association | ✅ Done |
 | [CV13.E5.S5](cv13-e5-s5-operation-job-history-and-audit-evidence/index.md) | Operation job history and audit evidence | Operation runs are recorded with status, parameters, timestamps, output summary, and errors | ✅ Done |
-| CV13.E5.S6 | Streaming operations UI | The web app shows operation progress/events without blocking the browser | ⚪ Future |
+| [CV13.E5.S6](cv13-e5-s6-operations-runner-surface/index.md) | Operations Runner surface | The web app exposes runnable maintenance operations and recent audit history with explicit results | ✅ Done |
 
 ---
 

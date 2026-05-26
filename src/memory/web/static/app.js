@@ -128,6 +128,11 @@ async function showView(view, { updateHash = true } = {}) {
     return;
   }
 
+  if (view === 'operations') {
+    await renderOperations();
+    return;
+  }
+
   if (view === 'docs') {
     await renderDocsFrame();
     return;
@@ -198,6 +203,141 @@ function renderPreferences() {
       </article>
     </section>
   `;
+}
+
+async function renderOperations(lastResult = null) {
+  const [catalog, runs] = await Promise.all([
+    fetchJson('/api/operations/catalog'),
+    fetchJson('/api/operations/runs'),
+  ]);
+  currentPath.textContent = 'Operations';
+  const cards = catalog.map(renderOperationCard).join('');
+  const history = runs.length ? runs.map(renderOperationRun).join('') : '<p class="empty-state">No operation runs recorded yet.</p>';
+  content.innerHTML = `
+    <section class="surface-intro surface-line operations-hero">
+      <p><strong>How your Mirror cares for itself:</strong> run bounded maintenance operations with explicit parameters, local audit evidence, and no arbitrary command access.</p>
+    </section>
+    ${lastResult ? renderOperationResult(lastResult) : ''}
+    <section class="operations-console">
+      <div class="operations-grid">${cards}</div>
+      <aside class="operations-history">
+        <p class="eyebrow">Recent runs</p>
+        <h3>Audit evidence</h3>
+        <div class="operation-run-list">${history}</div>
+      </aside>
+    </section>
+  `;
+}
+
+function renderOperationCard(operation) {
+  const runnable = operation.execution === 'runnable';
+  const parameters = (operation.parameters || []).map(renderOperationParameter).join('');
+  return `
+    <article class="operation-card risk-${escapeHtml(operation.riskLevel || 'unknown')}">
+      <div class="operation-card-head">
+        <div>
+          <p class="eyebrow">${escapeHtml(operation.category || 'operation')}</p>
+          <h3>${escapeHtml(operation.title)}</h3>
+        </div>
+        <span class="readiness-badge">${escapeHtml(operation.execution)}</span>
+      </div>
+      <p>${escapeHtml(operation.description || '')}</p>
+      <div class="operation-meta">
+        <span>Risk: ${escapeHtml(operation.riskLevel || 'unknown')}</span>
+        <span>Dry-run: ${escapeHtml(operation.dryRun || 'unknown')}</span>
+      </div>
+      ${runnable ? `
+        <form class="operation-form" data-operation-form data-operation-id="${escapeHtml(operation.id)}">
+          ${parameters}
+          <button type="submit">Run operation</button>
+        </form>
+      ` : '<p class="empty-state">Not runnable yet.</p>'}
+    </article>
+  `;
+}
+
+function renderOperationParameter(parameter) {
+  const name = escapeHtml(parameter.name);
+  const label = escapeHtml(parameter.label || parameter.name);
+  const description = parameter.description ? `<small>${escapeHtml(parameter.description)}</small>` : '';
+  if (parameter.kind === 'boolean') {
+    const checked = parameter.default !== false ? 'checked' : '';
+    return `
+      <label class="operation-check">
+        <input type="checkbox" name="${name}" ${checked} />
+        <span>${label}</span>
+        ${description}
+      </label>
+    `;
+  }
+  if (parameter.kind === 'integer') {
+    const min = parameter.minimum ?? '';
+    const max = parameter.maximum ?? '';
+    const value = parameter.default ?? '';
+    return `
+      <label>
+        <span>${label}</span>
+        <input type="number" name="${name}" value="${escapeHtml(value)}" min="${escapeHtml(min)}" max="${escapeHtml(max)}" />
+        ${description}
+      </label>
+    `;
+  }
+  return `
+    <label>
+      <span>${label}</span>
+      <input name="${name}" value="${escapeHtml(parameter.default || '')}" />
+      ${description}
+    </label>
+  `;
+}
+
+function renderOperationResult(result) {
+  const ok = !result.error;
+  const summary = (result.summary || []).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
+  const details = result.result ? `<pre>${escapeHtml(JSON.stringify(result.result, null, 2))}</pre>` : '';
+  return `
+    <section class="operation-result ${ok ? 'success' : 'failure'}">
+      <p class="eyebrow">Last operation</p>
+      <h3>${escapeHtml(result.operationId || 'Operation')} · ${escapeHtml(result.outcome || result.status || (ok ? 'completed' : 'failed'))}</h3>
+      ${result.runId ? `<p>Run id: <code>${escapeHtml(result.runId)}</code></p>` : ''}
+      ${result.error ? `<p>${escapeHtml(result.error)}</p>` : ''}
+      ${summary ? `<ul>${summary}</ul>` : ''}
+      ${details}
+    </section>
+  `;
+}
+
+function renderOperationRun(run) {
+  const summary = (run.summary || []).slice(0, 2).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
+  return `
+    <article class="operation-run status-${escapeHtml(run.status)}">
+      <div>
+        <strong>${escapeHtml(run.operationId)}</strong>
+        <span>${escapeHtml(run.status)}${run.outcome ? ` · ${escapeHtml(run.outcome)}` : ''}</span>
+      </div>
+      <small>${escapeHtml(formatDateTime(run.startedAt))}</small>
+      ${Object.keys(run.parameters || {}).length ? `<code>${escapeHtml(JSON.stringify(run.parameters))}</code>` : ''}
+      ${run.error ? `<p>${escapeHtml(run.error)}</p>` : ''}
+      ${summary ? `<ul>${summary}</ul>` : ''}
+    </article>
+  `;
+}
+
+function operationPayloadFromForm(form) {
+  const parameters = {};
+  const data = new FormData(form);
+  form.querySelectorAll('input[name]').forEach((input) => {
+    if (input.type === 'checkbox') {
+      parameters[input.name] = input.checked;
+      return;
+    }
+    if (input.type === 'number') {
+      parameters[input.name] = Number(data.get(input.name));
+      return;
+    }
+    parameters[input.name] = String(data.get(input.name) || '');
+  });
+  return { operationId: form.dataset.operationId, parameters };
 }
 
 async function renderConfiguration() {
@@ -1198,7 +1338,7 @@ document.querySelectorAll('[data-choose]').forEach((button) => {
 
 tabs.forEach((tab) => {
   tab.addEventListener('click', () => {
-    if (['docs', 'preferences', 'configuration'].includes(tab.dataset.view)) {
+    if (['docs', 'preferences', 'configuration', 'operations'].includes(tab.dataset.view)) {
       showView(tab.dataset.view);
       return;
     }
@@ -1278,6 +1418,30 @@ content.addEventListener('submit', async (event) => {
     return;
   }
 
+  const operationForm = event.target.closest('[data-operation-form]');
+  if (operationForm) {
+    event.preventDefault();
+    const submit = operationForm.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    try {
+      const result = await fetchJson('/api/operations/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(operationPayloadFromForm(operationForm)),
+      });
+      showWarning('Operation completed.');
+      await renderOperations(result);
+    } catch (error) {
+      showWarning(String(error.message || error));
+      await renderOperations({
+        operationId: operationForm.dataset.operationId,
+        status: 'failed',
+        error: String(error.message || error),
+      });
+    }
+    return;
+  }
+
   const form = event.target.closest('[data-profile-form]');
   if (!form) return;
   event.preventDefault();
@@ -1350,7 +1514,7 @@ function viewFromHash() {
   const hash = window.location.hash.replace(/^#/, '');
   const conversation = hash.match(/^conversation\/(.+)$/);
   if (conversation) return { view: 'conversation', id: decodeURIComponent(conversation[1]) };
-  if (['workspace', 'atlas', 'docs', 'preferences', 'configuration'].includes(hash)) return { view: hash };
+  if (['workspace', 'atlas', 'docs', 'preferences', 'configuration', 'operations'].includes(hash)) return { view: hash };
   return null;
 }
 

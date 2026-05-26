@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-26 — CV13.E5.S6 Operations Runner surface validated
+
+Added the first visible Operations Runner surface. The web app now has an Operations tab that renders the server-owned operation catalog, exposes runnable controls for runtime health, database backup, and conversation journey repair, keeps dry-run enabled by default for repair, displays inline operation results, and lists recent audit history. Future operations are visible without run controls. Result evidence is intentionally shown as structured raw JSON for this first validation slice; product polish can later render operation-specific result cards.
+
+Validation: focused web, service, and migration tests passed, ruff checks passed, `node --check` passed, and `git diff --check` passed. Navigator manually validated the Operations tab, ran runtime health, confirmed JSON result evidence and accepted the current functional surface.
+
 ### 2026-05-26 — CV13.E5.S5 operation audit evidence validated
 
 Added local audit persistence for Web Operations Runner executions. The core schema and migration now include `operation_runs`, `MemoryClient` exposes `operation_runs`, and `POST /api/operations/run` returns a `runId` while recording completed and failed known operation runs. `GET /api/operations/runs` lists recent audit records with operation id, status, outcome, timestamps, sanitized parameters, summary, result evidence, and errors. Execution remains synchronous; no background jobs, streaming, cancellation, retry, or visible UI was introduced.
