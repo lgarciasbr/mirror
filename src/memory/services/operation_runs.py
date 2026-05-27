@@ -228,6 +228,18 @@ class OperationRunService:
         ).fetchall()
         return [_row_to_event(row) for row in rows]
 
+    def record_event(
+        self,
+        run_id: str,
+        *,
+        kind: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+    ) -> OperationRun:
+        self._record_event(run_id, kind=kind, message=message, details=details)
+        self.store.conn.commit()
+        return self.get(run_id)
+
     def _record_event(
         self,
         run_id: str,

@@ -109,6 +109,7 @@ def test_operations_catalog_api_exposes_read_only_allowlist(tmp_path: Path) -> N
         "runtime-diagnose",
         "database-backup",
         "conversation-journey-repair",
+        "run-console-demo",
         "agent-run-prototype",
         "conversation-logger-health",
         "batch-conversation-retitle",
@@ -118,7 +119,8 @@ def test_operations_catalog_api_exposes_read_only_allowlist(tmp_path: Path) -> N
     assert payload[2]["execution"] == "runnable"
     assert payload[3]["execution"] == "runnable"
     assert payload[4]["execution"] == "runnable"
-    assert all(operation["execution"] == "future" for operation in payload[5:])
+    assert payload[5]["execution"] == "runnable"
+    assert all(operation["execution"] == "future" for operation in payload[6:])
     assert payload[3]["dryRun"] == "required"
     assert payload[3]["parameters"][0]["name"] == "dryRun"
 
@@ -192,6 +194,31 @@ def test_operations_run_api_executes_runtime_diagnose_through_controlled_command
     assert "diagnose" in command["argv"]
     assert command["cwd"].endswith("/repo")
     assert completed["events"][-1]["kind"] == "completed"
+
+
+def test_operations_run_api_executes_run_console_demo_with_progress_events(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    mirror_home.mkdir()
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/operations/run",
+            {"operationId": "run-console-demo", "parameters": {"steps": 1}},
+        )
+        completed = wait_for_run(server, payload["runId"])
+    finally:
+        server.close()
+
+    assert status == 202
+    assert completed["operationId"] == "run-console-demo"
+    assert completed["outcome"] == "demo_completed"
+    assert "progress" in [event["kind"] for event in completed["events"]]
+    assert completed["result"]["steps"] == 1
 
 
 def test_operations_run_api_executes_agent_run_prototype(tmp_path: Path) -> None:

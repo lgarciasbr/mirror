@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-26 — CV13.E6.S7 run console surface polish validated
+
+Refined the Operations experience from inline audit cards into a dedicated run console. Starting an operation now opens a dominant shell-like console surface with polled lifecycle output, command/agent evidence, side cards for operation metadata and run actions, approval/cancel affordances, and a disabled future-agent input panel for the agent prototype. The copy remains honest that this is polled durable run state rather than true SSE/WebSocket streaming.
+
+Validation: focused web/service/migration tests passed, ruff checks passed, `node --check` passed for the web app, `git diff --check` passed, and the Mirror Web server was restarted for browser validation.
+
 ### 2026-05-26 — CV13.E6.S6 agent run prototype validated
 
 Closed the CV13.E6 Async Operations and Agentic Web Console arc with a bounded read-only agent-run prototype. The new `agent-run-prototype` operation accepts a natural-language intent, runs through the same asynchronous operation run lifecycle, records timeline evidence, and returns a proposal with explicit safety boundaries. The prototype proves the agent-shaped product path without autonomous writes, unrestricted Pi/headless runtime embedding, arbitrary shell, SQL, git, update, migration, or file mutation. CV13.E6 is now complete as the first agentic substrate: async runs, event timelines, controlled commands, cooperative cancellation, approval checkpoints, and bounded agent prototype.

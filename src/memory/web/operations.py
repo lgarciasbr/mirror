@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import sys
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -145,6 +147,26 @@ OPERATION_CATALOG: tuple[WebOperation, ...] = (
         ),
     ),
     WebOperation(
+        id="run-console-demo",
+        title="Run console demo",
+        description="Simulate a slow read-only operation that emits progress events so the run console can be validated in real time.",
+        category="diagnostics",
+        risk_level="read_only",
+        dry_run="unsupported",
+        execution="runnable",
+        parameters=(
+            OperationParameter(
+                name="steps",
+                label="Steps",
+                kind="integer",
+                description="Number of progress steps to emit.",
+                default=5,
+                minimum=1,
+                maximum=12,
+            ),
+        ),
+    ),
+    WebOperation(
         id="agent-run-prototype",
         title="Agent run prototype",
         description="Launch a bounded read-only agent-shaped run from an intent and return a proposal through the async evidence model.",
@@ -226,6 +248,7 @@ def run_operation(
     mirror_home: Path | None = None,
     start: Path | None = None,
     parameters: dict[str, object] | None = None,
+    emit_event: Callable[[str, str, dict[str, object] | None], None] | None = None,
 ) -> dict[str, object]:
     """Run one implemented allowlisted operation and return web-safe results."""
 
@@ -243,6 +266,8 @@ def run_operation(
         return _run_conversation_journey_repair(
             mirror_home=mirror_home, parameters=parsed_parameters
         )
+    if operation.id == "run-console-demo":
+        return _run_console_demo(parameters=parsed_parameters, emit_event=emit_event)
     if operation.id == "agent-run-prototype":
         return _run_agent_run_prototype(mirror_home=mirror_home, parameters=parsed_parameters)
     raise ValueError(f"Operation is not implemented yet: {operation_id}")
@@ -421,6 +446,29 @@ def _run_conversation_journey_repair(
             f"Backup created: {backup_path}",
         ],
         "result": result,
+    }
+
+
+def _run_console_demo(
+    *,
+    parameters: dict[str, object],
+    emit_event: Callable[[str, str, dict[str, object] | None], None] | None,
+) -> dict[str, object]:
+    steps = int(parameters.get("steps", 5))
+    for step in range(1, steps + 1):
+        if emit_event is not None:
+            emit_event(
+                "progress",
+                f"Demo progress {step}/{steps}.",
+                {"step": step, "steps": steps},
+            )
+        time.sleep(1)
+    return {
+        "operationId": "run-console-demo",
+        "status": "completed",
+        "outcome": "demo_completed",
+        "summary": [f"Emitted {steps} progress events.", "Demo operation completed."],
+        "result": {"steps": steps, "note": "Read-only run console validation demo."},
     }
 
 

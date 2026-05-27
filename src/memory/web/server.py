@@ -502,6 +502,21 @@ def _operation_requires_approval(operation_id: str, parameters: dict[str, object
     return operation_id == "conversation-journey-repair" and parameters.get("dryRun") is False
 
 
+def _record_operation_event(
+    run_id: str,
+    kind: str,
+    message: str,
+    details: dict[str, object] | None,
+    *,
+    db_path: Path | None,
+) -> None:
+    with MemoryClient(db_path=db_path) as mem:
+        current = mem.operation_runs.get(run_id)
+        if current.status == "cancellation_requested":
+            raise ValueError("Operation cancelled by user")
+        mem.operation_runs.record_event(run_id, kind=kind, message=message, details=details)
+
+
 def _execute_operation_run(
     *,
     run_id: str,
@@ -523,6 +538,9 @@ def _execute_operation_run(
             mirror_home=mirror_home,
             start=root,
             parameters=parameters,
+            emit_event=lambda kind, message, details=None: _record_operation_event(
+                run_id, kind, message, details, db_path=db_path
+            ),
         )
     except (ValueError, TypeError, OSError) as exc:
         with MemoryClient(db_path=db_path) as mem:

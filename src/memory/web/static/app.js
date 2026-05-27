@@ -13,11 +13,22 @@ let docsLoaded = false;
 let activeView = 'workspace';
 let selectedWorkspaceJourney = null;
 let shellState = null;
+let operationsCatalog = [];
+let warningTimeout = null;
 
 function closeMirrorSelectorOnOutsideClick(event) {
   if (!mirrorSelector || mirrorSelector.hidden || mirrorSelector.contains(event.target)) return;
   const details = mirrorSelector.querySelector('details');
   if (details) details.open = false;
+}
+
+function clearWarning() {
+  if (warningTimeout) {
+    clearTimeout(warningTimeout);
+    warningTimeout = null;
+  }
+  warning.hidden = true;
+  warning.textContent = '';
 }
 
 async function boot() {
@@ -50,8 +61,17 @@ function applyTheme(theme) {
 }
 
 function showWarning(message) {
+  if (warningTimeout) {
+    clearTimeout(warningTimeout);
+    warningTimeout = null;
+  }
   warning.hidden = !message;
   warning.textContent = message || '';
+  if (message) {
+    warningTimeout = setTimeout(() => {
+      clearWarning();
+    }, 5000);
+  }
 }
 
 function renderMirrorSelector(mirrors) {
@@ -108,6 +128,7 @@ async function chooseDefault(perspective) {
 }
 
 async function showView(view, { updateHash = true } = {}) {
+  clearWarning();
   activeView = view;
   const docsActive = view === 'docs';
   if (docsPanel) docsPanel.hidden = !docsActive;
@@ -210,6 +231,7 @@ async function renderOperations(lastResult = null, selectedOperationId = null) {
     fetchJson('/api/operations/catalog'),
     fetchJson('/api/operations/runs'),
   ]);
+  operationsCatalog = catalog;
   currentPath.textContent = 'Operations';
   const selectedOperation = catalog.find((operation) => operation.id === selectedOperationId);
   const cards = catalog.map(renderOperationCard).join('');
@@ -300,6 +322,7 @@ function renderOperationDetail(operation, runs, lastResult = null) {
 function operationIcon(id) {
   if (id === 'runtime-health') return '⌁';
   if (id === 'runtime-diagnose') return '⌕';
+  if (id === 'run-console-demo') return '◷';
   if (id === 'database-backup') return '◫';
   if (id === 'conversation-journey-repair') return '↔';
   if (id === 'agent-run-prototype') return '✦';
@@ -340,6 +363,148 @@ function renderOperationParameter(parameter) {
       ${description}
     </label>
   `;
+}
+
+function catalogOperationById(operationId) {
+  return operationsCatalog.find((operation) => operation.id === operationId) || null;
+}
+
+function operationRunToResult(run, started = {}) {
+  return {
+    runId: run.id || started.runId,
+    operationId: run.operationId || started.operationId,
+    status: run.status || started.status,
+    outcome: run.outcome || started.outcome,
+    summary: run.summary || started.summary,
+    result: run.result || started.result,
+    error: run.error || started.error,
+    events: run.events || started.events || [],
+    parameters: run.parameters || started.parameters || {},
+    startedAt: run.startedAt || started.startedAt,
+    completedAt: run.completedAt || started.completedAt,
+  };
+}
+
+function showRunConsole(result, operation = null) {
+  const runId = result.runId || result.id || '';
+  const operationId = result.operationId || operation?.id || 'operation';
+  const terminal = !['queued', 'running', 'cancellation_requested', 'approval_required'].includes(result.status);
+  const summary = (result.summary || []).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
+  const actionButtons = renderRunConsoleActions(result);
+  const detailsIntro = operation ? `
+    <section class="operation-evidence-list">
+      <strong>${escapeHtml(operation.title)}</strong>
+      <p>${escapeHtml(operation.description || '')}</p>
+    </section>
+  ` : '';
+  const runFacts = `
+    <div class="operation-result-grid">
+      ${renderResultFact('Status', result.outcome || result.status || 'unknown')}
+      ${renderResultFact('Run id', runId || 'unknown')}
+      ${renderResultFact('Risk', operation?.riskLevel || 'unknown')}
+      ${renderResultFact('Dry-run', operation?.dryRun || 'unknown')}
+    </div>
+  `;
+  const agentInput = operationId === 'agent-run-prototype' ? `
+    <section class="operation-evidence-list agent-input-preview">
+      <strong>Future agent input</strong>
+      <textarea disabled placeholder="Future releases will let you continue the agent run here."></textarea>
+      <button type="button" disabled>Send to agent</button>
+      <small>Disabled in this prototype. The current run is read-only and proposal-oriented.</small>
+    </section>
+  ` : '';
+  content.innerHTML = `
+    <section class="run-console-shell single">
+      <section class="run-console-main">
+        <div class="run-console-head">
+          <p class="eyebrow">Operation execution</p>
+          <h2>${escapeHtml(operation?.title || operationId)}</h2>
+          <p class="surface-note">This surface updates from durable run state. True SSE/WebSocket streaming remains future work.</p>
+          ${actionButtons}
+        </div>
+        <div class="workspace-tabs run-frame-tabs" role="tablist" aria-label="Run result frame">
+          <button type="button" class="workspace-tab active" data-run-tab="console" role="tab" aria-selected="true">Polled console</button>
+          ${terminal ? '<button type="button" class="workspace-tab result-ready" data-run-tab="details" role="tab" aria-selected="false">Result details</button>' : ''}
+        </div>
+        <div class="run-tab-panel active" data-run-panel="console" role="tabpanel">
+          <div class="run-terminal">
+            ${renderConsoleLines(result)}
+          </div>
+          ${terminal ? renderRunCompletionInvite(result) : ''}
+        </div>
+        ${terminal ? `<div class="run-tab-panel" data-run-panel="details" role="tabpanel" hidden>
+          ${detailsIntro}
+          ${runFacts}
+          ${summary ? `<div class="operation-evidence-list"><strong>Summary</strong><ul>${summary}</ul></div>` : ''}
+          ${renderOperationTimeline(result.events || [])}
+          ${renderOperationResultCards(result)}
+          ${agentInput}
+          ${renderRawEvidence(result.result)}
+        </div>` : ''}
+      </section>
+    </section>
+  `;
+}
+
+function renderRunCompletionInvite(result) {
+  const failed = result.error || result.status === 'failed';
+  const cancelled = result.status === 'cancelled';
+  const label = failed ? 'Operation failed.' : (cancelled ? 'Operation cancelled.' : 'Operation completed.');
+  return `
+    <section class="run-completion-invite ${failed ? 'failed' : 'success'}">
+      <strong>${escapeHtml(label)}</strong>
+      <button type="button" class="secondary-action" data-run-tab="details">View result details</button>
+    </section>
+  `;
+}
+
+function renderRunConsoleActions(result) {
+  const runId = result.runId || result.id;
+  if (!runId) return '';
+  const parts = [];
+  if (result.status === 'approval_required') {
+    parts.push(`<button type="button" class="secondary-action" data-operation-approve="${escapeHtml(runId)}">Approve</button>`);
+  }
+  if (['queued', 'running', 'cancellation_requested', 'approval_required'].includes(result.status)) {
+    parts.push(`<button type="button" class="secondary-action" data-operation-cancel="${escapeHtml(runId)}">Request cancel</button>`);
+  }
+  return parts.length ? `<div class="run-actions">${parts.join('')}</div>` : '';
+}
+
+function consoleStatusTone(result) {
+  if (result.error || result.status === 'failed') return 'failed';
+  if (String(result.outcome || '').includes('attention') || ['queued', 'running', 'approval_required', 'cancellation_requested', 'cancelled'].includes(result.status)) return 'attention';
+  return 'success';
+}
+
+function renderConsoleLines(result) {
+  const progressLines = (result.events || [])
+    .filter((event) => event.kind === 'progress')
+    .map((event) => `
+      <div class="console-line status-attention">
+        <span>${escapeHtml(formatDateTime(event.createdAt))}</span>
+        <strong>progress</strong>
+        <code>${escapeHtml(event.message || '')}</code>
+      </div>
+    `).join('');
+  const command = result.result?.command;
+  const commandLines = command ? `
+    <div class="console-line"><span>command</span><strong>${escapeHtml(command.commandId || '')}</strong><code>${escapeHtml((command.argv || []).join(' '))}</code></div>
+    ${command.stdout ? `<pre class="console-output">${escapeHtml(command.stdout)}</pre>` : ''}
+    ${command.stderr ? `<pre class="console-output attention">${escapeHtml(command.stderr)}</pre>` : ''}
+  ` : '';
+  const agent = result.result?.agent;
+  const agentLines = agent ? `
+    <div class="console-line"><span>intent</span><strong>agent</strong><code>${escapeHtml(agent.intent || '')}</code></div>
+    <pre class="console-output">${escapeHtml(JSON.stringify({ proposal: agent.proposal, boundaries: agent.boundaries, nextStep: agent.nextStep }, null, 2))}</pre>
+  ` : '';
+  const operationLabel = String(result.operationId || 'operation').replaceAll('-', ' ');
+  const summaryLines = !commandLines && !agentLines && (result.summary || []).length ? `
+    <div class="console-line console-title-line status-${escapeHtml(consoleStatusTone(result))}"><span>result of ${escapeHtml(operationLabel)}</span><strong>${escapeHtml(result.outcome || result.status || 'completed')}</strong></div>
+    <pre class="console-output">${escapeHtml((result.summary || []).join('\n'))}</pre>
+  ` : '';
+  if (!progressLines && !commandLines && !agentLines && !summaryLines) return '<div class="console-line"><span>waiting</span><strong>queued</strong><code>Waiting for console output...</code></div>';
+  return `${progressLines}${commandLines}${agentLines}${summaryLines}`;
 }
 
 function renderOperationResult(result) {
@@ -501,7 +666,7 @@ function renderOperationRun(run) {
   const cancellable = ['queued', 'running', 'cancellation_requested', 'approval_required'].includes(run.status);
   const approvable = run.status === 'approval_required';
   return `
-    <article class="operation-run status-${escapeHtml(runStatusTone(run))}">
+    <article class="operation-run status-${escapeHtml(runStatusTone(run))}" data-operation-view-run="${escapeHtml(run.id)}" role="button" tabindex="0">
       <span class="operation-run-dot" aria-hidden="true"></span>
       <div class="operation-run-body">
         <div>
@@ -521,6 +686,19 @@ function runStatusTone(run) {
   if (['queued', 'running', 'cancellation_requested', 'cancelled', 'approval_required'].includes(run.status)) return 'attention';
   if (String(run.outcome || '').includes('attention') || String(run.outcome || '').includes('dry_run')) return 'attention';
   return 'completed';
+}
+
+async function pollRunConsole(runId, attempts = 120) {
+  for (let index = 0; index < attempts; index += 1) {
+    const run = await fetchJson(`/api/operations/runs/${encodeURIComponent(runId)}`);
+    showRunConsole(operationRunToResult(run), catalogOperationById(run.operationId));
+    if (run.status !== 'queued' && run.status !== 'running' && run.status !== 'cancellation_requested') {
+      showWarning(run.status === 'failed' ? 'Operation failed.' : 'Operation completed.');
+      return run;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  return null;
 }
 
 async function waitForOperationRun(runId, attempts = 20) {
@@ -1502,6 +1680,63 @@ content.addEventListener('click', async (event) => {
     return;
   }
 
+  const operationViewRun = event.target.closest('[data-operation-view-run]');
+  if (operationViewRun && !event.target.closest('button')) {
+    event.preventDefault();
+    try {
+      const run = await fetchJson(`/api/operations/runs/${encodeURIComponent(operationViewRun.dataset.operationViewRun)}`);
+      showRunConsole(operationRunToResult(run), catalogOperationById(run.operationId));
+    } catch (error) {
+      showWarning(String(error.message || error));
+    }
+    return;
+  }
+
+  const runTab = event.target.closest('[data-run-tab]');
+  if (runTab) {
+    event.preventDefault();
+    const tabName = runTab.dataset.runTab;
+    document.querySelectorAll('[data-run-tab]').forEach((tab) => {
+      const active = tab.dataset.runTab === tabName;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    document.querySelectorAll('[data-run-panel]').forEach((panel) => {
+      const active = panel.dataset.runPanel === tabName;
+      panel.classList.toggle('active', active);
+      panel.hidden = !active;
+    });
+    return;
+  }
+
+  const operationApprove = event.target.closest('[data-operation-approve]');
+  if (operationApprove) {
+    event.preventDefault();
+    try {
+      const approved = await fetchJson(`/api/operations/runs/${encodeURIComponent(operationApprove.dataset.operationApprove)}/approve`, { method: 'POST' });
+      showWarning('Operation approved.');
+      const completed = await waitForOperationRun(approved.id);
+      const result = operationRunToResult(completed || approved, approved);
+      showRunConsole(result, catalogOperationById(result.operationId));
+    } catch (error) {
+      showWarning(String(error.message || error));
+    }
+    return;
+  }
+
+  const operationCancel = event.target.closest('[data-operation-cancel]');
+  if (operationCancel) {
+    event.preventDefault();
+    try {
+      const cancelled = await fetchJson(`/api/operations/runs/${encodeURIComponent(operationCancel.dataset.operationCancel)}/cancel`, { method: 'POST' });
+      showWarning('Cancellation requested.');
+      showRunConsole(operationRunToResult(cancelled), catalogOperationById(cancelled.operationId));
+    } catch (error) {
+      showWarning(String(error.message || error));
+    }
+    return;
+  }
+
   const operationOpenTarget = event.target.closest('[data-operation-open]');
   if (operationOpenTarget) {
     event.preventDefault();
@@ -1540,6 +1775,14 @@ content.addEventListener('keydown', async (event) => {
   if (conversationTarget) {
     event.preventDefault();
     await loadConversation(conversationTarget.dataset.conversationCardId);
+    return;
+  }
+
+  const runTarget = event.target.closest('[data-operation-view-run]');
+  if (runTarget) {
+    event.preventDefault();
+    const run = await fetchJson(`/api/operations/runs/${encodeURIComponent(runTarget.dataset.operationViewRun)}`);
+    showRunConsole(operationRunToResult(run), catalogOperationById(run.operationId));
     return;
   }
 
@@ -1635,32 +1878,6 @@ content.addEventListener('submit', async (event) => {
     return;
   }
 
-  const operationApprove = event.target.closest('[data-operation-approve]');
-  if (operationApprove) {
-    event.preventDefault();
-    try {
-      await fetchJson(`/api/operations/runs/${encodeURIComponent(operationApprove.dataset.operationApprove)}/approve`, { method: 'POST' });
-      showWarning('Operation approved.');
-      await renderOperations(null, null);
-    } catch (error) {
-      showWarning(String(error.message || error));
-    }
-    return;
-  }
-
-  const operationCancel = event.target.closest('[data-operation-cancel]');
-  if (operationCancel) {
-    event.preventDefault();
-    try {
-      await fetchJson(`/api/operations/runs/${encodeURIComponent(operationCancel.dataset.operationCancel)}/cancel`, { method: 'POST' });
-      showWarning('Cancellation requested.');
-      await renderOperations(null, null);
-    } catch (error) {
-      showWarning(String(error.message || error));
-    }
-    return;
-  }
-
   const operationForm = event.target.closest('[data-operation-form]');
   if (operationForm) {
     event.preventDefault();
@@ -1673,19 +1890,19 @@ content.addEventListener('submit', async (event) => {
         body: JSON.stringify(operationPayloadFromForm(operationForm)),
       });
       showWarning('Operation queued.');
-      const completed = started.runId ? await waitForOperationRun(started.runId) : started;
-      const result = completed ? {
-        runId: completed.id || started.runId,
-        operationId: completed.operationId || started.operationId,
-        status: completed.status || started.status,
-        outcome: completed.outcome || started.outcome,
-        summary: completed.summary || started.summary,
-        result: completed.result || started.result,
-        error: completed.error || started.error,
-        events: completed.events || started.events || [],
-      } : started;
-      showWarning(result.status === 'completed' ? 'Operation completed.' : 'Operation still running.');
-      await renderOperations(result, operationForm.dataset.operationId);
+      const result = operationRunToResult({
+        id: started.runId,
+        operationId: started.operationId,
+        status: started.status,
+        outcome: started.outcome,
+        summary: started.summary,
+        result: started.result,
+        events: started.events || [],
+      }, started);
+      showWarning('Operation queued.');
+      await renderOperations(null, operationForm.dataset.operationId);
+      showRunConsole(result, catalogOperationById(operationForm.dataset.operationId));
+      if (started.runId) pollRunConsole(started.runId);
     } catch (error) {
       showWarning(String(error.message || error));
       await renderOperations({
