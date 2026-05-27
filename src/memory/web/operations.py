@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -11,6 +12,7 @@ from memory.cli.common import db_path_from_mirror_home
 from memory.cli.conversation_logger import diagnose_journey_associations
 from memory.cli.runtime import RuntimeStatusReport, build_runtime_status, verify_backup_archive
 from memory.client import MemoryClient
+from memory.web.command_executor import ControlledCommand, run_controlled_command
 
 ParameterType = Literal["string", "integer", "boolean", "choice"]
 RiskLevel = Literal["read_only", "writes_backup", "writes_database", "external_llm"]
@@ -82,6 +84,15 @@ OPERATION_CATALOG: tuple[WebOperation, ...] = (
         id="runtime-health",
         title="Runtime health diagnosis",
         description="Inspect runtime version, database path, migration state, extension health, and configuration warnings without changing local state.",
+        category="runtime",
+        risk_level="read_only",
+        dry_run="unsupported",
+        execution="runnable",
+    ),
+    WebOperation(
+        id="runtime-diagnose",
+        title="Runtime diagnosis",
+        description="Run the read-only runtime diagnosis command for the active Mirror and capture command evidence without exposing shell access.",
         category="runtime",
         risk_level="read_only",
         dry_run="unsupported",
@@ -205,6 +216,8 @@ def run_operation(
         raise ValueError(f"Unknown operation: {operation_id}")
     if operation.id == "runtime-health":
         return _run_runtime_health(mirror_home=mirror_home, start=start)
+    if operation.id == "runtime-diagnose":
+        return _run_runtime_diagnose(mirror_home=mirror_home, start=start)
     if operation.id == "database-backup":
         return _run_database_backup(mirror_home=mirror_home, parameters=parsed_parameters)
     if operation.id == "conversation-journey-repair":
@@ -262,6 +275,33 @@ def _run_runtime_health(*, mirror_home: Path | None, start: Path | None) -> dict
         "outcome": report.status,
         "summary": _runtime_health_summary(report),
         "result": _runtime_status_payload(report),
+    }
+
+
+def _run_runtime_diagnose(
+    *, mirror_home: Path | None, start: Path | None
+) -> dict[str, object]:
+    argv = [sys.executable, "-m", "memory", "runtime", "diagnose"]
+    if mirror_home is not None:
+        argv.extend(["--mirror-home", str(mirror_home)])
+    command = ControlledCommand(
+        id="runtime-diagnose",
+        argv=tuple(argv),
+        cwd=start or Path.cwd(),
+        timeout_seconds=30,
+    )
+    result = run_controlled_command(command)
+    outcome = "ready" if result.succeeded else "attention needed"
+    summary = [
+        f"Command exit: {result.return_code if result.return_code is not None else 'timeout'}",
+        "Runtime diagnosis command completed." if not result.timed_out else "Runtime diagnosis timed out.",
+    ]
+    return {
+        "operationId": "runtime-diagnose",
+        "status": "completed",
+        "outcome": outcome,
+        "summary": summary,
+        "result": {"command": result.to_dict()},
     }
 
 

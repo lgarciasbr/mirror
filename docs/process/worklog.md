@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-26 — CV13.E6.S3 controlled command executor validated
+
+Added a controlled command execution boundary for asynchronous web operations without exposing a browser shell. Server-owned `ControlledCommand` definitions now run with fixed argv, `shell=False`, explicit cwd, sanitized environment, timeout, and bounded stdout/stderr capture. A read-only `runtime-diagnose` operation proves the boundary by running `python -m memory runtime diagnose` for the selected Mirror home and returning command evidence through the existing async run, event timeline, and result surfaces. No user-supplied command string, arbitrary cwd/env, runtime update, git mutation, extension install, migration execution, cancellation, approval checkpoint, or Pi/headless agent integration was introduced.
+
+Validation: focused web/service/migration tests passed, ruff checks passed, `node --check` passed for the web app, and `git diff --check` passed.
+
 ### 2026-05-26 — CV13.E6.S2 operation event log and timeline validated
 
 Added durable lifecycle events for asynchronous web operation runs. The core schema and migration now include `operation_run_events`; `OperationRunService` records queued, running, completed, and failed events; single-run inspection returns events in sequence; and the Operations UI renders a compact run timeline beside final result evidence. Polling remains the delivery mechanism, with no SSE/WebSocket, cancellation, approval checkpoint, command executor, Pi/headless agent integration, arbitrary shell command, SQL, git, or runtime update surface introduced.

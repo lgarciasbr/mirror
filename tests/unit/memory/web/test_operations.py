@@ -13,6 +13,7 @@ def test_operation_catalog_exposes_stable_allowlisted_operations() -> None:
 
     assert [operation["id"] for operation in payload] == [
         "runtime-health",
+        "runtime-diagnose",
         "database-backup",
         "conversation-journey-repair",
         "conversation-logger-health",
@@ -20,13 +21,19 @@ def test_operation_catalog_exposes_stable_allowlisted_operations() -> None:
     ]
     operations = {operation["id"]: operation for operation in payload}
     assert operations["runtime-health"]["execution"] == "runnable"
+    assert operations["runtime-diagnose"]["execution"] == "runnable"
     assert operations["database-backup"]["execution"] == "runnable"
     assert operations["conversation-journey-repair"]["execution"] == "runnable"
     assert all(
         operation["execution"] == "future"
         for operation in payload
         if operation["id"]
-        not in {"runtime-health", "database-backup", "conversation-journey-repair"}
+        not in {
+            "runtime-health",
+            "runtime-diagnose",
+            "database-backup",
+            "conversation-journey-repair",
+        }
     )
 
 
@@ -35,6 +42,7 @@ def test_operation_catalog_declares_risk_and_dry_run_boundaries() -> None:
 
     assert operations["runtime-health"]["riskLevel"] == "read_only"
     assert operations["runtime-health"]["dryRun"] == "unsupported"
+    assert operations["runtime-diagnose"]["riskLevel"] == "read_only"
     assert operations["database-backup"]["riskLevel"] == "writes_backup"
     assert operations["conversation-journey-repair"]["riskLevel"] == "writes_database"
     assert operations["conversation-journey-repair"]["dryRun"] == "required"

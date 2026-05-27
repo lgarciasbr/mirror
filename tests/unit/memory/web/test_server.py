@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import time
 from http.client import HTTPConnection
@@ -105,6 +106,7 @@ def test_operations_catalog_api_exposes_read_only_allowlist(tmp_path: Path) -> N
     assert status == 200
     assert [operation["id"] for operation in payload] == [
         "runtime-health",
+        "runtime-diagnose",
         "database-backup",
         "conversation-journey-repair",
         "conversation-logger-health",
@@ -113,9 +115,10 @@ def test_operations_catalog_api_exposes_read_only_allowlist(tmp_path: Path) -> N
     assert payload[0]["execution"] == "runnable"
     assert payload[1]["execution"] == "runnable"
     assert payload[2]["execution"] == "runnable"
-    assert all(operation["execution"] == "future" for operation in payload[3:])
-    assert payload[2]["dryRun"] == "required"
-    assert payload[2]["parameters"][0]["name"] == "dryRun"
+    assert payload[3]["execution"] == "runnable"
+    assert all(operation["execution"] == "future" for operation in payload[4:])
+    assert payload[3]["dryRun"] == "required"
+    assert payload[3]["parameters"][0]["name"] == "dryRun"
 
 
 def test_operations_run_api_executes_runtime_health_only(tmp_path: Path) -> None:
@@ -156,6 +159,37 @@ def test_operations_run_api_executes_runtime_health_only(tmp_path: Path) -> None
     assert runs[0]["id"] == payload["runId"]
     assert runs[0]["operationId"] == "runtime-health"
     assert runs[0]["status"] == "completed"
+
+
+def test_operations_run_api_executes_runtime_diagnose_through_controlled_command(
+    tmp_path: Path,
+) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    mirror_home.mkdir()
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/operations/run",
+            {"operationId": "runtime-diagnose"},
+        )
+        completed = wait_for_run(server, payload["runId"])
+    finally:
+        server.close()
+
+    assert status == 202
+    assert completed["operationId"] == "runtime-diagnose"
+    assert completed["status"] == "completed"
+    command = completed["result"]["command"]
+    assert command["commandId"] == "runtime-diagnose"
+    assert command["argv"][:4] == [sys.executable, "-m", "memory", "runtime"]
+    assert "diagnose" in command["argv"]
+    assert command["cwd"].endswith("/repo")
+    assert completed["events"][-1]["kind"] == "completed"
 
 
 def test_operations_run_api_rejects_unknown_and_command_like_requests(tmp_path: Path) -> None:

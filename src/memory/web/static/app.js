@@ -299,6 +299,7 @@ function renderOperationDetail(operation, runs, lastResult = null) {
 
 function operationIcon(id) {
   if (id === 'runtime-health') return '⌁';
+  if (id === 'runtime-diagnose') return '⌕';
   if (id === 'database-backup') return '◫';
   if (id === 'conversation-journey-repair') return '↔';
   if (id === 'conversation-logger-health') return '◌';
@@ -377,6 +378,7 @@ function renderOperationTimeline(events) {
 function renderOperationResultCards(result) {
   const data = result.result || {};
   if (result.operationId === 'runtime-health') return renderRuntimeHealthResult(data);
+  if (result.operationId === 'runtime-diagnose') return renderCommandResult(data.command || {});
   if (result.operationId === 'database-backup') return renderBackupResult(data);
   if (result.operationId === 'conversation-journey-repair') return renderRepairResult(data);
   return '';
@@ -415,6 +417,18 @@ function runtimeHealthIssues(data) {
     if (!health.ready) issues.push(`Extension ${health.extensionId} needs attention${health.note ? `: ${health.note}` : ''}.`);
   }
   return issues;
+}
+
+function renderCommandResult(command) {
+  return `
+    <div class="operation-result-grid">
+      ${renderResultFact('Command', command.commandId || 'unknown')}
+      ${renderResultFact('Exit', command.timedOut ? 'timeout' : (command.returnCode ?? 'unknown'))}
+      ${renderResultFact('Succeeded', command.succeeded ? 'yes' : 'no')}
+    </div>
+    ${command.stdout ? `<div class="operation-evidence-list"><strong>stdout</strong><pre>${escapeHtml(command.stdout)}</pre></div>` : ''}
+    ${command.stderr ? `<div class="operation-evidence-list attention"><strong>stderr</strong><pre>${escapeHtml(command.stderr)}</pre></div>` : ''}
+  `;
 }
 
 function renderBackupResult(data) {
