@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-28 — Builder clone-role guard scoped to journey project path
+
+Fixed a Builder Mode guard regression where `memory build load <slug>` inspected the current Mirror runtime checkout and refused to start when that checkout was marked `production`, even if the selected journey pointed at a separate development project. The guard now loads the journey first, inspects the clone role of the journey `project_path`, and only falls back to the current directory when no project path is configured. Documentation now describes the journey-scoped boundary.
+
+Validation: focused Builder CLI tests passed and ruff checks passed for the touched files.
+
 ### 2026-05-27 — v0.17.0 conversation title hardening prepared
 
 Prepared `v0.17.0 — Conversation Title Hardening` as a minor release after validating the title-repair arc in production. The release hardens title provenance in the core, marks first-message titles as provisional, retitles safely at conversation close, adds bounded startup maintenance for missed/backfilled conversations, makes batch conversation retitle runnable from the web with dry-run cost estimates and backups, and polishes Operations console feedback for long title-generation runs.

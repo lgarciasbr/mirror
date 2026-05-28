@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from memory.cli.conversation_logger import switch_conversation
 from memory.cli.runtime import inspect_clone_role
@@ -35,8 +36,9 @@ def _extract_query(journey_content: str, slug: str) -> str:
     return text[:500] if text else slug
 
 
-def _check_clone_role_guard(*, ignore_production_role: bool) -> None:
-    role = inspect_clone_role()
+def _check_clone_role_guard(*, ignore_production_role: bool, project_path: str | None = None) -> None:
+    role_start = Path(project_path) if project_path else None
+    role = inspect_clone_role(role_start)
     if not role.is_production:
         return
     if ignore_production_role:
@@ -47,7 +49,8 @@ def _check_clone_role_guard(*, ignore_production_role: bool) -> None:
         return
     source = role.source if role.source is not None else "<default: missing marker>"
     print(
-        "Builder Mode refused: this clone is marked 'production'.\n"
+        "Builder Mode refused: the journey project clone is marked 'production'.\n"
+        f"  Project path: {project_path or '<current directory>'}\n"
         f"  Clone role source: {source}\n"
         "  Development should happen in a clone marked 'dev'.\n"
         "  To proceed here anyway, pass --ignore-production-role.",
@@ -57,7 +60,6 @@ def _check_clone_role_guard(*, ignore_production_role: bool) -> None:
 
 
 def cmd_load(slug: str, *, ignore_production_role: bool = False) -> None:
-    _check_clone_role_guard(ignore_production_role=ignore_production_role)
     mem = MemoryClient()
 
     journey_content = mem.get_identity("journey", slug)
@@ -66,6 +68,10 @@ def cmd_load(slug: str, *, ignore_production_role: bool = False) -> None:
         sys.exit(1)
 
     project_path = mem.journeys.get_project_path(slug)
+    _check_clone_role_guard(
+        ignore_production_role=ignore_production_role,
+        project_path=project_path,
+    )
     _print_builder_banner(slug, project_path)
 
     context = mem.load_mirror_context(persona="engineer", journey=slug)
