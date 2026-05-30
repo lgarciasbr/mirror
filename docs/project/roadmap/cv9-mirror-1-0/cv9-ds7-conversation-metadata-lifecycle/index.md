@@ -38,7 +38,8 @@ The Delivery Story expansion has been accepted. No implementation plan has been 
 |------|------|-------|--------|
 | [CV9.DS7.TS1](cv9-ds7-ts1-metadata-lifecycle-decision-policy/index.md) | Technical Story | Metadata Lifecycle Decision Policy | Done |
 | [CV9.DS7.US1](cv9-ds7-us1-dry-run-metadata-lifecycle-decision-path/index.md) | User Story | Dry-run Metadata Lifecycle Decision Path | Done |
-| [CV9.DS7.US2](cv9-ds7-us2-apply-metadata-lifecycle-decisions/index.md) | User Story | Apply Metadata Lifecycle Decisions Safely | Accepted; later pull |
+| [CV9.DS7.TS2](cv9-ds7-ts2-extract-metadata-lifecycle-policy-boundary/index.md) | Technical Story | Extract Metadata Lifecycle Policy Boundary | Validated |
+| [CV9.DS7.US2](cv9-ds7-us2-apply-metadata-lifecycle-decisions/index.md) | User Story | Apply Metadata Lifecycle Decisions Safely | Active; unblocked, plan proposed |
 
 ---
 
@@ -73,7 +74,4 @@ Out of scope for this Delivery Story unless explicitly expanded later:
 - Improve evidence term filtering/ranking for metadata lifecycle reports. Current
   `refine_candidate` evidence is useful enough for candidate signaling, but may
   include noisy tokens from paths, timestamps, or generic connective words.
-- Debt ledger: [D-001 Metadata lifecycle policy and evidence filtering live inside ConversationService](../../../debt.md#d-001--metadata-lifecycle-policy-and-evidence-filtering-live-inside-conversationservice).
-- Revisit trigger: if this debt grows further during DS7, refactor — especially
-  before or during US2 apply behavior if mutation boundaries become harder to
-  reason about.
+- Debt ledger: [D-001 Metadata lifecycle policy and evidence filtering live inside ConversationService](../../../debt.md#d-001--metadata-lifecycle-policy-and-evidence-filtering-live-inside-conversationservice) was paid by TS2. Evidence term filtering/ranking remains a possible future improvement, but the policy boundary is no longer embedded directly in `ConversationService`.
