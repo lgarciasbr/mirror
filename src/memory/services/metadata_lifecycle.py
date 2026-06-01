@@ -13,7 +13,6 @@ from dataclasses import dataclass
 
 from memory.models import Conversation, Message
 
-
 TitleNeedsImprovement = Callable[[Conversation], bool]
 
 
@@ -349,8 +348,5 @@ def meaningful_terms(text: str) -> set[str]:
         "work",
         "working",
     }
-    terms = {
-        token.lower()
-        for token in re.findall(r"[\wÀ-ÿ]{4,}", text, flags=re.UNICODE)
-    }
+    terms = {token.lower() for token in re.findall(r"[\wÀ-ÿ]{4,}", text, flags=re.UNICODE)}
     return {term for term in terms if term not in stop_words}

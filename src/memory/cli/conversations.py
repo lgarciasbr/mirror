@@ -5,16 +5,16 @@ import json
 import sqlite3
 
 from memory import MemoryClient
+from memory.cli.common import db_path_from_mirror_home
 from memory.db.schema import SCHEMA
 from memory.intelligence.search import MemorySearch
-from memory.services.conversation import ConversationService
 from memory.services.attachment import AttachmentService
+from memory.services.conversation import ConversationService
 from memory.services.identity import IdentityService
 from memory.services.journey import JourneyService
 from memory.services.memory import MemoryService
 from memory.services.tasks import TaskService
 from memory.storage.store import Store
-from memory.cli.common import db_path_from_mirror_home
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -82,9 +82,7 @@ def main(argv: list[str] | None = None) -> None:
     mem = MemoryClient(db_path=db_path_from_mirror_home(args.mirror_home))
 
     if args.metadata_lifecycle_dry_run:
-        report = mem.conversations.dry_run_metadata_lifecycle(
-            args.metadata_lifecycle_dry_run
-        )
+        report = mem.conversations.dry_run_metadata_lifecycle(args.metadata_lifecycle_dry_run)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return
 
@@ -204,8 +202,7 @@ def _metadata_lifecycle_demo_report() -> dict:
         "preview_non_mutating": preview["mutated"] is False,
         "apply_changed_title": apply["changed"].get("title")
         == "Maestro checkpoint visibility validation",
-        "manual_lock_preserved": manual_apply["skipped"].get("title")
-        == "manual_lock_preserved",
+        "manual_lock_preserved": manual_apply["skipped"].get("title") == "manual_lock_preserved",
         "refine_candidate_skipped": refine_apply["skipped"].get("title")
         == "candidate_decision_requires_explicit_review",
     }

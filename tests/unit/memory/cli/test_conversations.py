@@ -86,18 +86,20 @@ def test_conversations_metadata_lifecycle_apply_reports_changes(tmp_path, capsys
 
     from memory.cli.conversations import main
 
-    main([
-        "--mirror-home",
-        str(mirror_home),
-        "--metadata-lifecycle-apply",
-        conv.id,
-        "--title",
-        "Maestro checkpoint visibility validation",
-        "--tag",
-        "maestro",
-        "--tag",
-        "metadata",
-    ])
+    main(
+        [
+            "--mirror-home",
+            str(mirror_home),
+            "--metadata-lifecycle-apply",
+            conv.id,
+            "--title",
+            "Maestro checkpoint visibility validation",
+            "--tag",
+            "maestro",
+            "--tag",
+            "metadata",
+        ]
+    )
 
     captured = capsys.readouterr()
     report = json.loads(captured.out)
@@ -120,14 +122,16 @@ def test_conversations_metadata_lifecycle_apply_preserves_manual_lock(tmp_path, 
 
     from memory.cli.conversations import main
 
-    main([
-        "--mirror-home",
-        str(mirror_home),
-        "--metadata-lifecycle-apply",
-        conv.id,
-        "--title",
-        "Generated replacement title",
-    ])
+    main(
+        [
+            "--mirror-home",
+            str(mirror_home),
+            "--metadata-lifecycle-apply",
+            conv.id,
+            "--title",
+            "Generated replacement title",
+        ]
+    )
 
     captured = capsys.readouterr()
     report = json.loads(captured.out)
@@ -169,15 +173,17 @@ def test_conversations_metadata_backfill_apply_reports_results(tmp_path, capsys,
 
     from memory.cli.conversations import main
 
-    main([
-        "--mirror-home",
-        str(mirror_home),
-        "--metadata-backfill-apply",
-        "--metadata-backfill-mode",
-        "safe",
-        "--limit",
-        "5",
-    ])
+    main(
+        [
+            "--mirror-home",
+            str(mirror_home),
+            "--metadata-backfill-apply",
+            "--metadata-backfill-mode",
+            "safe",
+            "--limit",
+            "5",
+        ]
+    )
 
     captured = capsys.readouterr()
     report = json.loads(captured.out)
@@ -197,15 +203,17 @@ def test_conversations_metadata_backfill_preview_reports_candidates(tmp_path, ca
 
     from memory.cli.conversations import main
 
-    main([
-        "--mirror-home",
-        str(mirror_home),
-        "--metadata-backfill-preview",
-        "--metadata-backfill-mode",
-        "safe",
-        "--limit",
-        "5",
-    ])
+    main(
+        [
+            "--mirror-home",
+            str(mirror_home),
+            "--metadata-backfill-preview",
+            "--metadata-backfill-mode",
+            "safe",
+            "--limit",
+            "5",
+        ]
+    )
 
     captured = capsys.readouterr()
     report = json.loads(captured.out)
@@ -215,9 +223,7 @@ def test_conversations_metadata_backfill_preview_reports_candidates(tmp_path, ca
     assert report["candidates"][0]["actions"]["title"] == "apply"
 
 
-def test_conversations_metadata_lifecycle_preview_at_message_reports_boundary(
-    tmp_path, capsys
-):
+def test_conversations_metadata_lifecycle_preview_at_message_reports_boundary(tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
     mem = MemoryClient(env="test", db_path=db_path)
@@ -227,12 +233,14 @@ def test_conversations_metadata_lifecycle_preview_at_message_reports_boundary(
 
     from memory.cli.conversations import main
 
-    main([
-        "--mirror-home",
-        str(mirror_home),
-        "--metadata-lifecycle-preview-at-message",
-        first.id,
-    ])
+    main(
+        [
+            "--mirror-home",
+            str(mirror_home),
+            "--metadata-lifecycle-preview-at-message",
+            first.id,
+        ]
+    )
 
     captured = capsys.readouterr()
     report = json.loads(captured.out)

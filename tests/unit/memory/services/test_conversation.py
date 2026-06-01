@@ -599,9 +599,7 @@ class TestConversationServiceMetadataLifecycleDryRun:
         assert after.title == before.title
         assert after.metadata == before.metadata
 
-    def test_reports_existing_raw_summary_as_refine_candidate(
-        self, conversation_service, store
-    ):
+    def test_reports_existing_raw_summary_as_refine_candidate(self, conversation_service, store):
         conv = conversation_service.start_conversation(interface="cli", title="Antes de mim")
         conversation_service.add_message(conv.id, "user", "Vamos trabalhar no projeto")
         conversation_service.add_message(conv.id, "assistant", "Contexto carregado")
@@ -624,14 +622,14 @@ class TestConversationServiceMetadataLifecycleDryRun:
         assert "contains_markdown" in summary["evidence"]["quality_issues"]
         assert "contains_paths" in summary["evidence"]["quality_issues"]
 
-    def test_reports_summary_and_tags_ready_from_conversation_substance(
-        self, conversation_service
-    ):
+    def test_reports_summary_and_tags_ready_from_conversation_substance(self, conversation_service):
         conv = conversation_service.start_conversation(interface="cli", title="Metadata lifecycle")
         conversation_service.add_message(conv.id, "user", "Vamos tratar o título")
         conversation_service.add_message(conv.id, "assistant", "Podemos criar uma política")
         conversation_service.add_message(conv.id, "user", "Também resumo e tags")
-        conversation_service.add_message(conv.id, "assistant", "Então precisamos de readiness por campo")
+        conversation_service.add_message(
+            conv.id, "assistant", "Então precisamos de readiness por campo"
+        )
 
         report = conversation_service.dry_run_metadata_lifecycle(conv.id)
 
@@ -648,7 +646,9 @@ class TestConversationServiceMetadataLifecycleDryRun:
         first = conversation_service.add_message(conv.id, "user", "Vamos tratar o título")
         conversation_service.add_message(conv.id, "assistant", "Podemos criar uma política")
         conversation_service.add_message(conv.id, "user", "Também resumo e tags")
-        conversation_service.add_message(conv.id, "assistant", "Então precisamos de readiness por campo")
+        conversation_service.add_message(
+            conv.id, "assistant", "Então precisamos de readiness por campo"
+        )
         before = store.get_conversation(conv.id)
 
         report = conversation_service.dry_run_metadata_lifecycle_at_message(first.id)
@@ -676,7 +676,9 @@ class TestConversationServiceMetadataBackfillPreview:
         report = conversation_service.preview_metadata_backfill(mode="safe", limit=5)
 
         after = store.get_conversation(conv.id)
-        candidate = next(item for item in report["candidates"] if item["conversation_id"] == conv.id)
+        candidate = next(
+            item for item in report["candidates"] if item["conversation_id"] == conv.id
+        )
         assert report["mode"] == "metadata_backfill_preview"
         assert report["mutated"] is False
         assert report["profile"] == "backfill_safe"
@@ -684,9 +686,7 @@ class TestConversationServiceMetadataBackfillPreview:
         assert after.title == before.title
         assert after.metadata == before.metadata
 
-    def test_force_backfill_marks_existing_metadata_for_regeneration(
-        self, conversation_service
-    ):
+    def test_force_backfill_marks_existing_metadata_for_regeneration(self, conversation_service):
         conv = conversation_service.start_conversation(
             interface="cli",
             title="Existing conversation title",
@@ -696,15 +696,15 @@ class TestConversationServiceMetadataBackfillPreview:
 
         report = conversation_service.preview_metadata_backfill(mode="force", limit=5)
 
-        candidate = next(item for item in report["candidates"] if item["conversation_id"] == conv.id)
+        candidate = next(
+            item for item in report["candidates"] if item["conversation_id"] == conv.id
+        )
         assert report["profile"] == "backfill_force"
         assert candidate["actions"]["title"] == "regenerate"
 
 
 class TestConversationServiceMetadataBackfillApply:
-    def test_applies_safe_backfill_to_bounded_candidates(
-        self, conversation_service, store, mocker
-    ):
+    def test_applies_safe_backfill_to_bounded_candidates(self, conversation_service, store, mocker):
         import json
 
         mocker.patch(
@@ -889,7 +889,9 @@ class TestConversationServiceMetadataLifecycleApply:
         conversation_service.add_message(conv.id, "user", "Vamos tratar o título")
         conversation_service.add_message(conv.id, "assistant", "Podemos criar uma política")
         conversation_service.add_message(conv.id, "user", "Também resumo e tags")
-        conversation_service.add_message(conv.id, "assistant", "Então precisamos de readiness por campo")
+        conversation_service.add_message(
+            conv.id, "assistant", "Então precisamos de readiness por campo"
+        )
 
         report = conversation_service.apply_generated_metadata_lifecycle(conv.id)
 
@@ -911,7 +913,9 @@ class TestConversationServiceMetadataLifecycleApply:
         conversation_service.add_message(conv.id, "user", "Vamos tratar o título")
         conversation_service.add_message(conv.id, "assistant", "Podemos criar uma política")
         conversation_service.add_message(conv.id, "user", "Também resumo e tags")
-        conversation_service.add_message(conv.id, "assistant", "Então precisamos de readiness por campo")
+        conversation_service.add_message(
+            conv.id, "assistant", "Então precisamos de readiness por campo"
+        )
 
         report = conversation_service.apply_metadata_lifecycle(
             conv.id,

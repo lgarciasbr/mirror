@@ -20,9 +20,11 @@ from memory.intelligence.llm_router import LLMResponse
 from memory.models import Conversation, ConversationSummary, Memory, Message
 from memory.services.metadata_lifecycle import (
     dry_run_metadata_lifecycle as dry_run_metadata_lifecycle_policy,
+)
+from memory.services.metadata_lifecycle import (
+    messages_are_titleable,
     metadata_execution_profile,
     metadata_profile_action,
-    messages_are_titleable,
 )
 from memory.storage.store import Store
 
@@ -215,7 +217,9 @@ class ConversationService:
                 field: metadata_profile_action(profile, field, field_report)
                 for field, field_report in report["fields"].items()
             }
-            if mode == "force" or any(action in {"apply", "regenerate"} for action in actions.values()):
+            if mode == "force" or any(
+                action in {"apply", "regenerate"} for action in actions.values()
+            ):
                 candidates.append(
                     {
                         "conversation_id": report["conversation_id"],
@@ -432,7 +436,9 @@ class ConversationService:
 
         tags_decision = dry_run["fields"]["tags"]["decision"]
         tags_ready_after_summary = tags_decision == "defer" and "summary" in changed
-        if tags_decision == "create" and tags is not None or tags_ready_after_summary and tags is not None:
+        if (tags_decision == "create" and tags is not None) or (
+            tags_ready_after_summary and tags is not None
+        ):
             encoded_tags = tags if isinstance(tags, str) else json.dumps(tags, ensure_ascii=False)
             updates["tags"] = encoded_tags
             metadata["tags_status"] = "generated"
@@ -571,7 +577,9 @@ class ConversationService:
             clean_summary = clean_summary[:1000].rstrip()
         return clean_summary
 
-    def _suggest_tags(self, conversation_id: str, generated_summary: str | None = None) -> list[str]:
+    def _suggest_tags(
+        self, conversation_id: str, generated_summary: str | None = None
+    ) -> list[str]:
         conversation = self._get_conversation_for_title_operation(conversation_id)
         messages = self.store.get_messages(conversation.id)
         tags = generate_conversation_tags(
