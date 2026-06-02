@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-02 — ES-002 promoted into CV15 Cognitive Location
+
+Promoted the Hierarchical Journeys exploration into CV15 Cognitive Location. The promoted capability is split into two release-sized stories: Hierarchical Journey Organization, intended for v0.20.0, and Scene Workspace Home, intended for v0.21.0. The split preserves a stable parent-journey foundation before adding the interpretive Scene surface and grounded LLM synthesis.
+
+Validation: documentation-only promotion; roadmap and exploration links were updated and `git diff --check` passed.
+
 ### 2026-06-02 — v0.19.1 CI formatting patch prepared
 
 Prepared `v0.19.1 — Web Console Maintenance CI Formatting` after the v0.19.0 main push failed GitHub Actions at the repository-wide `ruff format --check src/ tests/` gate. The patch preserves the v0.19.0 web-console behavior and applies formatting to the touched Python files so the release line can return to green CI.
