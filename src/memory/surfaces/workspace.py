@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from typing import Any
 
 from memory.models import Attachment, ConversationSummary, MemorySummary, Task
 from memory.services.attachment import AttachmentService
@@ -75,6 +77,15 @@ class WorkspaceSurface:
             else []
         )
 
+        scene = self._scene_model(
+            mode="focused" if journey_id else "global",
+            journeys=display_journeys,
+            selected_journey=selected_journey,
+            conversations=recent_conversations,
+            memories=recent_memories,
+            tasks=tasks,
+        )
+
         sections = (
             self._briefing_section(selected_journey),
             self._attachments_section(journey_attachments),
@@ -130,8 +141,193 @@ class WorkspaceSurface:
             journeys=tuple(_journey_card(journey) for journey in display_journeys),
             selected_journey_id=selected_journey_id,
             selected_journey=selected_card,
+            scene=scene,
             sections=sections,
         )
+
+    def _scene_model(
+        self,
+        *,
+        mode: str,
+        journeys: list[dict],
+        selected_journey: dict | None,
+        conversations: list[ConversationSummary],
+        memories: list[MemorySummary],
+        tasks: list[Task],
+    ) -> dict[str, Any]:
+        journey_ids = {journey["id"] for journey in journeys}
+        selected_id = selected_journey["id"] if selected_journey else None
+        map_items = [
+            self._scene_journey_item(
+                journey, conversations=conversations, memories=memories, tasks=tasks
+            )
+            for journey in journeys
+            if not journey.get("metadata", {}).get("parent_journey")
+            or journey.get("metadata", {}).get("parent_journey") not in journey_ids
+        ]
+        for item in map_items:
+            item["children"] = [
+                self._scene_journey_item(
+                    child, conversations=conversations, memories=memories, tasks=tasks
+                )
+                for child in journeys
+                if child.get("metadata", {}).get("parent_journey") == item["id"]
+            ]
+        location_path = self._scene_location_path(selected_journey, journeys)
+        nearby = self._scene_nearby(selected_journey, journeys) if selected_journey else []
+        signals = self._scene_signals(
+            selected_id=selected_id,
+            conversations=conversations,
+            memories=memories,
+            tasks=tasks,
+        )
+        scene_without_synthesis: dict[str, Any] = {
+            "mode": mode,
+            "selectedJourneyId": selected_id,
+            "journeyMap": map_items,
+            "locationPath": location_path,
+            "nearbyJourneys": nearby,
+            "signals": signals,
+        }
+        scene_without_synthesis["synthesis"] = {
+            "state": "not_run",
+            "text": self._scene_fallback(mode, selected_journey, signals),
+        }
+        return scene_without_synthesis
+
+    def _scene_journey_item(
+        self,
+        journey: dict,
+        *,
+        conversations: list[ConversationSummary],
+        memories: list[MemorySummary],
+        tasks: list[Task],
+    ) -> dict[str, Any]:
+        journey_id = journey["id"]
+        recent_titles = [
+            conversation.title or conversation.id[:8]
+            for conversation in conversations
+            if conversation.journey == journey_id
+        ][:5]
+        memory_titles = [memory.title for memory in memories if memory.journey == journey_id][:5]
+        task_titles = [
+            task.title for task in tasks if task.journey == journey_id and task.status != "done"
+        ][:5]
+        return {
+            "id": journey_id,
+            "title": journey.get("name") or journey_id,
+            "status": journey.get("status") or "unknown",
+            "parentJourney": journey.get("metadata", {}).get("parent_journey") or "",
+            "horizon": self._journey_horizon(journey_id, journey.get("description", "")),
+            "movement": {
+                "conversationCount": sum(
+                    1 for conversation in conversations if conversation.journey == journey_id
+                ),
+                "memoryCount": sum(1 for memory in memories if memory.journey == journey_id),
+                "taskCount": len(task_titles),
+                "recentConversationTitles": recent_titles,
+                "recentMemoryTitles": memory_titles,
+                "openTaskTitles": task_titles,
+            },
+            "children": [],
+        }
+
+    def _journey_horizon(self, journey_id: str, fallback: str) -> str:
+        content = _journey_briefing_content(self.journeys, journey_id)
+        for heading in ("Current focus", "Foco atual"):
+            match = re.search(rf"## {heading}\s*\n+(.+?)(?:\n\n|\n##|$)", content, re.DOTALL)
+            if match:
+                return " ".join(match.group(1).split())[:240]
+        stage_match = re.search(r"\*\*(?:Stage|Etapa):\*\*\s*([^\n]+)", content)
+        if stage_match:
+            return stage_match.group(1).strip()
+        return fallback
+
+    def _scene_location_path(
+        self, selected_journey: dict | None, journeys: list[dict]
+    ) -> list[dict[str, str]]:
+        if not selected_journey:
+            return []
+        by_id = {journey["id"]: journey for journey in journeys}
+        parent_id = selected_journey.get("metadata", {}).get("parent_journey") or ""
+        path = []
+        if parent_id in by_id:
+            parent = by_id[parent_id]
+            path.append({"id": parent["id"], "title": parent.get("name") or parent["id"]})
+        path.append(
+            {
+                "id": selected_journey["id"],
+                "title": selected_journey.get("name") or selected_journey["id"],
+            }
+        )
+        return path
+
+    def _scene_nearby(
+        self, selected_journey: dict | None, journeys: list[dict]
+    ) -> list[dict[str, str]]:
+        if not selected_journey:
+            return []
+        parent_id = selected_journey.get("metadata", {}).get("parent_journey") or ""
+        siblings = [
+            journey
+            for journey in journeys
+            if journey["id"] != selected_journey["id"]
+            and (journey.get("metadata", {}).get("parent_journey") or "") == parent_id
+        ]
+        return [
+            {"id": journey["id"], "title": journey.get("name") or journey["id"]}
+            for journey in siblings[:6]
+        ]
+
+    def _scene_signals(
+        self,
+        *,
+        selected_id: str | None,
+        conversations: list[ConversationSummary],
+        memories: list[MemorySummary],
+        tasks: list[Task],
+    ) -> list[dict[str, str]]:
+        def include_journey(journey: str | None) -> bool:
+            return selected_id is None or journey == selected_id
+
+        signals: list[dict[str, str]] = []
+        for conversation in conversations:
+            if include_journey(conversation.journey):
+                signals.append(
+                    {
+                        "kind": "conversation",
+                        "title": conversation.title or conversation.id[:8],
+                        "journey": conversation.journey or "",
+                    }
+                )
+            if len(signals) >= 8:
+                break
+        for memory in memories:
+            if include_journey(memory.journey):
+                signals.append(
+                    {
+                        "kind": memory.memory_type,
+                        "title": memory.title,
+                        "journey": memory.journey or "",
+                    }
+                )
+            if len(signals) >= 12:
+                break
+        for task in tasks:
+            if include_journey(task.journey) and task.status != "done":
+                signals.append({"kind": "task", "title": task.title, "journey": task.journey or ""})
+            if len(signals) >= 16:
+                break
+        return signals
+
+    def _scene_fallback(
+        self, mode: str, selected_journey: dict | None, signals: list[dict[str, str]]
+    ) -> str:
+        if selected_journey:
+            return f"Focused Scene for {selected_journey.get('name') or selected_journey['id']}. Recent signals are available below; synthesis is unavailable right now."
+        if signals:
+            return "Global Scene across your journeys. Recent movement signals are available below; synthesis is unavailable right now."
+        return "Global Scene across your journeys. There are not enough recent signals for a grounded synthesis yet."
 
     def _briefing_section(self, journey: dict | None) -> WorkspaceSection:
         if journey is None:
@@ -375,10 +571,7 @@ def _select_journey_id(
     active_ids = {journey["id"] for journey in journeys}
     if requested_id in active_ids:
         return requested_id
-    for conversation in conversations:
-        if conversation.journey and conversation.journey in active_ids:
-            return conversation.journey
-    return journeys[0]["id"] if journeys else None
+    return None
 
 
 def _find_journey(journeys: list[dict], journey_id: str | None) -> dict | None:

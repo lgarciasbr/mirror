@@ -1642,7 +1642,9 @@ def test_journey_metadata_api_updates_selected_safe_fields(tmp_path: Path) -> No
                 "color": "amber",
             },
         )
-        workspace_status, workspace = server.request("GET", "/api/surface/workspace")
+        workspace_status, workspace = server.request(
+            "GET", "/api/surface/workspace?journey=mirror-mind"
+        )
     finally:
         server.close()
 
@@ -1687,7 +1689,9 @@ def test_configuration_console_boundaries_stay_coherent(tmp_path: Path, monkeypa
                 "color": "amber",
             },
         )
-        workspace_status, workspace = server.request("GET", "/api/surface/workspace")
+        workspace_status, workspace = server.request(
+            "GET", "/api/surface/workspace?journey=mirror-mind"
+        )
     finally:
         server.close()
 

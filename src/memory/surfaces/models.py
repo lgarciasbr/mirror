@@ -99,6 +99,7 @@ class WorkspaceHome:
     journeys: tuple[SurfaceCard, ...] = ()
     selected_journey_id: str | None = None
     selected_journey: SurfaceCard | None = None
+    scene: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return to_surface_dict(self)

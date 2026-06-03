@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import mimetypes
 import threading
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -13,6 +15,7 @@ from urllib.parse import parse_qs, urlparse
 from memory import MemoryClient
 from memory.cli.common import db_path_from_mirror_home
 from memory.config import resolve_mirror_home
+from memory.intelligence.scene import generate_scene_synthesis
 from memory.web.configuration import build_configuration_overview
 from memory.web.docs import DocsBrowser
 from memory.web.mirrors import MirrorRegistry
@@ -81,6 +84,17 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             self._send_json(detail)
             return
 
+        if parsed.path == "/api/conversations":
+            query = parse_qs(parsed.query)
+            try:
+                limit = int(query.get("limit", ["200"])[0])
+            except ValueError:
+                self._send_json({"error": "limit must be an integer"}, status=400)
+                return
+            with MemoryClient(db_path=self._db_path()) as mem:
+                self._send_json(self._conversations_payload(mem, limit=limit))
+            return
+
         if parsed.path == "/api/conversations/unassigned":
             query = parse_qs(parsed.query)
             try:
@@ -101,7 +115,9 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             query = parse_qs(parsed.query)
             journey_id = query.get("journey", [None])[0]
             with MemoryClient(db_path=self._db_path()) as mem:
-                self._send_json(mem.surfaces.workspace_home(journey_id=journey_id).to_dict())
+                payload = mem.surfaces.workspace_home(journey_id=journey_id).to_dict()
+                self._attach_scene_orientation(mem, payload)
+                self._send_json(payload)
             return
 
         if parsed.path == "/api/surface/object":
@@ -174,6 +190,9 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/journeys":
             self._create_journey()
+            return
+        if parsed.path == "/api/surface/workspace/scene-synthesis":
+            self._generate_scene_synthesis()
             return
         if parsed.path == "/api/conversations/title":
             self._write_conversation_title()
@@ -372,6 +391,90 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
                 "warning": preference.warning,
             }
         )
+
+    def _generate_scene_synthesis(self) -> None:
+        try:
+            payload = self._read_json_body()
+            journey_id = payload.get("journeyId")
+            if journey_id is not None and not isinstance(journey_id, str):
+                raise ValueError("journeyId must be a string or null")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                scene = mem.surfaces.workspace_home(journey_id=journey_id or None).scene or {}
+                bounded_scene = dict(scene)
+                bounded_scene.pop("synthesis", None)
+                source_hash = _scene_source_hash(bounded_scene)
+                orientation = generate_scene_synthesis(bounded_scene)
+                saved = self._save_scene_orientation(
+                    mem,
+                    scope=_scene_orientation_scope(journey_id),
+                    source_hash=source_hash,
+                    orientation=orientation,
+                )
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+
+        self._send_json(
+            {
+                "journeyId": journey_id,
+                "synthesis": saved,
+            }
+        )
+
+    def _attach_scene_orientation(self, mem: MemoryClient, payload: dict[str, object]) -> None:
+        scene = payload.get("scene")
+        if not isinstance(scene, dict):
+            return
+        selected_id = scene.get("selectedJourneyId")
+        journey_id = selected_id if isinstance(selected_id, str) and selected_id else None
+        bounded_scene = dict(scene)
+        bounded_scene.pop("synthesis", None)
+        source_hash = _scene_source_hash(bounded_scene)
+        stored = _load_scene_orientation(mem, _scene_orientation_scope(journey_id))
+        if stored:
+            stored_hash = stored.get("sourceHash")
+            stored["state"] = "generated" if stored_hash == source_hash else "stale"
+            stored["outdated"] = stored_hash != source_hash
+            scene["synthesis"] = stored
+            return
+        scene["synthesis"] = {
+            "state": "missing",
+            "outdated": False,
+            "text": "No orientation has been generated for this scene yet.",
+            "orientation": {
+                "title": "No orientation yet",
+                "summary": "Generate an orientation when you want Mirror to read the current scene.",
+                "signals": [],
+                "next": "Generate orientation.",
+            },
+        }
+
+    def _save_scene_orientation(
+        self,
+        mem: MemoryClient,
+        *,
+        scope: str,
+        source_hash: str,
+        orientation: dict[str, object],
+    ) -> dict[str, object]:
+        normalized = _normalize_scene_orientation(orientation)
+        now = _utc_now()
+        payload = {
+            "state": "generated" if normalized else "unavailable",
+            "outdated": False,
+            "sourceHash": source_hash,
+            "createdAt": now,
+            "updatedAt": now,
+            "orientation": normalized,
+            "text": normalized.get("summary") or "Scene orientation is unavailable right now.",
+        }
+        mem.identity.set_identity(
+            "scene_orientation",
+            scope,
+            json.dumps(payload, ensure_ascii=False),
+            metadata=json.dumps({"source_hash": source_hash, "scope": scope}, ensure_ascii=False),
+        )
+        return payload
 
     def _write_journey_metadata(self) -> None:
         try:
@@ -699,6 +802,36 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             ],
         }
 
+    def _conversations_payload(self, mem: MemoryClient, *, limit: int = 200) -> dict[str, object]:
+        bounded_limit = max(1, min(limit, 500))
+        summaries = mem.conversations.list_recent(limit=bounded_limit)
+        journey_options = _journey_options(mem)
+        journey_names = {journey["id"]: journey["name"] for journey in journey_options}
+        return {
+            "title": "Conversations",
+            "description": "Recent conversations across all journeys.",
+            "count": len(summaries),
+            "limit": bounded_limit,
+            "journeys": journey_options,
+            "cards": [
+                {
+                    "id": summary.id,
+                    "kind": "conversation",
+                    "title": summary.title or summary.id[:8],
+                    "description": f"{summary.message_count} stored messages",
+                    "status": summary.journey or "unassigned",
+                    "metadata": {
+                        "started_at": summary.started_at,
+                        "message_count": summary.message_count,
+                        "journey": summary.journey,
+                        "journey_name": journey_names.get(summary.journey or "", "Unassigned"),
+                        "persona": summary.persona,
+                    },
+                }
+                for summary in summaries
+            ],
+        }
+
     def _unassigned_conversations_payload(
         self, mem: MemoryClient, *, limit: int = 100
     ) -> dict[str, object]:
@@ -821,6 +954,85 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
 
 def _journey_options(mem: MemoryClient) -> list[dict[str, str]]:
     return mem.journeys.list_journey_options()
+
+
+def _scene_orientation_scope(journey_id: str | None) -> str:
+    return f"journey:{journey_id}" if journey_id else "global"
+
+
+def _load_scene_orientation(mem: MemoryClient, scope: str) -> dict[str, object] | None:
+    content = mem.identity.get_identity("scene_orientation", scope)
+    if not content:
+        return None
+    try:
+        payload = json.loads(content)
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _scene_source_hash(scene: dict[str, object]) -> str:
+    encoded = json.dumps(scene, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _normalize_scene_orientation(orientation: dict[str, object]) -> dict[str, object]:
+    if not orientation:
+        return {}
+    if set(orientation) == {"summary"}:
+        reparsed = _parse_embedded_orientation(str(orientation.get("summary") or ""))
+        if reparsed:
+            orientation = reparsed
+    title = _humanize_orientation_title(
+        str(orientation.get("title") or "Current orientation").strip()
+    )
+    summary = str(orientation.get("summary") or orientation.get("text") or "").strip()
+    raw_signals = orientation.get("signals") or []
+    signals = [str(signal).strip() for signal in raw_signals if str(signal).strip()]
+    next_move = str(orientation.get("next") or "").strip()
+    if not summary:
+        return {}
+    return {
+        "title": title,
+        "summary": summary,
+        "signals": signals[:5],
+        "next": next_move,
+    }
+
+
+def _humanize_orientation_title(title: str) -> str:
+    cold_titles = {
+        "global scene orientation": "Your current scene",
+        "focused scene orientation": "This journey's current scene",
+        "scene orientation": "Your current scene",
+    }
+    return cold_titles.get(title.lower(), title)
+
+
+def _parse_embedded_orientation(content: str) -> dict[str, object] | None:
+    cleaned = content.strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+        if cleaned.startswith("json"):
+            cleaned = cleaned[4:].strip()
+    first = cleaned.find("{")
+    last = cleaned.rfind("}")
+    if first == -1 or last == -1 or first >= last:
+        return None
+    try:
+        payload = json.loads(cleaned[first : last + 1])
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _conversation_tags(raw_tags: str | None) -> list[str]:

@@ -49,7 +49,7 @@ def test_workspace_home_surfaces_operational_sections(
         attachments=attachment_service,
     )
 
-    home = surfaces.workspace_home()
+    home = surfaces.workspace_home(journey_id="mirror-mind")
 
     sections = {section.id: section for section in home.sections}
     metrics = {metric.id: metric for metric in home.metrics}
@@ -127,7 +127,8 @@ def test_workspace_home_orders_journeys_by_recent_activity(
     home = surfaces.workspace_home()
 
     assert [journey.id for journey in home.journeys] == ["beta", "alpha"]
-    assert home.selected_journey_id == "beta"
+    assert home.selected_journey_id is None
+    assert home.scene["mode"] == "global"
 
 
 def test_workspace_home_shows_more_than_eight_conversations_for_selected_journey(

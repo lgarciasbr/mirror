@@ -31,7 +31,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV12](cv12-audience-modes/index.md) | Audience Modes | ⚪ Future |
 | [CV13](cv13-mirror-web-console/index.md) | Mirror Web Experience | ✅ Done |
 | [CV14](cv14-stateful-extensions/index.md) | Stateful Extension System | 🟢 E1–E2 Done · E3–E4 provisional |
-| [CV15](cv15-cognitive-location/index.md) | Cognitive Location | 🟢 Planned |
+| [CV15](cv15-cognitive-location/index.md) | Cognitive Location | ✅ Done |
 
 ---
 
@@ -135,11 +135,11 @@ the [CV8 index](cv8-runtime-expansion/index.md).
 
 ## CV15 — Cognitive Location
 
-Planned. CV15 turns hierarchical journeys into a cognitive-location surface. It
-ships in two releases: first, one-level journey hierarchy and hierarchical
-journey rendering across web and textual surfaces; then Scene as the Workspace
-home with grounded LLM synthesis over a bounded read model. See the [CV15
-index](cv15-cognitive-location/index.md).
+Done. CV15 turns hierarchical journeys into a cognitive-location surface. It
+shipped in two releases: v0.20.0 added one-level journey hierarchy and
+hierarchical journey rendering across web and textual surfaces; v0.21.0 added
+Current Scene as the Workspace home with grounded persisted orientation over a
+bounded read model. See the [CV15 index](cv15-cognitive-location/index.md).
 
 ## Radar
 

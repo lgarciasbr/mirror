@@ -12,6 +12,7 @@ let currentDocPath = null;
 let docsLoaded = false;
 let activeView = 'workspace';
 let selectedWorkspaceJourney = null;
+let workspaceSubview = 'scene';
 let showCompletedJourneys = false;
 let expandedJourneyParents = new Set(JSON.parse(sessionStorage.getItem('expandedJourneyParents') || '[]'));
 let shellState = null;
@@ -165,9 +166,15 @@ async function showView(view, { updateHash = true } = {}) {
     ? `/api/surface/workspace?journey=${encodeURIComponent(selectedWorkspaceJourney)}`
     : `/api/surface/${view}`;
   const surface = await fetchJson(url);
-  if (view === 'workspace') selectedWorkspaceJourney = surface.selected_journey_id || null;
+  if (view === 'workspace') {
+    selectedWorkspaceJourney = surface.selected_journey_id || null;
+    workspaceSubview = selectedWorkspaceJourney ? 'journey' : 'scene';
+  }
   currentPath.textContent = view === 'atlas' ? 'Identity' : 'Workspace';
-  content.innerHTML = view === 'atlas' ? renderAtlas(surface) : renderWorkspace(surface);
+  content.innerHTML = view === 'atlas' ? renderAtlas(surface) : renderWorkspace(surface, null, workspaceSubview);
+  if (view === 'workspace' && !surface.selected_journey_id && surface.scene?.synthesis?.state === 'missing') {
+    window.setTimeout(() => generateSceneSynthesis(content.querySelector('[data-scene-panel]')), 0);
+  }
   window.scrollTo({ top: 0 });
 }
 
@@ -912,30 +919,144 @@ function renderThemeOption(value, label, description) {
   `;
 }
 
-function renderWorkspace(surface) {
+function renderWorkspace(surface, mainContent = null, subview = 'scene') {
   const metrics = (surface.metrics || [])
     .filter((metric) => metric.id !== 'active-journeys')
     .map(renderWorkspaceMetric)
     .join('');
-  const sections = (surface.sections || []).map(renderWorkspaceTabPanel).join('');
-  const tabs = (surface.sections || []).map(renderWorkspaceTab).join('');
   const selected = surface.selected_journey;
+  const sections = selected ? [renderCurrentSceneTabPanel(surface.scene || null), ...(surface.sections || []).map((section, index) => renderWorkspaceTabPanel(section, index + 1))].join('') : '';
+  const tabs = selected ? [renderCurrentSceneTab(), ...(surface.sections || []).map((section, index) => renderWorkspaceTab(section, index + 1))].join('') : '';
   return `
     <section class="surface-intro surface-line workspace-hero">
       <p><strong>How Mirror can help you today:</strong> ${escapeHtml(surface.status || 'Where you find your journeys, conversations, memories and decisions.')}</p>
     </section>
     <div class="workspace-shell">
       <aside class="journey-sidebar">
-        <p class="eyebrow">Journeys (${escapeHtml((surface.journeys || []).length)})</p>
+        ${renderGlobalWorkspaceMenu(surface.selected_journey_id, subview)}
+        <p class="eyebrow">Your Journeys (${escapeHtml((surface.journeys || []).length)})</p>
         <button type="button" class="journey-create-button" data-new-journey>+ New journey</button>
         ${renderJourneyMenu(surface.journeys || [], surface.selected_journey_id)}
       </aside>
       <section class="journey-workspace">
-        ${renderJourneyProfile(selected, metrics)}
-        <div class="workspace-tabs" role="tablist" aria-label="Journey workspace tabs">${tabs}</div>
-        <div class="workspace-tab-panels">${sections}</div>
+        ${mainContent || `
+          ${selected ? '' : renderScene(surface.scene || null)}
+          ${selected ? renderJourneyProfile(selected, metrics) : ''}
+          ${selected ? `<div class="workspace-tabs" role="tablist" aria-label="Journey workspace tabs">${tabs}</div>` : ''}
+          ${selected ? `<div class="workspace-tab-panels">${sections}</div>` : ''}
+        `}
       </section>
     </div>
+  `;
+}
+
+function renderGlobalWorkspaceMenu(selectedJourneyId, subview = 'scene') {
+  return `
+    <section class="global-workspace-menu" aria-label="Global workspace navigation">
+      <p class="eyebrow">Your Moment</p>
+      <button type="button" class="global-workspace-item ${subview === 'scene' && !selectedJourneyId ? 'active' : ''}" data-global-scene>
+        <span>◉</span>
+        <span><strong>Current Scene</strong><small>Where am I now?</small></span>
+      </button>
+      <button type="button" class="global-workspace-item ${subview === 'conversations' ? 'active' : ''}" data-all-conversations>
+        <span>☷</span>
+        <span><strong>Conversations</strong><small>What has been said</small></span>
+      </button>
+      <button type="button" class="global-workspace-item ${subview === 'journeys' ? 'active' : ''}" data-all-journeys>
+        <span>⌁</span>
+        <span><strong>All journeys</strong><small>The wider field</small></span>
+      </button>
+    </section>
+  `;
+}
+
+function renderScene(scene) {
+  if (!scene) return '';
+  const synthesis = scene.synthesis || {};
+  return `
+    <section class="scene-panel scene-panel-synthesis-only" data-scene-panel data-scene-journey-id="${escapeHtml(scene.selectedJourneyId || '')}">
+      <div class="scene-synthesis ${synthesis.state === 'generated' ? 'generated' : 'fallback'} ${synthesis.outdated ? 'outdated' : ''}" data-scene-synthesis>
+        ${renderSceneOrientation(synthesis, { scope: scene.selectedJourneyId ? 'journey' : 'global' })}
+      </div>
+    </section>
+  `;
+}
+
+function renderSceneOrientation(synthesis, { showKicker = true, scope = 'global' } = {}) {
+  if (synthesis.state === 'missing') return renderMissingSceneOrientation({ showKicker, scope });
+  const orientation = synthesis.orientation || {};
+  const summary = orientation.summary || synthesis.text || 'Scene orientation is unavailable right now.';
+  const paragraphs = String(summary).split(/\n\s*\n/).filter(Boolean).map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('');
+  const signals = (orientation.signals || []).map((signal) => `<li>${escapeHtml(signal)}</li>`).join('');
+  const buttonLabel = synthesis.outdated ? 'Refresh orientation' : 'Regenerate orientation';
+  return `
+    <div class="orientation-head">
+      <div>
+        ${showKicker ? '<p class="concept-kicker">Current Scene</p>' : ''}
+        <h2>${escapeHtml(orientation.title || 'Your current scene')}</h2>
+      </div>
+      ${synthesis.outdated ? '<span class="orientation-status outdated" title="This orientation was generated before the latest scene signals.">↻ Outdated</span>' : ''}
+    </div>
+    <div class="orientation-summary">${paragraphs}</div>
+    ${signals ? `<div class="orientation-signals"><p class="eyebrow">Signals used</p><ul>${signals}</ul></div>` : ''}
+    ${orientation.next ? `<div class="orientation-next"><p class="eyebrow">Next movement</p><p>${escapeHtml(orientation.next)}</p></div>` : ''}
+    <button type="button" class="secondary-action" data-generate-scene-synthesis>${buttonLabel}</button>
+  `;
+}
+
+function renderMissingSceneOrientation({ showKicker = true, scope = 'global' } = {}) {
+  const global = scope === 'global';
+  return `
+    <div class="orientation-head">
+      <div>
+        ${showKicker ? '<p class="concept-kicker">Current Scene</p>' : ''}
+        <h2>${global ? 'Let Mirror read your moment' : 'Let Mirror read this journey'}</h2>
+      </div>
+    </div>
+    <div class="orientation-summary">
+      <p>${global ? 'Mirror can look across recent conversations, memories, tasks, and journeys to compose a grounded orientation.' : 'When you are ready, Mirror can look at recent movement in this journey and compose a grounded orientation.'}</p>
+    </div>
+    <button type="button" class="secondary-action" data-generate-scene-synthesis>${global ? 'Read my moment' : 'Read this journey'}</button>
+  `;
+}
+
+async function generateSceneSynthesis(panel) {
+  if (!panel) return;
+  const box = panel.querySelector('[data-scene-synthesis]');
+  const button = panel.querySelector('[data-generate-scene-synthesis]');
+  if (box) box.innerHTML = '<p class="orientation-loading">Generating orientation…</p>';
+  if (button) button.disabled = true;
+  try {
+    const result = await fetchJson('/api/surface/workspace/scene-synthesis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ journeyId: panel.dataset.sceneJourneyId || null }),
+    });
+    const synthesis = result.synthesis || {};
+    if (box) {
+      box.classList.toggle('generated', synthesis.state === 'generated');
+      box.classList.toggle('fallback', synthesis.state !== 'generated');
+      box.classList.toggle('outdated', Boolean(synthesis.outdated));
+      box.innerHTML = renderSceneOrientation(synthesis, {
+        showKicker: !box.classList.contains('scene-synthesis-inline'),
+        scope: panel.dataset.sceneJourneyId ? 'journey' : 'global',
+      });
+    }
+  } catch (error) {
+    if (box) box.querySelector('p').textContent = String(error.message || error);
+    if (button) button.disabled = false;
+  }
+}
+
+function renderSceneJourneyMapItem(item) {
+  const children = (item.children || []).map((child) => `
+    <li class="scene-map-child"><span>↳</span><strong>${escapeHtml(child.title || child.id)}</strong><small>${escapeHtml(child.horizon || '')}</small></li>
+  `).join('');
+  return `
+    <article class="scene-map-item">
+      <div><strong>${escapeHtml(item.title || item.id)}</strong><small>${escapeHtml(item.horizon || '')}</small></div>
+      ${children ? `<ul>${children}</ul>` : ''}
+    </article>
   `;
 }
 
@@ -960,10 +1081,6 @@ function renderJourneyMenu(journeys, selectedId) {
   `).join('');
   return `
     <div class="journey-menu">
-      <button type="button" class="journey-menu-item" title="Unassigned conversations" data-unassigned-conversations>
-        <span>?</span>
-        <span class="journey-menu-title">Unassigned</span>
-      </button>
       ${completedJourneys.length ? `
         <button type="button" class="journey-completed-toggle" data-toggle-completed-journeys>
           ${includeCompleted ? 'Hide completed journeys' : `Show completed journeys (${escapeHtml(completedJourneys.length)})`}
@@ -1077,6 +1194,135 @@ function renderJourneyCreateReview(draft, journeyOptions = []) {
   `;
 }
 
+async function loadAllConversations() {
+  activeView = 'workspace';
+  workspaceSubview = 'conversations';
+  selectedWorkspaceJourney = null;
+  const [surface, payload] = await Promise.all([
+    fetchJson('/api/surface/workspace'),
+    fetchJson('/api/conversations?limit=300'),
+  ]);
+  content.innerHTML = renderWorkspace(surface, renderAllConversationsContent(payload), 'conversations');
+  window.scrollTo({ top: 0 });
+}
+
+function renderAllConversationsContent(payload) {
+  const groups = groupConversationCardsByDay(payload.cards || []);
+  const groupedRows = groups.map((group) => `
+    <section class="conversation-day-group">
+      <h3>${escapeHtml(group.label)}</h3>
+      <div class="global-conversation-list compact">${group.cards.map(renderGlobalConversationRow).join('')}</div>
+    </section>
+  `).join('');
+  return `
+    <section class="surface-intro surface-line workspace-hero compact-workspace-hero">
+      <p class="eyebrow">Your Moment</p>
+      <h2>${escapeHtml(payload.title || 'Conversations')}</h2>
+      <p>${escapeHtml(payload.description || '')}</p>
+      <span class="readiness-badge">${escapeHtml(payload.count || 0)} shown</span>
+    </section>
+    <section class="workspace-tab-panel active all-conversation-list">
+      ${groupedRows || '<p class="empty-state">No conversations found.</p>'}
+    </section>
+  `;
+}
+
+function renderGlobalConversationRow(card) {
+  const metadata = card.metadata || {};
+  const journey = metadata.journey_name || metadata.journey || 'Unassigned';
+  const messageCount = Number(metadata.message_count || 0);
+  const messageLabel = messageCount === 1 ? '1 message' : `${messageCount} messages`;
+  return `
+    <article class="global-conversation-row conversation-card-link" role="button" tabindex="0" data-conversation-card-id="${escapeHtml(card.id)}">
+      <div class="global-conversation-main">
+        <h4>${escapeHtml(card.title || card.id)}</h4>
+        <p>${escapeHtml(messageLabel)}${metadata.persona ? ` · ${escapeHtml(metadata.persona)}` : ''}${metadata.started_at ? ` · ${escapeHtml(formatDateTime(metadata.started_at))}` : ''}</p>
+      </div>
+      <span class="conversation-journey-pill ${metadata.journey ? '' : 'muted'}">${escapeHtml(journey)}</span>
+    </article>
+  `;
+}
+
+function groupConversationCardsByDay(cards) {
+  const groups = new Map();
+  (cards || []).forEach((card) => {
+    const label = conversationDayLabel(card.metadata?.started_at);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push(card);
+  });
+  return [...groups.entries()].map(([label, groupCards]) => ({ label, cards: groupCards }));
+}
+
+function conversationDayLabel(value) {
+  if (!value) return 'No date';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'No date';
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((startOfToday - startOfDate) / 86400000);
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return date.toLocaleDateString(undefined, { weekday: 'long' });
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function loadAllJourneys() {
+  activeView = 'workspace';
+  workspaceSubview = 'journeys';
+  selectedWorkspaceJourney = null;
+  const surface = await fetchJson('/api/surface/workspace');
+  const broadFields = hierarchicalJourneyItems(surface.journeys || [], '').map(({ journey, depth, hasChildren }) => {
+    if (depth) return '';
+    const children = (surface.journeys || []).filter((item) => item.metadata?.parent_journey === journey.id);
+    return renderAllJourneyCard(journey, children, hasChildren);
+  }).join('');
+  const mainContent = `
+    <section class="surface-intro surface-line workspace-hero compact-workspace-hero">
+      <p class="eyebrow">Your Moment</p>
+      <h2>All journeys</h2>
+      <p>A broader reading of your journey field, beyond the navigation tree.</p>
+    </section>
+    <section class="all-journeys-grid">
+      ${broadFields || '<p class="empty-state">No journeys found.</p>'}
+    </section>
+  `;
+  content.innerHTML = renderWorkspace(surface, mainContent, 'journeys');
+  window.scrollTo({ top: 0 });
+}
+
+function renderAllJourneyCard(journey, children) {
+  const status = journey.status || 'unknown';
+  const childList = (children || []).map((child) => {
+    const childStatus = child.status || 'unknown';
+    return `<li><span class="journey-status-icon status-${escapeHtml(childStatus)}" title="${escapeHtml(childStatus)}">${escapeHtml(journeyStatusIcon(childStatus))}</span><span>${escapeHtml(child.title)}</span><small>${escapeHtml(childStatus)}</small></li>`;
+  }).join('');
+  return `
+    <article class="all-journey-card ${journey.status !== 'active' ? 'muted' : ''}">
+      <div class="all-journey-head">
+        <span>${escapeHtml(journey.metadata?.icon || '⌁')}</span>
+        <div>
+          <h3>${escapeHtml(journey.title)}</h3>
+          <p>${escapeHtml(journey.description || 'No description available.')}</p>
+        </div>
+        <strong class="journey-status-badge status-${escapeHtml(status)}"><span>${escapeHtml(journeyStatusIcon(status))}</span>${escapeHtml(status)}</strong>
+      </div>
+      ${childList ? `<div class="all-journey-children"><p class="eyebrow">Child journeys</p><ul>${childList}</ul></div>` : ''}
+      <button type="button" class="secondary-action all-journey-open" data-workspace-journey="${escapeHtml(journey.id)}">Open journey</button>
+    </article>
+  `;
+}
+
+function journeyStatusIcon(status) {
+  return {
+    active: '●',
+    planned: '○',
+    paused: 'Ⅱ',
+    completed: '✓',
+    archived: '□',
+  }[status] || '◇';
+}
+
 async function loadUnassignedConversations() {
   activeView = 'workspace';
   const payload = await fetchJson('/api/conversations/unassigned?limit=200');
@@ -1124,6 +1370,32 @@ function renderJourneyProfile(journey, metrics) {
         ${journey.status ? `<span class="readiness-badge">${escapeHtml(journey.status)}</span>` : ''}
       </div>
       ${metrics ? `<div class="workspace-metrics compact" aria-label="Selected journey metrics">${metrics}</div>` : ''}
+    </section>
+  `;
+}
+
+function renderCurrentSceneTab() {
+  return `
+    <button type="button" class="workspace-tab active" data-workspace-tab="current-scene">
+      Current Scene
+    </button>
+  `;
+}
+
+function renderCurrentSceneTabPanel(scene) {
+  const synthesis = scene?.synthesis || {};
+  return `
+    <section class="workspace-tab-panel active current-scene-tab-panel" data-workspace-panel="current-scene" data-scene-panel data-scene-journey-id="${escapeHtml(scene?.selectedJourneyId || '')}">
+      <div class="workspace-section-head">
+        <div>
+          <p class="eyebrow">current scene</p>
+          <h3>Current Scene</h3>
+          <p>Orientation for this journey from recent movement signals.</p>
+        </div>
+      </div>
+      <div class="scene-synthesis scene-synthesis-inline ${synthesis.state === 'generated' ? 'generated' : 'fallback'} ${synthesis.outdated ? 'outdated' : ''}" data-scene-synthesis>
+        ${renderSceneOrientation(synthesis, { showKicker: false, scope: 'journey' })}
+      </div>
     </section>
   `;
 }
@@ -2048,6 +2320,36 @@ content.addEventListener('click', async (event) => {
     return;
   }
 
+  const sceneSynthesisTarget = event.target.closest('[data-generate-scene-synthesis]');
+  if (sceneSynthesisTarget) {
+    event.preventDefault();
+    await generateSceneSynthesis(sceneSynthesisTarget.closest('[data-scene-panel]'));
+    return;
+  }
+
+  const globalSceneTarget = event.target.closest('[data-global-scene]');
+  if (globalSceneTarget) {
+    event.preventDefault();
+    selectedWorkspaceJourney = null;
+    workspaceSubview = 'scene';
+    await showView('workspace', { updateHash: true });
+    return;
+  }
+
+  const allConversationsTarget = event.target.closest('[data-all-conversations]');
+  if (allConversationsTarget) {
+    event.preventDefault();
+    await loadAllConversations();
+    return;
+  }
+
+  const allJourneysTarget = event.target.closest('[data-all-journeys]');
+  if (allJourneysTarget) {
+    event.preventDefault();
+    await loadAllJourneys();
+    return;
+  }
+
   const journeyParentToggle = event.target.closest('[data-toggle-journey-parent]');
   if (journeyParentToggle) {
     event.preventDefault();
@@ -2085,6 +2387,7 @@ content.addEventListener('click', async (event) => {
   if (journeyTarget) {
     event.preventDefault();
     selectedWorkspaceJourney = journeyTarget.dataset.workspaceJourney;
+    workspaceSubview = 'journey';
     await showView('workspace', { updateHash: false });
     return;
   }

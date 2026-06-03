@@ -2,7 +2,7 @@
 
 # CV15 — Cognitive Location
 
-**Status:** 🟢 Planned  
+**Status:** ✅ Done
 **Source exploration:** [ES-002 Hierarchical Journeys](../../exploration/es-002-hierarchical-journeys.md)  
 **Release intent:** two minor releases after v0.19.x
 
@@ -44,7 +44,7 @@ Hierarchical journeys organize the field. Scene interprets the field.
 | Target | Story | Outcome | Status |
 |--------|-------|---------|--------|
 | v0.20.0 | [Hierarchical Journey Organization](cv15-ds1-hierarchical-journey-organization/index.md) | Users can set parent journeys and see journeys rendered hierarchically across web and Mirror textual surfaces | ✅ Done |
-| v0.21.0 | Scene Workspace Home | Workspace opens as Scene, using the hierarchical journey map, movement signals, horizons, and bounded LLM synthesis to return cognitive location | 🟡 Planned |
+| v0.21.0 | [Scene Workspace Home](cv15-ds2-scene-workspace-home/index.md) | Workspace opens as Current Scene, using the hierarchical journey map, movement signals, horizons, and bounded persisted orientation to return cognitive location | ✅ Done |
 
 Version numbers are release intents. They may shift if urgent patches land first,
 but the stories should remain separate: the hierarchy foundation must exist
@@ -93,7 +93,8 @@ wherever journeys are listed.
 
 ## Story 2 — Scene Workspace Home
 
-**Release intent:** v0.21.0
+**Status:** ✅ Done
+**Release:** [v0.21.0](../../../releases/v0.21.0.md)
 
 ### Outcome
 
@@ -102,8 +103,8 @@ journeys.
 
 ### Scope
 
-- Make **Scene** the default Workspace home.
-- Use Scene as the home shown when the user clicks a specific journey.
+- Make **Current Scene** the default global Workspace home.
+- Render focused Current Scene as the first tab when the user clicks a specific journey.
 - Compose a deterministic Scene read model from:
   - journey tree;
   - selected journey, when present;
@@ -113,7 +114,8 @@ journeys.
   - recent memories and decisions;
   - open tasks where available.
 - Add bounded LLM synthesis from the deterministic Scene read model.
-- Show the signals used for synthesis.
+- Persist structured Scene Orientation internally with stale/outdated detection.
+- Show grounded orientation signals in the rendered synthesis.
 - Provide fallback behavior when synthesis fails or is unavailable.
 
 ### Non-goals
