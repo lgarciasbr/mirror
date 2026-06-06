@@ -13,9 +13,11 @@ from memory.cli.conversation_logger import (
     update_current_conversation,
 )
 from memory.client import MemoryClient
-from memory.config import LOG_LLM_CALLS, RECEPTION_ENABLED
+from memory.config import LOG_LLM_CALLS, RECEPTION_ENABLED, resolve_mirror_home
 from memory.hooks.mirror_state import write_state
 from memory.intelligence.llm_router import LLMResponse
+from memory.services.operating_mode import activate_mode
+from memory.surfaces.mode_transition import render_mirror_mode_transition
 
 _GLOBAL_STICKY_DEFAULTS_SESSION_ID = "__global_sticky_defaults__"
 
@@ -72,9 +74,7 @@ def _resolve_defaults(
     session_journey: str | None = runtime_session.journey if runtime_session else None
 
     if session_persona is None or session_journey is None:
-        global_persona, global_journey = mem.store.get_latest_runtime_defaults(
-            exclude_session_id=session_id
-        )
+        global_persona, global_journey = mem.store.get_global_sticky_defaults()
         session_persona = session_persona or global_persona
         session_journey = session_journey or global_journey
 
@@ -197,6 +197,8 @@ def load(
         journey=resolved_journey,
     )
 
+    activate_mode(mem.store, mode="Mirror Mode", journey=resolved_journey)
+
     write_state(
         active=True,
         persona=resolved_persona,
@@ -261,8 +263,7 @@ PERSONA_ICONS: dict[str, str] = {
 def _print_mirror_banner(persona: str | None = None) -> None:
     print("\033[38;5;183m⏺ Mirror Mode active\033[0m", file=sys.stderr)
     if persona:
-        icon = PERSONA_ICONS.get(persona, "◇")
-        print(f"\033[38;5;183m  {icon} Persona: {persona}\033[0m", file=sys.stderr)
+        print(f"\033[38;5;183m  ✦ Persona: {persona}\033[0m", file=sys.stderr)
     else:
         print("\033[38;5;183m  Ego responding without persona\033[0m", file=sys.stderr)
 
@@ -307,6 +308,22 @@ def main(argv: list[str] | None = None) -> None:
             org=args.org,
             context_only=args.context_only,
             session_id=args.session_id,
+        )
+        try:
+            mem = MemoryClient()
+            personas = [p.key for p in mem.store.get_identity_by_layer("persona")]
+        except Exception:
+            personas = []
+        try:
+            identity = resolve_mirror_home().name
+        except ValueError:
+            identity = "Mirror"
+        print(
+            render_mirror_mode_transition(
+                identity=identity,
+                journey=_resolved_journey,
+                personas=personas,
+            )
         )
         if detected:
             j, score, match_type = detected[0]

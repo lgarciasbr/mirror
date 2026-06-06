@@ -90,6 +90,10 @@ def test_build_load_allows_non_mirror_project_without_clone_role_guard(mocker, t
 
     captured = capsys.readouterr()
     assert f"project_path={project_path.resolve()}" in captured.out
+    state = mem.store.get_runtime_session("__global_operating_mode__")
+    assert state is not None
+    assert '"active_mode": "Builder Mode"' in (state.metadata or "")
+    assert '"active_journey": "softwarezen"' in (state.metadata or "")
     inspect.assert_not_called()
 
 

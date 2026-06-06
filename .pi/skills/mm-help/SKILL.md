@@ -8,18 +8,14 @@ user-invocable: true
 
 Show the user the available commands (same on Pi and Gemini CLI):
 
-## Mirror Mode
+## Operating Modes
 
 | Command | What it does |
 |---------|-------------|
-| `/mm-mirror` | Activates Mirror Mode |
+| `/mm-mirror` | Activates ◌ Mirror Mode |
 | | `--persona ID` · `--journey ID` · `--query "terms"` · `--org` |
-
-## Builder Mode
-
-| Command | What it does |
-|---------|-------------|
-| `/mm-build <slug>` | Activates Builder Mode for a journey |
+| `/mm-build <slug>` | Activates ■ Builder Mode for a journey |
+| `/mm-explore <slug>` | Activates △ Explorer Mode for a journey |
 
 ## Journeys
 
@@ -63,6 +59,7 @@ Show the user the available commands (same on Pi and Gemini CLI):
 | `/mm-recall ID` | Loads a previous conversation |
 | `/mm-save` | Export conversation (Claude Code only — no Pi transcript) |
 | `/mm-new` | Starts a new conversation |
+| `/mm-discard` | Discards the current conversation from the database before quitting |
 | `/mm-mute` | Toggles conversation logging |
 
 ## System

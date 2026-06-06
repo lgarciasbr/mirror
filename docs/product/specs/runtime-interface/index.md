@@ -29,15 +29,27 @@ required CLI command, and any arguments the runtime must supply.
 
 Backup runs at session end immediately after the session-end command.
 
+Optional runtime hygiene command:
+
+```bash
+uv run python -m memory conversation-logger discard-current --interface pi
+```
+
+This deletes the current runtime conversation and marks the session so the
+assistant confirmation is not logged as a new conversation. It is intended for
+test sessions the user wants to quit without preserving in Mirror history.
+
 ---
 
 ## Event Details
 
 ### Session Start
 
-Runs once when the runtime initialises. Unmutes logging, closes stale orphan
-conversations (idle > 30 min), and extracts memories from any conversations
-that ended without extraction.
+Runs once when the runtime initialises. Unmutes logging, clears stale session
+orientation so the new session starts from present intention rather than the
+last explicit mode or journey, closes stale orphan conversations (idle > 30
+min), and extracts memories from any conversations that ended without
+extraction.
 
 ```
 uv run python -m memory conversation-logger session-start
@@ -130,6 +142,46 @@ A new runtime should use `session-end-pi` unless it can supply a transcript
 path, in which case `session-end` gives immediate extraction.
 
 ---
+
+## Optional: Runtime Status Line
+
+Runtimes with a footer/status API may render Mirror's compact status line:
+
+```bash
+uv run python -m memory welcome --status-line
+```
+
+The command is cheap and cache-oriented. It includes active operating mode
+context when present, for example:
+
+```text
+◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓
+```
+
+When no journey context is active, it still shows the default Mirror lens:
+
+```text
+◇ alisson-vale · ◌ Mirror Mode · ✓
+```
+
+Pi renders this through `ctx.ui.setStatus("mirror", ...)` and refreshes it at
+startup and after agent turns. Other runtimes may ignore this optional surface.
+
+Operating mode lifecycle is explicit and lives in the Python core as an internal
+surface for Mirror skills and runtime integrations:
+
+```bash
+uv run python -m memory mode activate "Builder Mode" --journey <slug>
+uv run python -m memory mode deactivate
+```
+
+Activation and deactivation are semantic operations that can be triggered by the
+user through natural language or by Mirror through contained commands. Users are
+never in "no mode": deactivating an explicit lens returns to Mirror Mode, while
+journey context remains visible when it is still sticky inside the active
+session. A new runtime session clears stale explicit mode and sticky journey
+context so the next session starts from present intention, not accidental
+continuity. Rendering and clearing runtime UI are internal effects.
 
 ## Optional: Mirror Mode Identity Injection
 

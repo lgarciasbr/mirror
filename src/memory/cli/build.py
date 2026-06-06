@@ -9,7 +9,9 @@ from pathlib import Path
 from memory.cli.conversation_logger import switch_conversation
 from memory.cli.runtime import inspect_clone_role
 from memory.client import MemoryClient
+from memory.services.operating_mode import activate_mode
 from memory.skills.mirror import _persist_global_sticky_defaults
+from memory.surfaces.mode_transition import render_builder_mode_transition
 
 
 def _print_builder_banner(slug: str, project_path: str | None = None) -> None:
@@ -94,6 +96,13 @@ def cmd_load(slug: str, *, ignore_production_role: bool = False) -> None:
         project_path=project_path,
     )
     _print_builder_banner(slug, project_path)
+    print(
+        render_builder_mode_transition(
+            journey=slug,
+            journey_content=journey_content,
+            project_path=project_path,
+        )
+    )
 
     context = mem.load_mirror_context(persona="engineer", journey=slug)
     print(context)
@@ -117,6 +126,7 @@ def cmd_load(slug: str, *, ignore_production_role: bool = False) -> None:
             print(memory.content)
 
     _persist_global_sticky_defaults(mem, persona="engineer", journey=slug)
+    activate_mode(mem.store, mode="Builder Mode", journey=slug)
     switch_conversation(persona="engineer", journey=slug)
 
     if project_path:

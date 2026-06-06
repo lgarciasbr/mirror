@@ -22,6 +22,13 @@ class RuntimeSessionStore(ConnectionBacked):
         data["active"] = bool(data["active"])
         return RuntimeSession(**data)
 
+    def get_global_sticky_defaults(self) -> tuple[str | None, str | None]:
+        """Return explicit cross-session sticky persona and journey defaults."""
+        session = self.get_runtime_session("__global_sticky_defaults__")
+        if session is None:
+            return None, None
+        return session.persona, session.journey
+
     def get_latest_runtime_defaults(
         self,
         *,

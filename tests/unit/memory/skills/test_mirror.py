@@ -1,6 +1,6 @@
 """Unit tests for memory.skills.mirror."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 
 def test_load_returns_context_and_journey():
@@ -8,7 +8,7 @@ def test_load_returns_context_and_journey():
     mock_mem.detect_journey.return_value = []
     mock_mem.load_mirror_context.return_value = "identity context"
     mock_mem.store.get_runtime_session.return_value = None
-    mock_mem.store.get_latest_runtime_defaults.return_value = (None, None)
+    mock_mem.store.get_global_sticky_defaults.return_value = (None, None)
 
     with (
         patch("memory.skills.mirror.MemoryClient", return_value=mock_mem),
@@ -47,7 +47,7 @@ def test_load_detects_persona_and_journey_from_query():
     mock_mem.detect_persona.return_value = [("engineer", 2.0, "keyword")]
     mock_mem.detect_journey.return_value = [("mirror-poc", 0.85, "semantic")]
     mock_mem.load_mirror_context.return_value = "context"
-    mock_mem.store.get_latest_runtime_defaults.return_value = (None, None)
+    mock_mem.store.get_global_sticky_defaults.return_value = (None, None)
 
     with (
         patch("memory.skills.mirror.MemoryClient", return_value=mock_mem),
@@ -72,7 +72,7 @@ def test_load_skips_binding_when_context_only():
     mock_mem.detect_journey.return_value = []
     mock_mem.load_mirror_context.return_value = "context"
     mock_mem.store.get_runtime_session.return_value = None
-    mock_mem.store.get_latest_runtime_defaults.return_value = (None, None)
+    mock_mem.store.get_global_sticky_defaults.return_value = (None, None)
 
     with (
         patch("memory.skills.mirror.MemoryClient", return_value=mock_mem),
@@ -107,7 +107,7 @@ def test_load_uses_current_session_sticky_defaults_before_global_or_detection():
     assert resolved_persona == "therapist"
     assert resolved_journey == "deep-work"
     assert detected is None
-    mock_mem.store.get_latest_runtime_defaults.assert_not_called()
+    mock_mem.store.get_global_sticky_defaults.assert_not_called()
     mock_mem.detect_persona.assert_not_called()
     mock_mem.detect_journey.assert_not_called()
     mock_write.assert_called_once_with(
@@ -123,7 +123,7 @@ def test_load_uses_global_sticky_defaults_when_session_has_no_context():
     mock_mem = MagicMock()
     mock_mem.load_mirror_context.return_value = "context"
     mock_mem.store.get_runtime_session.return_value = None
-    mock_mem.store.get_latest_runtime_defaults.return_value = ("writer", "course-launch")
+    mock_mem.store.get_global_sticky_defaults.return_value = ("writer", "course-launch")
 
     with (
         patch("memory.skills.mirror.MemoryClient", return_value=mock_mem),
@@ -139,15 +139,24 @@ def test_load_uses_global_sticky_defaults_when_session_has_no_context():
     assert resolved_persona == "writer"
     assert resolved_journey == "course-launch"
     assert detected is None
-    mock_mem.store.get_latest_runtime_defaults.assert_called_once_with(exclude_session_id="sess-2")
-    mock_mem.store.upsert_runtime_session.assert_called_once_with(
-        "__global_sticky_defaults__",
-        interface="global_defaults",
-        mirror_active=False,
-        persona="writer",
-        journey="course-launch",
-        hook_injected=True,
-        active=False,
+    mock_mem.store.get_global_sticky_defaults.assert_called_once_with()
+    mock_mem.store.upsert_runtime_session.assert_has_calls(
+        [
+            call(
+                "__global_sticky_defaults__",
+                interface="global_defaults",
+                mirror_active=False,
+                persona="writer",
+                journey="course-launch",
+                hook_injected=True,
+                active=False,
+            ),
+            call(
+                "__global_operating_mode__",
+                metadata='{"active_mode": "Mirror Mode", "active_journey": "course-launch"}',
+                active=True,
+            ),
+        ]
     )
     mock_mem.detect_persona.assert_not_called()
     mock_mem.detect_journey.assert_not_called()
@@ -165,7 +174,7 @@ def test_load_uses_global_sticky_defaults_when_session_has_no_context():
 def test_load_persists_global_sticky_defaults_without_session_id():
     mock_mem = MagicMock()
     mock_mem.load_mirror_context.return_value = "context"
-    mock_mem.store.get_latest_runtime_defaults.return_value = (None, None)
+    mock_mem.store.get_global_sticky_defaults.return_value = (None, None)
     mock_mem.detect_persona.return_value = []
     mock_mem.detect_journey.return_value = []
 
@@ -185,14 +194,23 @@ def test_load_persists_global_sticky_defaults_without_session_id():
     assert resolved_persona == "engineer"
     assert resolved_journey == "mirror-poc"
     assert detected is None
-    mock_mem.store.upsert_runtime_session.assert_called_once_with(
-        "__global_sticky_defaults__",
-        interface="global_defaults",
-        mirror_active=False,
-        persona="engineer",
-        journey="mirror-poc",
-        hook_injected=True,
-        active=False,
+    mock_mem.store.upsert_runtime_session.assert_has_calls(
+        [
+            call(
+                "__global_sticky_defaults__",
+                interface="global_defaults",
+                mirror_active=False,
+                persona="engineer",
+                journey="mirror-poc",
+                hook_injected=True,
+                active=False,
+            ),
+            call(
+                "__global_operating_mode__",
+                metadata='{"active_mode": "Mirror Mode", "active_journey": "mirror-poc"}',
+                active=True,
+            ),
+        ]
     )
     mock_write.assert_called_once_with(
         active=True,
@@ -227,7 +245,7 @@ def test_load_prefers_explicit_args_over_sticky_defaults():
     assert resolved_persona == "engineer"
     assert resolved_journey == "mirror-poc"
     assert detected is None
-    mock_mem.store.get_latest_runtime_defaults.assert_not_called()
+    mock_mem.store.get_global_sticky_defaults.assert_not_called()
     mock_mem.detect_persona.assert_not_called()
     mock_mem.detect_journey.assert_not_called()
     mock_write.assert_called_once_with(
@@ -397,7 +415,7 @@ def test_explicit_arg_not_overridden_by_reception(mocker):
     mock_mem = MagicMock()
     mock_mem.load_mirror_context.return_value = "context"
     mock_mem.store.get_runtime_session.return_value = None
-    mock_mem.store.get_latest_runtime_defaults.return_value = (None, None)
+    mock_mem.store.get_global_sticky_defaults.return_value = (None, None)
     mock_mem.store.get_identity_by_layer.return_value = []
 
     with (

@@ -25,6 +25,8 @@ Commands:
                        Usage: python -m memory ext [list | <id> [--help] | <id> <subcommand> [args...] | <id> bind|unbind|bindings|migrate ...]
   mirror               Mirror skill commands
                        Usage: python -m memory mirror <load|deactivate|log|journeys> [args]
+  mode                 Explicit Mirror operating mode lifecycle
+                       Usage: python -m memory mode <activate|deactivate|status> [args]
   conversation-logger  Conversation logging commands
                        Usage: python -m memory conversation-logger <status|mute|unmute|switch|...>
   backup               Create a zipped backup of the memory database
@@ -35,6 +37,8 @@ Commands:
                        Usage: python -m memory journey [status [SLUG]] | update <slug> <content> | set-path <slug> <path> [--mirror-home PATH]
   build                Builder Mode DB context loader
                        Usage: python -m memory build load <slug>
+  explore              Explorer Mode context loader
+                       Usage: python -m memory explore load <slug>
   memories             List memories with filters
                        Usage: python -m memory memories [--type T] [--layer L] [--journey J] [--search Q] [--mirror-home PATH]
   conversations        List recent conversations
@@ -137,6 +141,11 @@ def main() -> None:
 
         _mirror_main(sys.argv[2:])
 
+    elif command == "mode":
+        from memory.cli.mode import main as _mode_main
+
+        _mode_main(sys.argv[2:])
+
     elif command == "conversation-logger":
         from memory.cli.conversation_logger import main as _logger_main
 
@@ -200,6 +209,11 @@ def main() -> None:
         from memory.cli.build import main as _build_main
 
         _build_main(sys.argv[2:])
+
+    elif command == "explore":
+        from memory.cli.explore import main as _explore_main
+
+        _explore_main(sys.argv[2:])
 
     elif command == "consult":
         sys.argv = [sys.argv[0], *sys.argv[2:]]

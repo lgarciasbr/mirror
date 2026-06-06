@@ -125,6 +125,20 @@ def _generate_title(content: str) -> str:
     return text
 
 
+def _session_metadata(session) -> dict:
+    if not session or not session.metadata or not isinstance(session.metadata, str):
+        return {}
+    try:
+        data = json.loads(session.metadata)
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _discard_marker_active(session) -> bool:
+    return bool(_session_metadata(session).get("discard_current_conversation"))
+
+
 def log_user_message(
     session_id: str,
     content: str,
@@ -134,6 +148,9 @@ def log_user_message(
     """Record a user message and set the title on the first message."""
     mem = _memory_client(mirror_home)
     existing = mem.store.get_runtime_session(session_id)
+    if _discard_marker_active(existing):
+        mem.store.upsert_runtime_session(session_id, metadata=None, active=True, closed_at=None)
+        existing = mem.store.get_runtime_session(session_id)
     is_new = existing is None or existing.conversation_id is None
     conv_id = get_or_create_conversation(
         session_id,
@@ -159,8 +176,11 @@ def log_assistant_message(
     mirror_home: str | Path | None = None,
 ) -> None:
     """Record an assistant message."""
-    conv_id = get_or_create_conversation(session_id, interface=interface, mirror_home=mirror_home)
     mem = _memory_client(mirror_home)
+    existing = mem.store.get_runtime_session(session_id)
+    if _discard_marker_active(existing):
+        return
+    conv_id = get_or_create_conversation(session_id, interface=interface, mirror_home=mirror_home)
     mem.add_message(conv_id, role="assistant", content=content)
 
 
@@ -371,9 +391,27 @@ def retitle_pending_conversations(
     return changed
 
 
+def _reset_session_orientation(mirror_home: str | Path | None = None) -> None:
+    """New runtime sessions start from intention, not stale mode or journey context."""
+    from memory.services.operating_mode import deactivate_mode
+    from memory.skills.mirror import _GLOBAL_STICKY_DEFAULTS_SESSION_ID
+
+    mem = _memory_client(mirror_home)
+    try:
+        deactivate_mode(mem.store)
+        mem.conn.execute(
+            "DELETE FROM runtime_sessions WHERE session_id = ?",
+            (_GLOBAL_STICKY_DEFAULTS_SESSION_ID,),
+        )
+        mem.conn.commit()
+    finally:
+        mem.close()
+
+
 def session_start_fast(mirror_home: str | Path | None = None) -> str:
     """Start logging without running expensive maintenance work."""
     set_mute(False, mirror_home)
+    _reset_session_orientation(mirror_home=mirror_home)
     return "Conversation logging ACTIVE. Maintenance deferred."
 
 
@@ -415,6 +453,7 @@ def session_maintenance(mirror_home: str | Path | None = None) -> str:
 def session_start(mirror_home: str | Path | None = None) -> str:
     """Unmute, close stale orphans, backfill Pi sessions, and run pending extraction."""
     set_mute(False, mirror_home)
+    _reset_session_orientation(mirror_home=mirror_home)
     maintenance = session_maintenance(mirror_home=mirror_home)
     return "\n".join(["Conversation logging ACTIVE.", maintenance])
 
@@ -803,6 +842,37 @@ def diagnose_journey_associations(
     return findings
 
 
+def discard_current_conversation(
+    *,
+    session_id: str | None = None,
+    interface: str = "pi",
+    mirror_home: str | Path | None = None,
+) -> str | None:
+    """Delete the current runtime conversation and mark the session discarded."""
+    mem = _memory_client(mirror_home)
+    resolved_session_id = session_id
+    if resolved_session_id is None:
+        active_sessions = mem.store.get_active_runtime_session_ids(interface)
+        resolved_session_id = active_sessions[0] if active_sessions else None
+    if resolved_session_id is None:
+        return None
+
+    runtime_session = mem.store.get_runtime_session(resolved_session_id)
+    if runtime_session is None or runtime_session.conversation_id is None:
+        return None
+
+    conversation_id = runtime_session.conversation_id
+    mem.conversations.delete_conversations([conversation_id])
+    mem.store.upsert_runtime_session(
+        resolved_session_id,
+        conversation_id=None,
+        interface=runtime_session.interface or interface,
+        active=False,
+        metadata=json.dumps({"discard_current_conversation": True}),
+    )
+    return conversation_id
+
+
 def _print_journey_association_findings(
     findings: list[dict[str, str | int]], *, applied: bool
 ) -> None:
@@ -897,6 +967,21 @@ def main(argv: list[str] | None = None) -> None:
             print(session_start(mirror_home=mirror_home))
     elif cmd == "session-maintenance":
         print(session_maintenance(mirror_home=mirror_home))
+    elif cmd == "discard-current":
+        interface = "pi"
+        if "--interface" in args:
+            idx = args.index("--interface")
+            if idx + 1 < len(args):
+                interface = args[idx + 1]
+        conversation_id = discard_current_conversation(
+            session_id=session_id,
+            interface=interface,
+            mirror_home=mirror_home,
+        )
+        if conversation_id:
+            print(f"Discarded current conversation: {conversation_id}")
+        else:
+            print("No current conversation to discard.")
     elif cmd == "session-end-pi":
         if len(args) >= 2:
             end_session(args[1], extract=False, mirror_home=mirror_home)

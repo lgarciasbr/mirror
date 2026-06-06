@@ -52,6 +52,13 @@ type RuntimeCatalog = {
 	extensions?: RuntimeCatalogEntry[];
 };
 
+type MirrorStatusContext = {
+	hasUI: boolean;
+	ui: {
+		setStatus(key: string, value: string | undefined): void;
+	};
+};
+
 export default function (pi: ExtensionAPI) {
 	// --- Helpers ---
 
@@ -127,6 +134,18 @@ export default function (pi: ExtensionAPI) {
 	function truncate(text: string): string {
 		if (text.length <= MAX_CONTENT_SIZE) return text;
 		return text.slice(0, MAX_CONTENT_SIZE) + "\n[… truncated]";
+	}
+
+	async function refreshMirrorStatus(ctx: MirrorStatusContext): Promise<void> {
+		if (!ctx.hasUI) return;
+		const compactStatus = (await runPy(["-m", "memory", "welcome", "--status-line"])).trim();
+		const externalCatalog = loadInstalledPiExternalSkills();
+		const externalSkills = externalCatalog?.extensions ?? [];
+		const status = compactStatus || "◇ Mirror · ?";
+		ctx.ui.setStatus(
+			"mirror",
+			externalSkills.length > 0 ? `${status} · ext ${externalSkills.length}` : status,
+		);
 	}
 
 	function resolveMirrorHome(): string | null {
@@ -241,12 +260,7 @@ export default function (pi: ExtensionAPI) {
 			if (welcome) {
 				ctx.ui.notify(welcome, "info");
 			}
-			const compactStatus = (await runPy(["-m", "memory", "welcome", "--status-line"])).trim();
-			const status = compactStatus || summary || "◇ Mirror · ?";
-			ctx.ui.setStatus(
-				"mirror",
-				externalSkills.length > 0 ? `${status} · ext ${externalSkills.length}` : status,
-			);
+			await refreshMirrorStatus(ctx);
 			runPyBackground(["-m", "memory", "conversation-logger", "session-maintenance"], "session-maintenance");
 		} else {
 			runPyBackground(["-m", "memory", "conversation-logger", "session-maintenance"], "session-maintenance");
@@ -323,6 +337,7 @@ export default function (pi: ExtensionAPI) {
 			],
 			"log-assistant",
 		);
+		await refreshMirrorStatus(ctx);
 	});
 
 	// --- 4. session_shutdown → close conversation + backup ---

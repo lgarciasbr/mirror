@@ -32,6 +32,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV13](cv13-mirror-web-console/index.md) | Mirror Web Experience | ✅ Done |
 | [CV14](cv14-stateful-extensions/index.md) | Stateful Extension System | 🟢 E1–E2 Done · E3–E4 provisional |
 | [CV15](cv15-cognitive-location/index.md) | Cognitive Location | ✅ Done |
+| [CV16](cv16-explorer-mode/index.md) | Explorer Mode | 🟡 Planned |
 
 ---
 
@@ -59,6 +60,15 @@ Planned. CV10 makes coherence a natural Builder lifecycle capability. Builder
 will automatically evaluate Units of Coherence for the active journey's
 `project_path`, surface blocking gaps before implementation, and refresh a
 project-visible coherence index. See the [CV10 index](cv10-coherence-engine/index.md).
+
+## CV16 — Explorer Mode
+
+Planned. CV16 gives Mirror a native exploratory lens for the uncertain middle
+between reflection and construction. Explorer Mode is activated explicitly for a
+journey, preserves signals and one current Exploratory Story, makes Story
+Thickened visible, keeps nearby material in a Signal Radar, and proposes explicit
+promotion to Builder without silently turning uncertainty into delivery. See the
+[CV16 index](cv16-explorer-mode/index.md).
 
 ## CV11 — Localization
 

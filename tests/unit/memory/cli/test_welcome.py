@@ -600,7 +600,7 @@ def test_welcome_status_line_reads_cache_only(monkeypatch, tmp_path, capsys):
     main(["--mirror-home", str(home), "--status-line"])
 
     assert called == []
-    assert capsys.readouterr().out.strip() == "◇ alisson-vale · ⬆ v0.9.0"
+    assert capsys.readouterr().out.strip() == "◇ alisson-vale · ◌ Mirror Mode · ⬆ v0.9.0"
 
 
 def test_welcome_status_line_healthy_without_cache(tmp_path, capsys):
@@ -610,4 +610,38 @@ def test_welcome_status_line_healthy_without_cache(tmp_path, capsys):
 
     main(["--mirror-home", str(tmp_path / ".mirror" / "alisson-vale"), "--status-line"])
 
-    assert capsys.readouterr().out.strip() == "◇ alisson-vale · ✓"
+    assert capsys.readouterr().out.strip() == "◇ alisson-vale · ◌ Mirror Mode · ✓"
+
+
+def test_welcome_status_line_includes_active_mode_context(tmp_path, capsys):
+    mem, home = _mem(tmp_path, user="alisson-vale")
+    from memory.services.operating_mode import activate_mode
+
+    activate_mode(mem.store, mode="Builder Mode", journey="explorer-mode")
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", home, "--status-line"])
+
+    assert (
+        capsys.readouterr().out.strip()
+        == "◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓"
+    )
+
+
+def test_welcome_status_line_returns_to_mirror_mode_context_after_deactivation(tmp_path, capsys):
+    mem, home = _mem(tmp_path, user="alisson-vale")
+    from memory.services.operating_mode import activate_mode, deactivate_mode
+
+    mem.store.upsert_runtime_session("__global_sticky_defaults__", journey="explorer-mode")
+    activate_mode(mem.store, mode="Builder Mode", journey="explorer-mode")
+    deactivate_mode(mem.store)
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", home, "--status-line"])
+
+    assert (
+        capsys.readouterr().out.strip()
+        == "◇ alisson-vale · Active Journey explorer-mode on ◌ Mirror Mode · ✓"
+    )

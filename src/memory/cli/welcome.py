@@ -27,6 +27,7 @@ from memory.cli.runtime import (
     package_version,
 )
 from memory.config import resolve_mirror_home
+from memory.services.operating_mode import OperatingModeState, get_active_mode
 
 INVITATION = "→ Where shall we begin?"
 SEPARATOR = " · "
@@ -121,11 +122,34 @@ def compose_status_line(mirror_home: str | Path | None = None) -> str:
     home_path = _resolve_home(mirror_home)
     if home_path is None:
         return ""
+    parts = [f"◇ {home_path.name}"]
+    mode_context = _mode_status_segment(home_path)
+    if mode_context:
+        parts.append(mode_context)
     awareness = _read_update_cache(home_path)
     if awareness and awareness.availability == "update_available":
         version = f" {awareness.version}" if awareness.version else ""
-        return f"◇ {home_path.name} · ⬆{version}"
-    return f"◇ {home_path.name} · ✓"
+        parts.append(f"⬆{version}")
+    else:
+        parts.append("✓")
+    return SEPARATOR.join(parts)
+
+
+# --------- status line ---------------------------------------------------
+
+
+def _mode_status_segment(home_path: Path) -> str | None:
+    db_path = db_path_from_mirror_home(home_path)
+    if db_path is None or not db_path.exists():
+        return None
+    with MemoryClient(db_path=db_path) as mem:
+        state = get_active_mode(mem.store)
+        if state is None:
+            _, sticky_journey = mem.store.get_global_sticky_defaults()
+            state = OperatingModeState(mode="Mirror Mode", journey=sticky_journey)
+    if state.journey:
+        return f"Active Journey {state.journey} on {state.label}"
+    return state.label
 
 
 # --------- renderers -----------------------------------------------------

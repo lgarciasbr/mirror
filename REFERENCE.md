@@ -18,6 +18,8 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 |---------|-------|-------------|---------|----------------|
 | `/mm-mirror` | `$mm-mirror` | `/mm:mirror` | Loads identity, persona, journey, and attachments for Mirror Mode | `load [--persona P] [--journey J] [--query Q] [--org]`, `log "summary"`, `journeys` |
 | `/mm-build` | `$mm-build` | `/mm:build` | Builder Mode for a journey — loads context and project docs | `<slug>` |
+| `/mm-explore` | `$mm-explore` | `/mm:explore` | Explorer Mode for a journey — preserves uncertainty before construction | `<slug>` |
+| `python -m memory mode` | — | — | Internal explicit Mirror operating mode lifecycle used by runtime skills and status bars | `activate <mode> [--journey J]`, `deactivate`, `status` |
 | `/mm-identity` | `$mm-identity` | `/mm:identity` | Read and update identity directly in the database | `list [--layer L]`, `get <layer> <key>`, `set <layer> <key>`, `edit <layer> <key>` |
 | `/mm-consult` | `$mm-consult` | `/mm:consult` | Asks other LLMs through OpenRouter with Mirror context | `<family> [tier] "prompt"`, `credits` |
 | `/mm-journeys` | `$mm-journeys` | `/mm:journeys` | Lists journeys with status | no arguments |
@@ -32,6 +34,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-seed` | `$mm-seed` | `/mm:seed` | Seeds identity files from the active user home into the database | no arguments |
 | `/mm-mute` | `$mm-mute` | `/mm:mute` | Toggles conversation logging | no arguments |
 | `/mm-new` | `$mm-new` | `/mm:new` | Starts a new conversation | no arguments |
+| `/mm-discard` | `$mm-discard` | `/mm:discard` | Discards the current runtime conversation from the database before quitting | no arguments |
 | `/mm-consolidate` | `$mm-consolidate` | `/mm:consolidate` | Scan memories for patterns and propose consolidation | `scan`, `apply <id>`, `reject <id>`, `list` |
 | `/mm-shadow` | `$mm-shadow` | `/mm:shadow` | Surface and promote shadow-layer observations | `scan`, `apply`, `reject`, `list`, `show` |
 | `/mm-welcome` | `$mm-welcome` | `/mm:welcome` | Renders the state-aware welcome card on demand | no arguments |
@@ -39,8 +42,53 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-update` | `$mm-update` | `/mm:update` | Updates the local Mirror runtime through the safe updater | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
 | `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
-| `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `repair-journeys [--limit N] [--apply]` |
+| `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
+
+## Operating Mode Lifecycle
+
+```bash
+uv run python -m memory mode activate "Builder Mode" --journey <slug>
+uv run python -m memory mode status
+uv run python -m memory mode deactivate
+```
+
+Operating mode lifecycle is a small runtime state surface used by Mirror skills
+and status bars. It records the currently active operating lens, such as Builder
+Mode now and Explorer Mode later, plus the active journey when present. Mode
+activation and deactivation are semantic operations. Rendering the Pi status line
+and clearing stale UI are internal effects of that lifecycle.
+
+The user-facing mode skills are `/mm-mirror`, `/mm-build`, and `/mm-explore`.
+The internal lifecycle command exists so Mirror can activate and leave explicit
+lenses through contained operations. Users are never in "no mode": when an
+explicit lens is deactivated, Mirror returns to Mirror Mode, preserving journey
+context when one remains active.
+
+`memory mirror load` activates `◌ Mirror Mode`. `memory build load <slug>`
+activates `■ Builder Mode` for the selected journey. `memory explore load <slug>`
+activates `△ Explorer Mode` for the selected journey. Deactivation clears only
+the explicit active mode state; it does not erase sticky persona/journey defaults
+or rewrite conversation history.
+
+`memory welcome --status-line` includes active mode context when present:
+
+```text
+◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓
+```
+
+When Builder Mode is deactivated while journey context remains active, the
+status line returns to Mirror Mode:
+
+```text
+◇ alisson-vale · Active Journey explorer-mode on ◌ Mirror Mode · ✓
+```
+
+When no journey context is active it still shows the default mode:
+
+```text
+◇ alisson-vale · ◌ Mirror Mode · ✓
+```
 
 ## Runtime Self-Update
 

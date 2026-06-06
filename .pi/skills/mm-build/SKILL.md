@@ -43,10 +43,27 @@ uv run python -m memory build load <slug>
 ```
 
 The command:
+- Activates `■ Builder Mode` in the operating-mode lifecycle
+- Renders the Mode Transition Surface (`■ BUILDER MODE ACTIVE`)
 - Prints identity context (soul + ego + user + journey, persona=engineer)
 - Prints relevant memories
 - Starts a new database conversation session
 - Emits `project_path=<path>` as the last output line
+
+## 1.1 Transition Surface
+
+The `build load` output includes the conversational transition surface. Render
+that surface visibly to the user before continuing with project-doc loading or
+substantive Builder work. Do not recreate it from scratch unless the command
+failed to render it; copy the rendered surface from the command output.
+
+Builder Mode surface should orient the user around:
+
+- active journey
+- journey path/stage, when present
+- project path, when present
+- compact briefing/synthesis
+- boundary: `Builder executes commitment.`
 
 ## 2. Read Project Docs
 

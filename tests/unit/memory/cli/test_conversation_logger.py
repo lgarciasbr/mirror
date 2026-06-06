@@ -293,6 +293,7 @@ class TestJourneyAssociationRepair:
 class TestSessionStart:
     def test_fast_start_unmutes_without_maintenance(self, mocker, tmp_path):
         mocker.patch("memory.cli.conversation_logger._MUTE_FLAG_PATH", tmp_path / "mute")
+        reset_orientation = mocker.patch("memory.cli.conversation_logger._reset_session_orientation")
         extract = mocker.patch("memory.cli.conversation_logger.extract_pending", return_value=0)
         close = mocker.patch("memory.cli.conversation_logger.close_stale_orphans", return_value=0)
         backfill = mocker.patch(
@@ -307,6 +308,7 @@ class TestSessionStart:
         result = session_start_fast()
         assert "ACTIVE" in result
         assert "deferred" in result
+        reset_orientation.assert_called_once_with(mirror_home=None)
         extract.assert_not_called()
         close.assert_not_called()
         backfill.assert_not_called()
@@ -314,6 +316,7 @@ class TestSessionStart:
 
     def test_unmutes_and_returns_active(self, mocker, tmp_path):
         mocker.patch("memory.cli.conversation_logger._MUTE_FLAG_PATH", tmp_path / "mute")
+        reset_orientation = mocker.patch("memory.cli.conversation_logger._reset_session_orientation")
         mocker.patch("memory.cli.conversation_logger.extract_pending", return_value=0)
         mocker.patch("memory.cli.conversation_logger.close_stale_orphans", return_value=0)
         mocker.patch("memory.cli.conversation_logger.backfill_pi_sessions", return_value=0)
@@ -323,6 +326,27 @@ class TestSessionStart:
 
         result = session_start()
         assert "ACTIVE" in result
+        reset_orientation.assert_called_once_with(mirror_home=None)
+
+    def test_session_start_fast_clears_stale_orientation(self, tmp_path):
+        from memory import MemoryClient
+        from memory.cli.conversation_logger import session_start_fast
+        from memory.config import default_db_path_for_home
+        from memory.services.operating_mode import activate_mode, get_active_mode
+
+        home = tmp_path / ".mirror" / "alisson-vale"
+        mem = MemoryClient(db_path=default_db_path_for_home(home))
+        mem.store.upsert_runtime_session("__global_sticky_defaults__", journey="explorer-mode")
+        activate_mode(mem.store, mode="Builder Mode", journey="explorer-mode")
+        assert get_active_mode(mem.store) is not None
+        mem.close()
+
+        session_start_fast(mirror_home=home)
+
+        mem = MemoryClient(db_path=default_db_path_for_home(home))
+        assert get_active_mode(mem.store) is None
+        assert mem.store.get_global_sticky_defaults() == (None, None)
+        mem.close()
 
     def test_reports_counts(self, mocker, tmp_path):
         mocker.patch("memory.cli.conversation_logger._MUTE_FLAG_PATH", tmp_path / "mute")

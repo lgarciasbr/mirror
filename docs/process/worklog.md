@@ -12,6 +12,24 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-06 — Discard current conversation skill added
+
+Added a runtime hygiene path for test sessions: `python -m memory conversation-logger discard-current` deletes the current runtime conversation through the existing conversation deletion service and marks the runtime session so the assistant confirmation is not logged as a new conversation. Added `/mm-discard` for Pi, documented the command, and updated CV16 with DS2 as done.
+
+Validation: discard-current focused tests passed and ruff checks passed for the touched logger files.
+
+### 2026-06-06 — Mode transition surfaces added
+
+Added compact conversational transition surfaces for the three primary Mirror lenses. Mirror Mode now renders `◌ MIRROR MODE ACTIVE` with identity, active journey, persona-routing examples, and available lenses. Builder Mode renders `■ BUILDER MODE ACTIVE` with active journey, stage/path, project path, compact briefing, and boundary. Explorer Mode renders an initial minimal `△ EXPLORER MODE ACTIVE` surface to be refined when Explorer behavior is built. Persona activation now uses `✦ Persona:` instead of reusing the Mirror identity symbol.
+
+Validation: focused mode-transition, Mirror skill, Builder CLI, and Explorer CLI tests passed; ruff checks passed for touched Python files.
+
+### 2026-06-06 — Runtime status bar foundation added
+
+Added explicit Mirror operating mode lifecycle state and connected it to the Pi status line foundation for CV16 Explorer Mode. `python -m memory mode activate|deactivate|status` now records and clears the active operating lens without mutating sticky persona/journey defaults inside the active session. The user-facing mode grouping is now `/mm-mirror`, `/mm-build`, and `/mm-explore`: Mirror load activates `◌ Mirror Mode`, Builder load activates `■ Builder Mode`, and Explorer load activates `△ Explorer Mode` for a selected journey. `welcome --status-line` renders compact orientation such as `◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓`. When the explicit mode is deactivated but journey context remains sticky, the status line returns to `◌ Mirror Mode`. New runtime session start clears stale explicit mode and sticky journey context so opening Mirror begins from present intention rather than accidental continuity with the last journey. The Pi logger extension refreshes the Mirror footer status at startup and after agent turns, while preserving Pi's built-in footer.
+
+Validation: focused operating-mode, welcome, build, and mode CLI tests passed; ruff checks passed for touched Python files; `.pi` TypeScript type-check passed; CLI smoke confirmed Builder activation, status rendering, explicit deactivation, and restoration.
+
 ### 2026-06-02 — v0.20.0 Hierarchical Journey Organization prepared
 
 Prepared `v0.20.0 — Hierarchical Journey Organization`, the first CV15 Cognitive Location release. Journeys now support one-level `parent_journey` metadata with guarded validation; the web console can set parent, title, and status in Journey Settings; New journey can assign a parent; Workspace renders parent/child journeys with session-persistent expand/collapse; paused and completed journeys are visually dimmed; completed journeys are hidden by default behind a toggle while preserving hierarchy when shown; and `mm-journeys` / `python -m memory journeys` render the hierarchy textually.
