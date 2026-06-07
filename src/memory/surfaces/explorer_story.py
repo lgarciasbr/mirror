@@ -25,8 +25,35 @@ def render_story_thickened(story: ExplorerStory, *, changed: str | None = None) 
 def render_narrative_field_snapshot(story: ExplorerStory) -> str:
     return _box(
         "△  NARRATIVE FIELD SNAPSHOT",
-        _story_rows(story, include_last_card=True),
+        _story_rows(story, include_last_card=True, include_direction=True),
     )
+
+
+def render_attractors_emerging(story: ExplorerStory) -> str:
+    rows = [("journey", story.journey)]
+    if story.attractors:
+        for index, attractor in enumerate(story.attractors, start=1):
+            label = "possible attractor" if index == 1 else "possible attractor " + str(index)
+            rows.append((label, attractor.label))
+            if attractor.description:
+                rows.append(("description", attractor.description))
+            rows.append(("status", attractor.status))
+    else:
+        rows.append(("possible attractor", "No attractor has been surfaced yet."))
+    return _box("△  ATTRACTORS EMERGING", rows)
+
+
+def render_experiment_proposal(story: ExplorerStory) -> str:
+    rows = [("journey", story.journey)]
+    if story.experiment_proposal:
+        rows.append(("small experiment", story.experiment_proposal.title))
+        if story.experiment_proposal.description:
+            rows.append(("description", story.experiment_proposal.description))
+        rows.append(("status", story.experiment_proposal.status))
+    else:
+        rows.append(("small experiment", "No experiment has been proposed yet."))
+    rows.append(("boundary", "This is not Builder delivery until explicitly confirmed."))
+    return _box("△  EXPERIMENT PROPOSAL", rows)
 
 
 def render_missing_exploratory_story(*, journey: str) -> str:
@@ -39,7 +66,12 @@ def render_missing_exploratory_story(*, journey: str) -> str:
     )
 
 
-def _story_rows(story: ExplorerStory, *, include_last_card: bool) -> list[tuple[str, str]]:
+def _story_rows(
+    story: ExplorerStory,
+    *,
+    include_last_card: bool,
+    include_direction: bool = False,
+) -> list[tuple[str, str]]:
     rows = [("journey", story.journey)]
     if story.current_exploratory_story:
         rows.append(("current story", story.current_exploratory_story))
@@ -47,6 +79,20 @@ def _story_rows(story: ExplorerStory, *, include_last_card: bool) -> list[tuple[
         rows.append(("narrative summary", story.narrative_field_summary))
     if include_last_card and story.last_story_card:
         rows.append(("last card", story.last_story_card))
+    if include_direction:
+        for attractor in story.attractors:
+            rows.append(("attractor", f"{attractor.label} [{attractor.status}]"))
+            if attractor.description:
+                rows.append(("attractor detail", attractor.description))
+        if story.experiment_proposal:
+            rows.append(
+                (
+                    "experiment proposal",
+                    f"{story.experiment_proposal.title} [{story.experiment_proposal.status}]",
+                )
+            )
+            if story.experiment_proposal.description:
+                rows.append(("experiment detail", story.experiment_proposal.description))
     if len(rows) == 1:
         rows.append(("current story", "No story text recorded yet."))
     return rows

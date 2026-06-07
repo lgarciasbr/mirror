@@ -3,9 +3,13 @@
 from memory import MemoryClient
 from memory.config import default_db_path_for_home
 from memory.services.explorer_story import (
+    ExplorerAttractor,
+    ExplorerExperimentProposal,
     clear_explorer_story,
     get_explorer_story,
     render_explorer_story_context,
+    set_explorer_attractors,
+    set_explorer_experiment_proposal,
     update_explorer_story,
 )
 
@@ -123,7 +127,80 @@ def test_invalid_metadata_returns_none(tmp_path):
     assert get_explorer_story(mem.store, "explorer-mode") is None
 
 
-def test_render_explorer_story_context(tmp_path):
+def test_setting_attractors_preserves_story_fields(tmp_path):
+    mem = _client(tmp_path)
+    update_explorer_story(
+        mem.store,
+        "explorer-mode",
+        current_exploratory_story="Explorer is becoming observable.",
+        narrative_field_summary="Runtime story state before persistence.",
+    )
+
+    updated = set_explorer_attractors(
+        mem.store,
+        "explorer-mode",
+        [
+            ExplorerAttractor(
+                label="External validation",
+                description="Validate behavior in Pi before internal modeling.",
+            )
+        ],
+    )
+
+    assert updated.current_exploratory_story == "Explorer is becoming observable."
+    assert updated.narrative_field_summary == "Runtime story state before persistence."
+    assert len(updated.attractors) == 1
+    assert updated.attractors[0].label == "External validation"
+    assert updated.attractors[0].status == "proposed"
+
+
+def test_setting_attractors_replaces_existing_attractors(tmp_path):
+    mem = _client(tmp_path)
+    set_explorer_attractors(
+        mem.store,
+        "explorer-mode",
+        [ExplorerAttractor(label="Old attractor")],
+    )
+
+    updated = set_explorer_attractors(
+        mem.store,
+        "explorer-mode",
+        [ExplorerAttractor(label="Corrected attractor", status="accepted")],
+    )
+
+    assert [attractor.label for attractor in updated.attractors] == ["Corrected attractor"]
+    assert updated.attractors[0].status == "accepted"
+
+
+def test_setting_experiment_preserves_attractors_and_story(tmp_path):
+    mem = _client(tmp_path)
+    update_explorer_story(
+        mem.store,
+        "explorer-mode",
+        current_exploratory_story="Explorer is becoming observable.",
+    )
+    set_explorer_attractors(
+        mem.store,
+        "explorer-mode",
+        [ExplorerAttractor(label="External validation")],
+    )
+
+    updated = set_explorer_experiment_proposal(
+        mem.store,
+        "explorer-mode",
+        ExplorerExperimentProposal(
+            title="Validate in Pi",
+            description="Ask through natural language and inspect surfaces.",
+        ),
+    )
+
+    assert updated.current_exploratory_story == "Explorer is becoming observable."
+    assert updated.attractors[0].label == "External validation"
+    assert updated.experiment_proposal is not None
+    assert updated.experiment_proposal.title == "Validate in Pi"
+
+
+def test_render_explorer_story_context_includes_directional_state(tmp_path):
     mem = _client(tmp_path)
     story = update_explorer_story(
         mem.store,
@@ -132,11 +209,21 @@ def test_render_explorer_story_context(tmp_path):
         narrative_field_summary="Runtime story state before persistence.",
         last_story_card="Story opened.",
     )
+    story = set_explorer_attractors(
+        mem.store,
+        "explorer-mode",
+        [ExplorerAttractor(label="External validation")],
+    )
+    story = set_explorer_experiment_proposal(
+        mem.store,
+        "explorer-mode",
+        ExplorerExperimentProposal(title="Validate in Pi"),
+    )
 
     rendered = render_explorer_story_context(story)
 
     assert "=== △ Exploratory Story ===" in rendered
     assert "journey: explorer-mode" in rendered
     assert "Explorer is becoming observable." in rendered
-    assert "Runtime story state before persistence." in rendered
-    assert "Story opened." in rendered
+    assert "External validation [proposed]" in rendered
+    assert "Validate in Pi [proposed]" in rendered

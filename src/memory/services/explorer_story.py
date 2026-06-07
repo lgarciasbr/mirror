@@ -16,11 +16,27 @@ _UNSET = object()
 
 
 @dataclass(frozen=True)
+class ExplorerAttractor:
+    label: str
+    description: str | None = None
+    status: str = "proposed"
+
+
+@dataclass(frozen=True)
+class ExplorerExperimentProposal:
+    title: str
+    description: str | None = None
+    status: str = "proposed"
+
+
+@dataclass(frozen=True)
 class ExplorerStory:
     journey: str
     current_exploratory_story: str | None = None
     narrative_field_summary: str | None = None
     last_story_card: str | None = None
+    attractors: tuple[ExplorerAttractor, ...] = ()
+    experiment_proposal: ExplorerExperimentProposal | None = None
 
 
 def _session_id(journey: str) -> str:
@@ -59,6 +75,8 @@ def get_explorer_story(store: Store, journey: str) -> ExplorerStory | None:
         current_exploratory_story=_string_or_none(data.get("current_exploratory_story")),
         narrative_field_summary=_string_or_none(data.get("narrative_field_summary")),
         last_story_card=_string_or_none(data.get("last_story_card")),
+        attractors=_parse_attractors(data.get("attractors")),
+        experiment_proposal=_parse_experiment(data.get("experiment_proposal")),
     )
 
 
@@ -101,22 +119,55 @@ def update_explorer_story(
             if last_card_value is _UNSET and existing
             else (None if last_card_value is _UNSET else last_card_value)
         ),
+        attractors=existing.attractors if existing else (),
+        experiment_proposal=existing.experiment_proposal if existing else None,
     )
 
-    store.upsert_runtime_session(
-        _session_id(normalized_journey),
-        interface="explorer_story",
+    _store_story(store, updated)
+    return updated
+
+
+def set_explorer_attractors(
+    store: Store,
+    journey: str,
+    attractors: list[ExplorerAttractor],
+) -> ExplorerStory:
+    """Replace the visible attractors for the current Explorer Story."""
+    normalized_journey = journey.strip()
+    if not normalized_journey:
+        raise ValueError("journey must not be empty")
+    existing = get_explorer_story(store, normalized_journey)
+    updated = ExplorerStory(
         journey=normalized_journey,
-        active=True,
-        metadata=json.dumps(
-            {
-                "current_exploratory_story": updated.current_exploratory_story,
-                "narrative_field_summary": updated.narrative_field_summary,
-                "last_story_card": updated.last_story_card,
-            },
-            ensure_ascii=False,
-        ),
+        current_exploratory_story=existing.current_exploratory_story if existing else None,
+        narrative_field_summary=existing.narrative_field_summary if existing else None,
+        last_story_card=existing.last_story_card if existing else None,
+        attractors=tuple(_normalize_attractor(attractor) for attractor in attractors),
+        experiment_proposal=existing.experiment_proposal if existing else None,
     )
+    _store_story(store, updated)
+    return updated
+
+
+def set_explorer_experiment_proposal(
+    store: Store,
+    journey: str,
+    proposal: ExplorerExperimentProposal,
+) -> ExplorerStory:
+    """Replace the visible experiment proposal for the current Explorer Story."""
+    normalized_journey = journey.strip()
+    if not normalized_journey:
+        raise ValueError("journey must not be empty")
+    existing = get_explorer_story(store, normalized_journey)
+    updated = ExplorerStory(
+        journey=normalized_journey,
+        current_exploratory_story=existing.current_exploratory_story if existing else None,
+        narrative_field_summary=existing.narrative_field_summary if existing else None,
+        last_story_card=existing.last_story_card if existing else None,
+        attractors=existing.attractors if existing else (),
+        experiment_proposal=_normalize_experiment(proposal),
+    )
+    _store_story(store, updated)
     return updated
 
 
@@ -143,7 +194,118 @@ def render_explorer_story_context(story: ExplorerStory) -> str:
         lines.extend(["", "narrative field summary:", story.narrative_field_summary])
     if story.last_story_card:
         lines.extend(["", "last story card:", story.last_story_card])
+    if story.attractors:
+        lines.extend(["", "attractors:"])
+        for attractor in story.attractors:
+            lines.append(f"- {attractor.label} [{attractor.status}]")
+            if attractor.description:
+                lines.append(f"  {attractor.description}")
+    if story.experiment_proposal:
+        lines.extend(
+            [
+                "",
+                "experiment proposal:",
+                f"{story.experiment_proposal.title} [{story.experiment_proposal.status}]",
+            ]
+        )
+        if story.experiment_proposal.description:
+            lines.append(story.experiment_proposal.description)
     return "\n".join(lines)
+
+
+def _store_story(store: Store, story: ExplorerStory) -> None:
+    store.upsert_runtime_session(
+        _session_id(story.journey),
+        interface="explorer_story",
+        journey=story.journey,
+        active=True,
+        metadata=json.dumps(
+            {
+                "current_exploratory_story": story.current_exploratory_story,
+                "narrative_field_summary": story.narrative_field_summary,
+                "last_story_card": story.last_story_card,
+                "attractors": [
+                    {
+                        "label": attractor.label,
+                        "description": attractor.description,
+                        "status": attractor.status,
+                    }
+                    for attractor in story.attractors
+                ],
+                "experiment_proposal": (
+                    {
+                        "title": story.experiment_proposal.title,
+                        "description": story.experiment_proposal.description,
+                        "status": story.experiment_proposal.status,
+                    }
+                    if story.experiment_proposal
+                    else None
+                ),
+            },
+            ensure_ascii=False,
+        ),
+    )
+
+
+def _parse_attractors(value: object) -> tuple[ExplorerAttractor, ...]:
+    if not isinstance(value, list):
+        return ()
+    attractors = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        label = _string_or_none(item.get("label"))
+        if not label:
+            continue
+        attractors.append(
+            ExplorerAttractor(
+                label=label,
+                description=_string_or_none(item.get("description")),
+                status=_valid_status(item.get("status")),
+            )
+        )
+    return tuple(attractors)
+
+
+def _parse_experiment(value: object) -> ExplorerExperimentProposal | None:
+    if not isinstance(value, dict):
+        return None
+    title = _string_or_none(value.get("title"))
+    if not title:
+        return None
+    return ExplorerExperimentProposal(
+        title=title,
+        description=_string_or_none(value.get("description")),
+        status=_valid_status(value.get("status")),
+    )
+
+
+def _normalize_attractor(attractor: ExplorerAttractor) -> ExplorerAttractor:
+    label = _string_or_none(attractor.label)
+    if not label:
+        raise ValueError("attractor label must not be empty")
+    return ExplorerAttractor(
+        label=label,
+        description=_string_or_none(attractor.description),
+        status=_valid_status(attractor.status),
+    )
+
+
+def _normalize_experiment(proposal: ExplorerExperimentProposal) -> ExplorerExperimentProposal:
+    title = _string_or_none(proposal.title)
+    if not title:
+        raise ValueError("experiment title must not be empty")
+    return ExplorerExperimentProposal(
+        title=title,
+        description=_string_or_none(proposal.description),
+        status=_valid_status(proposal.status),
+    )
+
+
+def _valid_status(value: object) -> str:
+    if value in {"proposed", "accepted"}:
+        return str(value)
+    return "proposed"
 
 
 def _string_or_none(value: object) -> str | None:

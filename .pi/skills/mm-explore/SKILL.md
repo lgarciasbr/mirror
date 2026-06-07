@@ -83,6 +83,19 @@ uv run python -m memory explore story open <slug> --story "..." --summary "..." 
 uv run python -m memory explore story thicken <slug> --story "..." --summary "..." --last-card "..." --changed "..."
 ```
 
+- When the user asks for the attractor, or when a strong directional pull should be proposed visibly, render attractors with:
+
+```bash
+uv run python -m memory explore story attractors <slug> --attractor "..." --description "..." --status proposed
+```
+
+- When the user corrects an attractor, replace it with the corrected attractor using the same command. Do not accumulate hidden competing interpretations.
+- When the user asks what small experiment tests the attractor, render an experiment proposal with:
+
+```bash
+uv run python -m memory explore story experiment <slug> --title "..." --description "..." --status proposed
+```
+
 - When the user asks what is currently being explored, render a snapshot with:
 
 ```bash

@@ -2,7 +2,7 @@
 
 # CV16 — Explorer Mode
 
-**Status:** 🟢 DS0–DS5 Done
+**Status:** 🟢 DS0–DS6 Done
 
 **Source exploration:** [ES-003 Explorer Mode](../../exploration/es-003-explorer-mode.md)
 
@@ -68,7 +68,7 @@ possible. It does not silently convert exploration into delivery.
 | [CV16.DS3](cv16-ds3-explorer-activation-contract/index.md) | Explorer activation contract | A user can explicitly enter and leave Explorer Mode for a journey through natural language, with Mirror using contained commands only as internal behavioral resources | ✅ Done |
 | [CV16.DS4](cv16-ds4-in-session-exploratory-story/index.md) | In-session Exploratory Story | Explorer Mode maintains one current Exploratory Story per journey session, with narrative summary and last card context available for the next turn | ✅ Done |
 | [CV16.DS5](cv16-ds5-story-thickening-surfaces/index.md) | Story thickening surfaces | Mirror renders Exploratory Story Opened, Story Thickened, and Narrative Field Snapshot at the right moments | ✅ Done |
-| CV16.DS6 | Experiment proposals and attractors | A thickened exploration can name attractors and propose concrete experiments without pretending to be Builder delivery | 🟡 Planned |
+| [CV16.DS6](cv16-ds6-experiment-proposals-and-attractors/index.md) | Experiment proposals and attractors | A thickened exploration can name attractors and propose concrete experiments without pretending to be Builder delivery | ✅ Done |
 | CV16.DS7 | Promotion handoff to Builder | A confirmed experiment or exploration can produce a minimal Builder handoff without pretending to be a complete delivery plan | 🟡 Planned |
 | CV16.DS8 | Persistence and visibility | Exploratory state survives beyond one fragile session and becomes visible in appropriate Mirror surfaces after the conversational behavior is proven | ⚪ Later |
 

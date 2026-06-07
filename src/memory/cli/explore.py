@@ -12,14 +12,20 @@ import sys
 
 from memory.client import MemoryClient
 from memory.services.explorer_story import (
+    ExplorerAttractor,
+    ExplorerExperimentProposal,
     clear_explorer_story,
     get_explorer_story,
     render_explorer_story_context,
+    set_explorer_attractors,
+    set_explorer_experiment_proposal,
     update_explorer_story,
 )
 from memory.services.operating_mode import activate_mode, deactivate_mode
 from memory.skills.mirror import _persist_global_sticky_defaults
 from memory.surfaces.explorer_story import (
+    render_attractors_emerging,
+    render_experiment_proposal,
     render_exploratory_story_opened,
     render_missing_exploratory_story,
     render_narrative_field_snapshot,
@@ -160,6 +166,38 @@ def cmd_story_snapshot(slug: str) -> None:
     print(render_narrative_field_snapshot(story))
 
 
+def cmd_story_attractors(
+    slug: str,
+    *,
+    attractor: str,
+    description: str | None,
+    status: str,
+) -> None:
+    mem = MemoryClient()
+    updated = set_explorer_attractors(
+        mem.store,
+        slug,
+        [ExplorerAttractor(label=attractor, description=description, status=status)],
+    )
+    print(render_attractors_emerging(updated))
+
+
+def cmd_story_experiment(
+    slug: str,
+    *,
+    title: str,
+    description: str | None,
+    status: str,
+) -> None:
+    mem = MemoryClient()
+    updated = set_explorer_experiment_proposal(
+        mem.store,
+        slug,
+        ExplorerExperimentProposal(title=title, description=description, status=status),
+    )
+    print(render_experiment_proposal(updated))
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Explorer Mode context loader")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -200,6 +238,28 @@ def main(argv: list[str] | None = None) -> None:
     p_story_snapshot = story_sub.add_parser("snapshot", help="Render a Narrative Field Snapshot")
     p_story_snapshot.add_argument("slug", help="Journey ID")
 
+    p_story_attractors = story_sub.add_parser("attractors", help="Set visible attractors")
+    p_story_attractors.add_argument("slug", help="Journey ID")
+    p_story_attractors.add_argument("--attractor", required=True, help="Attractor label")
+    p_story_attractors.add_argument("--description", default=None, help="Attractor description")
+    p_story_attractors.add_argument(
+        "--status",
+        default="proposed",
+        choices=["proposed", "accepted"],
+        help="Attractor status",
+    )
+
+    p_story_experiment = story_sub.add_parser("experiment", help="Set an experiment proposal")
+    p_story_experiment.add_argument("slug", help="Journey ID")
+    p_story_experiment.add_argument("--title", required=True, help="Experiment title")
+    p_story_experiment.add_argument("--description", default=None, help="Experiment description")
+    p_story_experiment.add_argument(
+        "--status",
+        default="proposed",
+        choices=["proposed", "accepted"],
+        help="Experiment status",
+    )
+
     args = parser.parse_args(argv)
     if args.command == "load":
         cmd_load(args.slug)
@@ -234,6 +294,20 @@ def main(argv: list[str] | None = None) -> None:
             )
         elif args.story_command == "snapshot":
             cmd_story_snapshot(args.slug)
+        elif args.story_command == "attractors":
+            cmd_story_attractors(
+                args.slug,
+                attractor=args.attractor,
+                description=args.description,
+                status=args.status,
+            )
+        elif args.story_command == "experiment":
+            cmd_story_experiment(
+                args.slug,
+                title=args.title,
+                description=args.description,
+                status=args.status,
+            )
 
 
 if __name__ == "__main__":

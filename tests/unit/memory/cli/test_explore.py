@@ -212,3 +212,89 @@ def test_story_snapshot_command_handles_missing_story(mocker, tmp_path, capsys):
     out = capsys.readouterr().out
     assert "△  NO EXPLORATORY STORY" in out
     assert "No current Exploratory Story" in out
+
+
+def test_story_attractors_command_stores_and_renders_surface(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "alisson-vale"
+    mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))
+    update_explorer_story(
+        mem.store,
+        "explorer-mode",
+        current_exploratory_story="Current story.",
+    )
+    mocker.patch("memory.cli.explore.MemoryClient", return_value=mem)
+
+    explore.cmd_story_attractors(
+        "explorer-mode",
+        attractor="External validation",
+        description="Validate behavior in Pi before internal modeling.",
+        status="proposed",
+    )
+
+    stored = get_explorer_story(mem.store, "explorer-mode")
+    assert stored is not None
+    assert stored.attractors[0].label == "External validation"
+    out = capsys.readouterr().out
+    assert "△  ATTRACTORS EMERGING" in out
+    assert "External validation" in out
+
+
+def test_story_experiment_command_stores_and_renders_surface(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "alisson-vale"
+    mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))
+    activate_mode(mem.store, mode="Explorer Mode", journey="explorer-mode")
+    update_explorer_story(
+        mem.store,
+        "explorer-mode",
+        current_exploratory_story="Current story.",
+    )
+    mocker.patch("memory.cli.explore.MemoryClient", return_value=mem)
+
+    explore.cmd_story_experiment(
+        "explorer-mode",
+        title="Validate in Pi",
+        description="Ask through natural language and inspect surfaces.",
+        status="proposed",
+    )
+
+    stored = get_explorer_story(mem.store, "explorer-mode")
+    assert stored is not None
+    assert stored.experiment_proposal is not None
+    assert stored.experiment_proposal.title == "Validate in Pi"
+    active_mode = get_active_mode(mem.store)
+    assert active_mode is not None
+    assert active_mode.mode == "Explorer Mode"
+    out = capsys.readouterr().out
+    assert "△  EXPERIMENT PROPOSAL" in out
+    assert "This is not Builder delivery" in out
+
+
+def test_story_snapshot_includes_attractor_and_experiment(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "alisson-vale"
+    mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))
+    update_explorer_story(
+        mem.store,
+        "explorer-mode",
+        current_exploratory_story="Current story.",
+    )
+    mocker.patch("memory.cli.explore.MemoryClient", return_value=mem)
+    explore.cmd_story_attractors(
+        "explorer-mode",
+        attractor="External validation",
+        description="Validate behavior in Pi before internal modeling.",
+        status="proposed",
+    )
+    explore.cmd_story_experiment(
+        "explorer-mode",
+        title="Validate in Pi",
+        description="Ask through natural language and inspect surfaces.",
+        status="proposed",
+    )
+    capsys.readouterr()
+
+    explore.cmd_story_snapshot("explorer-mode")
+
+    out = capsys.readouterr().out
+    assert "△  NARRATIVE FIELD SNAPSHOT" in out
+    assert "External validation [proposed]" in out
+    assert "Validate in Pi [proposed]" in out

@@ -11,6 +11,20 @@ resolved.
 
 ## Completed Decisions
 
+### Explorer attractors are visible story state, not hidden detection
+
+**Date:** 2026-06-06
+**Reference:** [CV16.DS6 Experiment Proposals and Attractors](roadmap/cv16-explorer-mode/cv16-ds6-experiment-proposals-and-attractors/index.md)
+
+Attractors in Explorer Mode are stored only when surfaced visibly in conversation. They live inside the current in-session Exploratory Story runtime payload, associated with the active journey story, rather than as durable standalone entities. The first implementation does not run hidden detection or an LLM classifier in the Python core.
+
+Consequences:
+
+- The user can ask for an attractor explicitly, and the assistant may propose one conversationally, but the state changes only when the attractor is rendered.
+- Correcting an attractor replaces the current visible attractor instead of accumulating hidden competing interpretations.
+- Experiment proposals are small learning moves, not Builder delivery plans.
+- DS7 remains responsible for explicit Builder handoff after confirmation.
+
 ### Explorer Mode starts from Exploratory Story, not signal/radar modeling
 
 **Date:** 2026-06-06

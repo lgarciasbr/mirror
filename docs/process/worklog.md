@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-06 — Experiment proposals and attractors added
+
+Extended the in-session Exploratory Story with visible attractors and small experiment proposals. `python -m memory explore story attractors <journey>` now replaces the current surfaced attractor, `story experiment <journey>` stores a proposed learning experiment, and Narrative Field Snapshot includes both. The implementation keeps attractors and experiments inside runtime story state, avoids hidden detection, and does not activate Builder.
+
+Validation: Explorer Story service, surface, and CLI tests passed; ruff checks passed for touched Explorer files; technical smoke confirmed attractor, experiment, snapshot, and cleanup behavior.
+
 ### 2026-06-06 — Story thickening surfaces added
 
 Added the first visible Explorer Story surfaces. `python -m memory explore story open|thicken|snapshot <journey>` now renders `△ EXPLORATORY STORY OPENED`, `△ STORY THICKENED`, and `△ NARRATIVE FIELD SNAPSHOT` while updating or reading the in-session Exploratory Story. CV16 was split so attractors and experiment proposals move to DS6, Builder handoff to DS7, and persistence/visibility to DS8.
