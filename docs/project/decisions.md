@@ -40,13 +40,16 @@ Consequences:
 ### Explorer handoff produces transfer documents for Builder
 
 **Date:** 2026-06-06
+**Updated:** 2026-06-07
 **Reference:** [CV16.DS7 Promotion Handoff to Builder](roadmap/cv16-explorer-mode/cv16-ds7-promotion-handoff-to-builder/index.md)
 
-Explorer-to-Builder promotion must produce a transfer document set, not only switch modes with contextual memory. The handoff output lives under `docs/project/explorations/<es-id>/` when the active journey has a project path, with three documents: `exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md`.
+Explorer-to-Builder promotion must produce a transfer document set, not only switch modes with contextual memory. The handoff output lives under `docs/project/explorations/<exploratory-story-slug>/` when the active journey has a project path. The folder name is generated from the handoff or Exploratory Story title, without timestamp or opaque id. The set has four documents: `index.md`, `exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md`.
 
 Consequences:
 
-- Builder receives a concrete discovery narrative, caution/boundary document, and product design proposal before roadmap work begins.
+- Builder receives an editorial synthesis, concrete discovery narrative, caution/boundary document, and product design proposal before roadmap work begins.
+- `index.md` orients Builder through the artifact set and carries the editorial synthesis.
+- `exploratory-story.md` must preserve continuous story thickening, not only the final state fields.
 - The product design proposal describes behavior and product shape, not implementation architecture.
 - Promotion remains a two-step process: generate handoff, then confirm Builder.
 - DS8 can later persist Exploratory Story records and connect durable story IDs to these artifact directories.

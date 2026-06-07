@@ -38,6 +38,7 @@ def _story() -> ExplorerStory:
             title="Build Explorer persistence",
             summary="The exploration clarified the Builder boundary.",
             artifact_dir="/tmp/exploration",
+            index_path="/tmp/exploration/index.md",
             exploratory_story_path="/tmp/exploration/exploratory-story.md",
             handoff_info_path="/tmp/exploration/handoff-info.md",
             product_design_proposal_path="/tmp/exploration/product-design-proposal.md",
@@ -94,6 +95,7 @@ def test_builder_handoff_surface_renders_artifacts_and_boundary():
 
     assert "△  BUILDER HANDOFF PROPOSED" in rendered
     assert "Build Explorer persistence" in rendered
+    assert "index.md" in rendered
     assert "exploratory-story.md" in rendered
     assert "handoff-info.md" in rendered
     assert "product-design-proposal.md" in rendered

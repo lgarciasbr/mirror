@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-07 — Builder handoff artifact quality improved
+
+Improved the Explorer-to-Builder transfer document set after real Soul Mode validation showed the generated docs did not represent the actual decision or the continuous thickening of the story. Handoff folders now use a slug from the handoff or Exploratory Story title instead of timestamp-plus-journey ids. The transfer set now includes `index.md` for editorial synthesis, plus richer `exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md` documents. `story handoff` accepts `--editorial-synthesis` so the assistant can transfer the narrative of discovery rather than only dumping stored state fields.
+
+Validation: Explorer handoff, story, surface, and CLI tests passed; ruff checks passed for touched Explorer files; technical smoke confirmed slug folder generation, four document outputs, index synthesis, and continuous thickening narrative.
+
 ### 2026-06-06 — Explorer story thickening boundary tightened
 
 Updated the Explorer skill contract so `story thicken` is reserved for narrative/substantive changes, not local refinements such as icons, microcopy, visual labels, formatting, wording polish, or small naming adjustments. Added a decision record and folded this boundary into the planned DS9 required surface rendering contract.

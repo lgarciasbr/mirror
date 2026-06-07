@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
 from pathlib import Path
 
 from memory.services.explorer_story import ExplorerBuilderHandoff, ExplorerStory
@@ -15,11 +14,10 @@ def write_builder_handoff_artifacts(
     *,
     title: str,
     summary: str | None = None,
-    now: datetime | None = None,
+    editorial_synthesis: str | None = None,
 ) -> ExplorerBuilderHandoff:
     """Write Explorer handoff docs under a project's exploration folder."""
-    timestamp = (now or datetime.now()).strftime("%Y%m%d-%H%M%S")
-    es_id = f"{timestamp}-{_slugify(story.journey)}"
+    es_id = _slugify(title or story.current_exploratory_story or story.journey)
     base = project_path / "docs" / "project" / "explorations" / es_id
     suffix = 2
     while base.exists():
@@ -27,21 +25,34 @@ def write_builder_handoff_artifacts(
         suffix += 1
     base.mkdir(parents=True, exist_ok=False)
 
+    index_path = base / "index.md"
     exploratory_story_path = base / "exploratory-story.md"
     handoff_info_path = base / "handoff-info.md"
     product_design_path = base / "product-design-proposal.md"
 
-    generated_at = (now or datetime.now()).isoformat(timespec="seconds")
+    index_path.write_text(
+        _render_index_doc(
+            story,
+            title=title,
+            summary=summary,
+            editorial_synthesis=editorial_synthesis,
+        ),
+        encoding="utf-8",
+    )
     exploratory_story_path.write_text(
-        _render_exploratory_story_doc(story, title=title, generated_at=generated_at),
+        _render_exploratory_story_doc(
+            story,
+            title=title,
+            editorial_synthesis=editorial_synthesis,
+        ),
         encoding="utf-8",
     )
     handoff_info_path.write_text(
-        _render_handoff_info_doc(story, title=title, summary=summary, generated_at=generated_at),
+        _render_handoff_info_doc(story, title=title, summary=summary),
         encoding="utf-8",
     )
     product_design_path.write_text(
-        _render_product_design_doc(story, title=title, summary=summary, generated_at=generated_at),
+        _render_product_design_doc(story, title=title, summary=summary),
         encoding="utf-8",
     )
 
@@ -50,14 +61,55 @@ def write_builder_handoff_artifacts(
         summary=summary,
         readiness="proposed",
         artifact_dir=str(base),
+        index_path=str(index_path),
         exploratory_story_path=str(exploratory_story_path),
         handoff_info_path=str(handoff_info_path),
         product_design_proposal_path=str(product_design_path),
     )
 
 
+def _render_index_doc(
+    story: ExplorerStory,
+    *,
+    title: str,
+    summary: str | None,
+    editorial_synthesis: str | None,
+) -> str:
+    return f"""# Exploration Handoff: {title}
+
+## Editorial Synthesis
+
+{editorial_synthesis or summary or story.narrative_field_summary or '_No editorial synthesis recorded._'}
+
+## What Was Decided
+
+{_render_decided_product_direction(story)}
+
+## Transfer Documents
+
+- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.
+- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.
+- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.
+
+## Current Attractors
+
+{_render_attractors(story)}
+
+## Current Experiment Proposal
+
+{_render_experiment(story)}
+
+## Builder Reading Order
+
+Read this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. Treat the set as exploration output, not as a completed delivery plan.
+"""
+
+
 def _render_exploratory_story_doc(
-    story: ExplorerStory, *, title: str, generated_at: str
+    story: ExplorerStory,
+    *,
+    title: str,
+    editorial_synthesis: str | None,
 ) -> str:
     return f"""# Exploratory Story: {title}
 
@@ -65,7 +117,10 @@ def _render_exploratory_story_doc(
 
 - Journey: `{story.journey}`
 - Mode: Explorer Mode
-- Generated at: {generated_at}
+
+## Continuous Thickening Narrative
+
+{editorial_synthesis or story.narrative_field_summary or '_No continuous thickening narrative recorded._'}
 
 ## Current Exploratory Story
 
@@ -87,30 +142,31 @@ def _render_exploratory_story_doc(
 
 {_render_experiment(story)}
 
-## Evolution Narrative
+## What Changed Through Exploration
 
-This document preserves the discovery path that Explorer Mode surfaced before Builder commitment. It should be read as exploratory context, not as a delivery plan.
+This section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.
 """
 
 
 def _render_handoff_info_doc(
-    story: ExplorerStory, *, title: str, summary: str | None, generated_at: str
-) -> str:
+    story: ExplorerStory, *, title: str, summary: str | None) -> str:
     return f"""# Handoff Info: {title}
-
-## Source
-
-- Journey: `{story.journey}`
-- Generated at: {generated_at}
 
 ## Handoff Summary
 
 {summary or story.narrative_field_summary or '_No handoff summary recorded._'}
 
+## What Builder Should Preserve
+
+- The exploration is not only a feature request. It carries discovery context and product judgment.
+- The attractor and experiment proposal should guide Builder's first roadmap framing.
+- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.
+
 ## Risks
 
 - Builder may over-treat exploratory material as settled delivery scope.
-- The product design proposal still needs Builder review and Navigator validation.
+- Builder may flatten open questions into implementation assumptions.
+- Builder may focus on mechanism before preserving the user-facing product shape.
 
 ## Open Questions
 
@@ -145,14 +201,8 @@ Builder executes only after explicit confirmation from the Navigator.
 
 
 def _render_product_design_doc(
-    story: ExplorerStory, *, title: str, summary: str | None, generated_at: str
-) -> str:
+    story: ExplorerStory, *, title: str, summary: str | None) -> str:
     return f"""# Product Design Proposal: {title}
-
-## Source
-
-- Journey: `{story.journey}`
-- Generated at: {generated_at}
 
 ## Product Intent
 
@@ -161,6 +211,10 @@ def _render_product_design_doc(
 ## User-Facing Behavior
 
 {story.current_exploratory_story or '_No current story recorded._'}
+
+## What The Product Should Feel Like
+
+The product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.
 
 ## Interaction Flow
 
@@ -195,6 +249,15 @@ def _render_product_design_doc(
 - What should remain exploratory after Builder starts?
 - What user validation will prove the product behavior works?
 """
+
+
+def _render_decided_product_direction(story: ExplorerStory) -> str:
+    parts = []
+    if story.current_exploratory_story:
+        parts.append(story.current_exploratory_story)
+    if story.narrative_field_summary:
+        parts.append(story.narrative_field_summary)
+    return "\n\n".join(parts) or "_No decided product direction recorded._"
 
 
 def _render_attractors(story: ExplorerStory) -> str:

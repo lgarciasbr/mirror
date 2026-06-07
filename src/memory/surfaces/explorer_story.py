@@ -65,6 +65,8 @@ def render_builder_handoff_proposed(story: ExplorerStory) -> str:
             rows.append(("summary", handoff.summary))
         if handoff.artifact_dir:
             rows.append(("artifact directory", handoff.artifact_dir))
+        if handoff.index_path:
+            rows.append(("index", handoff.index_path))
         if handoff.exploratory_story_path:
             rows.append(("exploratory story", handoff.exploratory_story_path))
         if handoff.handoff_info_path:

@@ -13,24 +13,32 @@ DS7 does not create durable Exploratory Story database records. DS8 will persist
 Explorer handoff output is a group of documents under:
 
 ```text
-<project_path>/docs/project/explorations/<es-id>/
+<project_path>/docs/project/explorations/<exploratory-story-slug>/
 ```
 
-For DS7, `<es-id>` can be generated deterministically from timestamp plus journey slug, for example:
-
-```text
-20260606-173000-explorer-mode
-```
-
-DS8 can later replace or augment this with durable Exploratory Story IDs once ES records exist in the database.
+For DS7, the slug is generated from the handoff or Exploratory Story title, without timestamp or opaque id. If the folder already exists, append a small numeric suffix such as `-2`.
 
 The document set is:
 
 ```text
+index.md
 exploratory-story.md
 handoff-info.md
 product-design-proposal.md
 ```
+
+### index.md
+
+Purpose: provide the editorial synthesis of the exploration and orient Builder through the document set.
+
+Content:
+
+- editorial synthesis;
+- what was decided;
+- links to the three transfer documents;
+- current attractors;
+- current experiment proposal;
+- recommended Builder reading order.
 
 ### exploratory-story.md
 
@@ -135,13 +143,13 @@ Semantics:
 Add a small artifact writer, likely in `src/memory/services/explorer_handoff.py`:
 
 ```python
-write_builder_handoff_artifacts(project_path: Path, story: ExplorerStory, *, title: str, summary: str | None) -> ExplorerBuilderHandoff
+write_builder_handoff_artifacts(project_path: Path, story: ExplorerStory, *, title: str, summary: str | None, editorial_synthesis: str | None) -> ExplorerBuilderHandoff
 ```
 
 Responsibilities:
 
-- create `docs/project/explorations/<es-id>/` under the journey project path;
-- write the three markdown documents;
+- create `docs/project/explorations/<exploratory-story-slug>/` under the journey project path;
+- write the four markdown documents;
 - avoid overwriting an existing directory by generating a unique id;
 - return a handoff object with artifact paths;
 - use deterministic markdown, no LLM calls.
@@ -177,7 +185,8 @@ Extend `python -m memory explore story`:
 ```bash
 uv run python -m memory explore story handoff explorer-mode \
   --title "Build Explorer persistence" \
-  --summary "The exploration clarified the next Builder boundary."
+  --summary "The exploration clarified the next Builder boundary." \
+  --editorial-synthesis "The exploration continuously thickened from ... into ..."
 
 uv run python -m memory explore story promote explorer-mode
 ```
@@ -199,7 +208,7 @@ Implementation option:
 Update `.pi/skills/mm-explore/SKILL.md`:
 
 - when the user asks “isso está pronto para Builder?” or “promover para Builder?”, first call `story handoff` and render the returned surface;
-- show the three generated artifact paths;
+- provide an editorial synthesis and show the four generated artifact paths;
 - ask for explicit confirmation in the answer;
 - only after the user confirms, call `story promote`;
 - never call Builder directly from an unconfirmed exploratory turn.
@@ -211,8 +220,8 @@ Service tests:
 - setting builder handoff preserves story, attractor, and experiment fields;
 - invalid empty handoff title raises;
 - unknown readiness normalizes to `proposed`;
-- artifact writer creates the three docs under `docs/project/explorations/<es-id>/`;
-- artifact docs include story, handoff info, and product design proposal sections.
+- artifact writer creates the four docs under `docs/project/explorations/<exploratory-story-slug>/`;
+- artifact docs include index, story, handoff info, and product design proposal sections.
 
 Surface tests:
 

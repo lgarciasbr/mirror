@@ -171,13 +171,14 @@ Do not switch to Builder silently. First produce a transfer document set and
 render the handoff proposal:
 
 ```bash
-uv run python -m memory explore story handoff <slug> --title "..." --summary "..."
+uv run python -m memory explore story handoff <slug> --title "..." --summary "..." --editorial-synthesis "..."
 ```
 
 Render `△ BUILDER HANDOFF PROPOSED` visibly, including the generated document
-paths under `docs/project/explorations/<es-id>/` when available:
+paths under `docs/project/explorations/<exploratory-story-slug>/` when available:
 
 ```text
+index.md
 exploratory-story.md
 handoff-info.md
 product-design-proposal.md

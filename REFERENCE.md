@@ -74,9 +74,11 @@ story open|thicken|snapshot <slug>` renders the first visible Explorer story
 surfaces. `memory explore story attractors|experiment <slug>` records visible
 attractors and small experiment proposals inside the current story state without
 activating Builder. `memory explore story handoff <slug>` writes the Builder
-transfer document set under `docs/project/explorations/<es-id>/` when the journey
-has a project path, and `memory explore story promote <slug>` enters Builder only
-after an explicit handoff exists. `memory explore deactivate` is the
+transfer document set under `docs/project/explorations/<exploratory-story-slug>/`
+when the journey has a project path, including `index.md`,
+`exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md`.
+`memory explore story promote <slug>` enters Builder only after an explicit
+handoff exists. `memory explore deactivate` is the
 Explorer-specific exit operation and returns the runtime to Mirror Mode semantics
 while preserving sticky journey context. Deactivation clears only the explicit
 active mode state; it does not erase sticky persona/journey defaults or rewrite

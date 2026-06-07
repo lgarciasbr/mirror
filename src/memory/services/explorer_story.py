@@ -35,6 +35,7 @@ class ExplorerBuilderHandoff:
     summary: str | None = None
     readiness: str = "proposed"
     artifact_dir: str | None = None
+    index_path: str | None = None
     exploratory_story_path: str | None = None
     handoff_info_path: str | None = None
     product_design_proposal_path: str | None = None
@@ -259,6 +260,8 @@ def render_explorer_story_context(story: ExplorerStory) -> str:
         )
         if story.builder_handoff.artifact_dir:
             lines.append(f"artifact_dir: {story.builder_handoff.artifact_dir}")
+        if story.builder_handoff.index_path:
+            lines.append(f"index: {story.builder_handoff.index_path}")
     return "\n".join(lines)
 
 
@@ -296,6 +299,7 @@ def _store_story(store: Store, story: ExplorerStory) -> None:
                         "summary": story.builder_handoff.summary,
                         "readiness": story.builder_handoff.readiness,
                         "artifact_dir": story.builder_handoff.artifact_dir,
+                        "index_path": story.builder_handoff.index_path,
                         "exploratory_story_path": story.builder_handoff.exploratory_story_path,
                         "handoff_info_path": story.builder_handoff.handoff_info_path,
                         "product_design_proposal_path": story.builder_handoff.product_design_proposal_path,
@@ -353,6 +357,7 @@ def _parse_handoff(value: object) -> ExplorerBuilderHandoff | None:
         summary=_string_or_none(value.get("summary")),
         readiness=_valid_handoff_readiness(value.get("readiness")),
         artifact_dir=_string_or_none(value.get("artifact_dir")),
+        index_path=_string_or_none(value.get("index_path")),
         exploratory_story_path=_string_or_none(value.get("exploratory_story_path")),
         handoff_info_path=_string_or_none(value.get("handoff_info_path")),
         product_design_proposal_path=_string_or_none(
@@ -392,6 +397,7 @@ def _normalize_handoff(handoff: ExplorerBuilderHandoff) -> ExplorerBuilderHandof
         summary=_string_or_none(handoff.summary),
         readiness=_valid_handoff_readiness(handoff.readiness),
         artifact_dir=_string_or_none(handoff.artifact_dir),
+        index_path=_string_or_none(handoff.index_path),
         exploratory_story_path=_string_or_none(handoff.exploratory_story_path),
         handoff_info_path=_string_or_none(handoff.handoff_info_path),
         product_design_proposal_path=_string_or_none(

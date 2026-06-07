@@ -36,7 +36,8 @@ Candidate smoke:
 ```bash
 uv run python -m memory explore story handoff explorer-mode \
   --title "Build Explorer persistence" \
-  --summary "The exploration clarified the next Builder boundary."
+  --summary "The exploration clarified the next Builder boundary." \
+  --editorial-synthesis "The exploration continuously thickened from a mode idea into a Builder-ready product boundary."
 uv run python -m memory mode status
 ```
 
@@ -72,8 +73,8 @@ isso já está pronto para virar Builder?
 Expected:
 
 - assistant renders `△ BUILDER HANDOFF PROPOSED` as the first visible block before interpretation;
-- handoff includes story, attractor, and experiment proposal when available;
-- assistant asks for explicit confirmation;
+- handoff includes story, attractor, experiment proposal, and editorial synthesis when available;
+- handoff shows generated paths for `index.md`, `exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md`;- assistant asks for explicit confirmation;
 - footer/status remains on `△ Explorer Mode`.
 
 Withhold confirmation:

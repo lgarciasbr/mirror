@@ -28,7 +28,7 @@ The user confirms the crossing.
 
 - Add a Builder handoff proposal surface for the current Exploratory Story.
 - Generate a transfer document set under `docs/project/explorations/<es-id>/` when the active journey has a project path.
-- The document set contains `exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md`.
+- The document set contains `index.md`, `exploratory-story.md`, `handoff-info.md`, and `product-design-proposal.md`.
 - Persist the proposed handoff and artifact paths inside the current in-session story state for DS7.
 - Add a contained confirmation operation that activates Builder Mode only after explicit user confirmation.
 - Keep Builder activation equivalent to normal Builder Mode activation, including transition surface and project path output.
@@ -49,7 +49,7 @@ The user confirms the crossing.
 
 ## Acceptance Behavior
 
-Given an Exploratory Story exists, when the user asks to promote it or asks whether it is ready for Builder, Mirror renders `△ BUILDER HANDOFF PROPOSED`, writes the transfer document set, shows the artifact paths, and does not switch modes.
+Given an Exploratory Story exists, when the user asks to promote it or asks whether it is ready for Builder, Mirror renders `△ BUILDER HANDOFF PROPOSED`, writes the transfer document set with an editorial synthesis index, shows the artifact paths, and does not switch modes.
 
 Given the user explicitly confirms promotion, Mirror activates Builder Mode for the same journey and renders the normal Builder Mode transition surface.
 

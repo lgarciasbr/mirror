@@ -205,7 +205,13 @@ def cmd_story_experiment(
     print(render_experiment_proposal(updated))
 
 
-def cmd_story_handoff(slug: str, *, title: str, summary: str | None) -> None:
+def cmd_story_handoff(
+    slug: str,
+    *,
+    title: str,
+    summary: str | None,
+    editorial_synthesis: str | None,
+) -> None:
     mem = MemoryClient()
     story = get_explorer_story(mem.store, slug)
     if not story:
@@ -218,6 +224,7 @@ def cmd_story_handoff(slug: str, *, title: str, summary: str | None) -> None:
             story,
             title=title,
             summary=summary,
+            editorial_synthesis=editorial_synthesis,
         )
     else:
         handoff = ExplorerBuilderHandoff(title=title, summary=summary, readiness="proposed")
@@ -236,6 +243,7 @@ def cmd_story_promote(slug: str) -> None:
         summary=story.builder_handoff.summary,
         readiness="confirmed",
         artifact_dir=story.builder_handoff.artifact_dir,
+        index_path=story.builder_handoff.index_path,
         exploratory_story_path=story.builder_handoff.exploratory_story_path,
         handoff_info_path=story.builder_handoff.handoff_info_path,
         product_design_proposal_path=story.builder_handoff.product_design_proposal_path,
@@ -310,6 +318,11 @@ def main(argv: list[str] | None = None) -> None:
     p_story_handoff.add_argument("slug", help="Journey ID")
     p_story_handoff.add_argument("--title", required=True, help="Handoff title")
     p_story_handoff.add_argument("--summary", default=None, help="Handoff summary")
+    p_story_handoff.add_argument(
+        "--editorial-synthesis",
+        default=None,
+        help="Editorial synthesis for the exploration index and story narrative",
+    )
 
     p_story_promote = story_sub.add_parser("promote", help="Confirm handoff and enter Builder")
     p_story_promote.add_argument("slug", help="Journey ID")
@@ -363,7 +376,12 @@ def main(argv: list[str] | None = None) -> None:
                 status=args.status,
             )
         elif args.story_command == "handoff":
-            cmd_story_handoff(args.slug, title=args.title, summary=args.summary)
+            cmd_story_handoff(
+                args.slug,
+                title=args.title,
+                summary=args.summary,
+                editorial_synthesis=args.editorial_synthesis,
+            )
         elif args.story_command == "promote":
             cmd_story_promote(args.slug)
 

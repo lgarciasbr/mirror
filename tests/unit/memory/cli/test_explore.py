@@ -317,17 +317,20 @@ def test_story_handoff_writes_docs_stores_and_renders_surface(mocker, tmp_path, 
         "explorer-mode",
         title="Build Explorer persistence",
         summary="The exploration clarified the Builder boundary.",
+        editorial_synthesis="The exploration continuously thickened around transfer docs.",
     )
 
     stored = get_explorer_story(mem.store, "explorer-mode")
     assert stored is not None
     assert stored.builder_handoff is not None
     assert stored.builder_handoff.title == "Build Explorer persistence"
+    assert stored.builder_handoff.index_path is not None
     assert stored.builder_handoff.exploratory_story_path is not None
     assert "docs/project/explorations" in stored.builder_handoff.exploratory_story_path
     assert (project_path / "docs" / "project" / "explorations").is_dir()
     out = capsys.readouterr().out
     assert "△  BUILDER HANDOFF PROPOSED" in out
+    assert "index.md" in out
     assert "exploratory-story.md" in out
 
 
@@ -357,6 +360,7 @@ def test_story_promote_confirms_handoff_and_invokes_builder(mocker, tmp_path):
         "explorer-mode",
         title="Build Explorer persistence",
         summary="The exploration clarified the Builder boundary.",
+        editorial_synthesis=None,
     )
     build = mocker.patch("memory.cli.explore.build_cli.cmd_load")
 
