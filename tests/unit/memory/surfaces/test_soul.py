@@ -149,13 +149,25 @@ def test_active_rite_requires_wisdom_voice_utterance():
         render_active_rite("wisdom")
 
 
-def test_active_rite_renders_beauty_voice_defaults():
-    rendered = render_active_rite("beauty")
+def test_active_rite_renders_beauty_voice_utterance_without_listening_for():
+    rendered = render_active_rite(
+        "beauty",
+        utterance=(
+            "A small lamp remains lit.\n\nIt does not deny the dark; it gives the dark a room."
+        ),
+        listening_for="the form of aliveness",
+    )
 
     assert "✺  BEAUTY VOICE LISTENING" in rendered
-    assert "there is still care in the way this" in rendered
-    assert "hurts" in rendered
-    assert "the form of aliveness" in rendered
+    assert "A small lamp remains lit" in rendered
+    assert "It does not deny the dark" in rendered
+    assert "listening for" not in rendered
+    assert "the form of aliveness" not in rendered
+
+
+def test_active_rite_requires_beauty_voice_utterance():
+    with pytest.raises(ValueError, match="Beauty Voice requires"):
+        render_active_rite("beauty")
 
 
 def test_active_rite_rejects_unsupported_voice():

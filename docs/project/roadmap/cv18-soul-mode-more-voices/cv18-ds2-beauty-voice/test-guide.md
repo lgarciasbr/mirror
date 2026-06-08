@@ -59,5 +59,6 @@ Expected:
 - Mirror stays in Soul Mode.
 - Beauty Voice is treated as a listening lens, not a separate character.
 - The response appears inside the ritual card under `the voice says`.
+- The card omits the `listening for` section for Beauty Voice.
 - Mirror may bridge outside the card after the voice speaks.
-- The content reveals form, aliveness, delicacy, texture, or care without forced optimism.
+- The content reveals form, aliveness, delicacy, texture, image, rhythm, literature/poetry when fitting, or care without forced optimism.

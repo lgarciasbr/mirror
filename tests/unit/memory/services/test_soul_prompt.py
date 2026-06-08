@@ -60,5 +60,8 @@ def test_beauty_voice_prompt_is_canonical():
 
     assert "# Soul Mode — Beauty Voice Prompt" in prompt
     assert "form of aliveness" in prompt
-    assert "must not" in prompt
+    assert "4 to 6 compact paragraphs" in prompt
+    assert "Do not include a separate `listening for` section" in prompt
+    assert "poetry, literature, music" in prompt
+    assert "Mirror's normal tone" in prompt
     assert "force positivity" in prompt

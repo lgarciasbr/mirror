@@ -162,13 +162,32 @@ def test_soul_rite_rejects_wisdom_without_utterance(capsys):
     assert "Wisdom Voice requires" in capsys.readouterr().err
 
 
-def test_soul_rite_renders_beauty_voice(capsys):
-    soul.cmd_rite("beauty")
+def test_soul_rite_renders_beauty_voice_without_listening_for(capsys):
+    soul.cmd_rite(
+        "beauty",
+        utterance=(
+            "A small lamp remains lit.\n\nIt does not deny the dark; it gives the dark a room."
+        ),
+        listening_for="the form of aliveness",
+    )
 
     out = capsys.readouterr().out
     assert "✺  BEAUTY VOICE LISTENING" in out
-    assert "there is still care in the way" in out
-    assert "the form of aliveness" in out
+    assert "A small lamp remains lit" in out
+    assert "It does not deny the dark" in out
+    assert "listening for" not in out
+    assert "the form of aliveness" not in out
+
+
+def test_soul_rite_rejects_beauty_without_utterance(capsys):
+    try:
+        soul.cmd_rite("beauty")
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "Beauty Voice requires" in capsys.readouterr().err
 
 
 def test_soul_rite_rejects_unsupported_voice(capsys):
@@ -417,5 +436,8 @@ def test_soul_prompt_beauty_renders_canonical_prompt(capsys):
     out = capsys.readouterr().out
     assert "# Soul Mode — Beauty Voice Prompt" in out
     assert "form of aliveness" in out
-    assert "must not" in out
+    assert "4 to 6 compact paragraphs" in out
+    assert "Do not include a separate `listening for` section" in out
+    assert "poetry, literature, music" in out
+    assert "Mirror's normal tone" in out
     assert "force positivity" in out
