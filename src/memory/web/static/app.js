@@ -1724,13 +1724,17 @@ function renderMemoryCategoryPage(results) {
 function renderSearchResultCard(result) {
   const metadata = result.metadata || {};
   const detail = [metadata.memory_type, metadata.layer, metadata.journey, metadata.persona].filter(Boolean);
+  const description = result.description || '';
+  const renderedDescription = metadata.memory_type === 'journal' && looksLikeMarkdown(description)
+    ? `<div class="rendered-content memory-card-markdown">${renderDetailContent(description)}</div>`
+    : `<p>${escapeHtml(description)}</p>`;
   return `
     <article class="workspace-card memory-result-card" role="button" tabindex="0" data-object-kind="${escapeHtml(result.kind)}" data-object-id="${escapeHtml(result.id)}">
       <div class="workspace-card-icon" aria-hidden="true">${escapeHtml(metadata.icon || '◫')}</div>
       <div>
         <div class="card-meta">${escapeHtml(detail.join(' · ') || result.kind)}</div>
         <h4>${escapeHtml(result.title)}</h4>
-        <p>${escapeHtml(result.description || '')}</p>
+        ${renderedDescription}
       </div>
     </article>
   `;

@@ -2631,6 +2631,26 @@ input {
   color: var(--muted);
 }
 
+.memory-card-markdown {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.memory-card-markdown h3,
+.memory-card-markdown h4,
+.memory-card-markdown h5 {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+}
+
+.memory-card-markdown p,
+.memory-card-markdown ul,
+.memory-card-markdown blockquote {
+  margin-bottom: 0;
+}
+
 .workspace-card-icon {
   display: grid;
   width: 36px;
