@@ -2,7 +2,7 @@
 
 # CV18.DS1 — Wisdom Voice
 
-**Status:** 🟢 Implemented · awaiting Pi validation
+**Status:** ✅ Done
 
 **Placement:** First new voice in `v0.25.0 — Soul Mode More Voices`
 

@@ -2,7 +2,7 @@
 
 # CV18.DS3 — Refinements Pre-Release
 
-**Status:** 🟡 Planned
+**Status:** ⏭️ Cancelled
 
 **Placement:** Pre-release tuning after Wisdom Voice and Beauty Voice are usable
 
@@ -14,7 +14,7 @@
 
 The first Soul Mode release showed that ritual behavior needs validation in Pi, not only unit tests. Adding Wisdom and Beauty changes the feel of Possible Listenings, the voice-selection grammar, and the user's expectations.
 
-This story reserves space for the small corrections discovered once the new voices are used in a real ritual flow.
+This story reserved space for the small corrections discovered once the new voices were used in a real ritual flow. It was cancelled before implementation because all necessary tuning was completed during DS1 and DS2 validation: Wisdom Voice and Beauty Voice were refined directly inside the voice delivery stories, and no separate pre-release refinement pass remained necessary.
 
 ---
 

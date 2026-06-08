@@ -2,7 +2,7 @@
 
 # CV18.DS4 — Release Packaging
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 
 **Placement:** Final packaging story for `v0.25.0 — Soul Mode More Voices`
 

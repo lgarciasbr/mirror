@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — v0.25.0 Soul Mode More Voices prepared
+
+Completed CV18 and prepared `v0.25.0 — Soul Mode More Voices`. The release adds active Wisdom Voice and Beauty Voice listening lenses, full voice utterances inside ritual cards, no `listening for` field for the new voices, canonical Wisdom/Beauty prompts, source/aesthetic bridge guidance for Mirror outside the card, and safeguards requiring situated `--says` content so placeholder cards do not render. DS3 refinements were cancelled because the necessary tuning happened during direct DS1/DS2 Pi validation.
+
+Validation: `uv run pytest tests/unit/ tests/integration/ -m "not live" --cov=src --cov-report=term-missing -q`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, `git diff --check`, `uv run python -m memory runtime release-notes latest`, and `uv run python -m memory runtime release-notes v0.25.0` passed before release promotion.
+
 ### 2026-06-08 — CV18 Wisdom Voice and Beauty Voice implemented
 
 Implemented CV18.DS1 and CV18.DS2 for `v0.25.0 — Soul Mode More Voices`. Soul Mode now supports Wisdom Voice and Beauty Voice as active listening lenses, with ritual cards, canonical voice prompts, CLI prompt rendering, and Pi skill guidance. Possible Listenings retains the expanded voice constellation and the new voices remain non-mutating listening lenses rather than agents or advice engines. Wisdom and Beauty both require situated `--says` content and omit `listening for` so the voice itself lives inside the card.

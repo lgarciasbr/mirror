@@ -2,7 +2,7 @@
 
 # CV18.DS2 — Beauty Voice
 
-**Status:** 🟢 Implemented · awaiting Pi validation
+**Status:** ✅ Done
 
 **Placement:** Second new voice in `v0.25.0 — Soul Mode More Voices`
 
