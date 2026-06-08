@@ -162,6 +162,16 @@ async function showView(view, { updateHash = true } = {}) {
     return;
   }
 
+  if (view === 'conversations') {
+    await loadAllConversations({ updateHistory: false });
+    return;
+  }
+
+  if (view === 'journeys') {
+    await loadAllJourneys({ updateHistory: false });
+    return;
+  }
+
   const url = view === 'workspace' && selectedWorkspaceJourney
     ? `/api/surface/workspace?journey=${encodeURIComponent(selectedWorkspaceJourney)}`
     : `/api/surface/${view}`;
@@ -1194,10 +1204,17 @@ function renderJourneyCreateReview(draft, journeyOptions = []) {
   `;
 }
 
-async function loadAllConversations() {
-  activeView = 'workspace';
+async function loadAllConversations({ updateHistory = true } = {}) {
+  activeView = 'conversations';
   workspaceSubview = 'conversations';
   selectedWorkspaceJourney = null;
+  if (docsPanel) docsPanel.hidden = true;
+  currentPath.hidden = true;
+  contentGrid.classList.remove('docs-active');
+  tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.view === 'conversations'));
+  if (updateHistory) {
+    window.history.pushState({ view: 'conversations' }, '', '#conversations');
+  }
   const [surface, payload] = await Promise.all([
     fetchJson('/api/surface/workspace'),
     fetchJson('/api/conversations?limit=300'),
@@ -1267,10 +1284,17 @@ function conversationDayLabel(value) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-async function loadAllJourneys() {
-  activeView = 'workspace';
+async function loadAllJourneys({ updateHistory = true } = {}) {
+  activeView = 'journeys';
   workspaceSubview = 'journeys';
   selectedWorkspaceJourney = null;
+  if (docsPanel) docsPanel.hidden = true;
+  currentPath.hidden = true;
+  contentGrid.classList.remove('docs-active');
+  tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.view === 'journeys'));
+  if (updateHistory) {
+    window.history.pushState({ view: 'journeys' }, '', '#journeys');
+  }
   const surface = await fetchJson('/api/surface/workspace');
   const broadFields = hierarchicalJourneyItems(surface.journeys || [], '').map(({ journey, depth, hasChildren }) => {
     if (depth) return '';
@@ -2652,11 +2676,7 @@ document.querySelectorAll('[data-choose]').forEach((button) => {
 
 tabs.forEach((tab) => {
   tab.addEventListener('click', () => {
-    if (['docs', 'preferences', 'configuration', 'operations'].includes(tab.dataset.view)) {
-      showView(tab.dataset.view);
-      return;
-    }
-    chooseDefault(tab.dataset.view);
+    showView(tab.dataset.view);
   });
 });
 
@@ -3148,7 +3168,7 @@ function viewFromHash() {
   const hash = window.location.hash.replace(/^#/, '');
   const conversation = hash.match(/^conversation\/(.+)$/);
   if (conversation) return { view: 'conversation', id: decodeURIComponent(conversation[1]) };
-  if (['workspace', 'atlas', 'docs', 'preferences', 'configuration', 'operations'].includes(hash)) return { view: hash };
+  if (['workspace', 'conversations', 'journeys', 'atlas', 'docs', 'preferences', 'configuration', 'operations'].includes(hash)) return { view: hash };
   return null;
 }
 
