@@ -28,7 +28,7 @@ lens.
 ## Desired Shape
 
 ```text
-◇ alisson-vale · Active Journey xxxx on ■ Builder Mode · ✓
+◇ alisson-vale · Journey Name on ■ Builder Mode · ✓
 ```
 
 The exact copy may be refined during implementation, but the user-visible shape

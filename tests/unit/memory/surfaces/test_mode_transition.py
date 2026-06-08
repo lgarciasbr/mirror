@@ -4,6 +4,7 @@ from memory.surfaces.mode_transition import (
     render_builder_mode_transition,
     render_explorer_mode_transition,
     render_mirror_mode_transition,
+    render_soul_mode_transition,
 )
 
 
@@ -19,6 +20,7 @@ def test_mirror_mode_transition_shows_persona_examples_and_count():
     assert "explorer-mode" in rendered
     assert "when the topic asks: engineer, mentor, therapist and 1" in rendered
     assert "more available" in rendered
+    assert "Soul Mode" in rendered
 
 
 def test_builder_mode_transition_shows_project_path_stage_and_briefing():
@@ -49,3 +51,17 @@ def test_explorer_mode_transition_is_minimal():
     assert "ready for durable" in rendered
     assert "exploration" in rendered
     assert "Explorer preserves uncertainty" in rendered
+
+
+def test_soul_mode_transition_renders_entry_surface():
+    rendered = render_soul_mode_transition(journey="soul-mode")
+
+    assert "☾  SOUL MODE ACTIVE" in rendered
+    assert "Soul Mode turns the day toward the inner life" in rendered
+    assert "active journey" not in rendered
+    assert "soul-mode" not in rendered
+    assert "boundary" not in rendered
+    assert "✦  IN ORDER TO" in rendered
+    assert "remember who you are" in rendered
+    assert "▹  START BY ANSWERING" in rendered
+    assert "how is your day going today?" in rendered

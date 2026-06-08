@@ -171,8 +171,13 @@ def _memory_category_cards(
         return ()
 
     ranked = counts.most_common()
+    pinned = [item for item in ranked if item[0] == "Journal"]
     visible = ranked[:7]
-    other_count = sum(count for _, count in ranked[7:])
+    for item in pinned:
+        if item not in visible:
+            visible.append(item)
+    visible_labels = {label for label, _ in visible}
+    other_count = sum(count for label, count in ranked if label not in visible_labels)
     if other_count:
         visible.append(("Other", other_count))
     max_count = max(count for _, count in visible)
@@ -204,7 +209,7 @@ def _memory_category(raw_type: str) -> str:
         "insight": "Insights",
         "learning": "Learning",
         "reflection": "Reflections",
-        "journal": "Reflections",
+        "journal": "Journal",
         "pattern": "Patterns",
         "padrao": "Patterns",
         "tension": "Tensions",
@@ -229,6 +234,7 @@ def _memory_category_icon(label: str) -> str:
         "Insights": "✺",
         "Learning": "▣",
         "Reflections": "☉",
+        "Journal": "📓",
         "Patterns": "⌘",
         "Tensions": "◐",
         "Commitments": "●",

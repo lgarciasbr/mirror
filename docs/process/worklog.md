@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-07 — Pi status line journey label simplified
+
+Updated the compact Pi status line to show the journey display name directly instead of the `Active Journey <slug>` prefix. The status now reads like `◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓`, using the journey title from identity when available and falling back to the slug when not. Updated focused welcome tests and runtime status-line documentation.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_welcome.py -q` passed.
+
+### 2026-06-07 — CV17 Soul Mode roadmap opened
+
+Opened CV17 Soul Mode from the expanded Builder handoff for Mirror Soul Mode. Added the CV17 roadmap index and six planned delivery stories covering explicit Soul Mode entry, living-field listening with Possible Listenings, minimal active rites for Self Voice and Shadow Voice, Fruit In Maturation, Harvested Fruit with optional journal persistence, and release packaging with a feedback runway. Updated the roadmap index and documentation map so Soul Mode appears as the next planned capability after Explorer Mode.
+
+Validation: documentation-only roadmap change; `git diff --check` passed.
+
 ### 2026-06-07 — v0.23.0 release candidate prepared
 
 Prepared `v0.23.0 — Durable Explorer Mode` as the first durable Explorer Mode release candidate. Bumped the package version to `0.23.0`, added `docs/releases/v0.23.0.md`, listed it in the release index, and marked CV16.DS8, DS8.2, DS9, and DS10 done in the Explorer roadmap. Validation handoff artifacts under `docs/project/explorations/` are intentionally kept local for the next Soul Mode implementation and excluded from release packaging.
@@ -92,7 +104,7 @@ Validation: focused mode-transition, Mirror skill, Builder CLI, and Explorer CLI
 
 ### 2026-06-06 — Runtime status bar foundation added
 
-Added explicit Mirror operating mode lifecycle state and connected it to the Pi status line foundation for CV16 Explorer Mode. `python -m memory mode activate|deactivate|status` now records and clears the active operating lens without mutating sticky persona/journey defaults inside the active session. The user-facing mode grouping is now `/mm-mirror`, `/mm-build`, and `/mm-explore`: Mirror load activates `◌ Mirror Mode`, Builder load activates `■ Builder Mode`, and Explorer load activates `△ Explorer Mode` for a selected journey. `welcome --status-line` renders compact orientation such as `◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓`. When the explicit mode is deactivated but journey context remains sticky, the status line returns to `◌ Mirror Mode`. New runtime session start clears stale explicit mode and sticky journey context so opening Mirror begins from present intention rather than accidental continuity with the last journey. The Pi logger extension refreshes the Mirror footer status at startup and after agent turns, while preserving Pi's built-in footer.
+Added explicit Mirror operating mode lifecycle state and connected it to the Pi status line foundation for CV16 Explorer Mode. `python -m memory mode activate|deactivate|status` now records and clears the active operating lens without mutating sticky persona/journey defaults inside the active session. The user-facing mode grouping is now `/mm-mirror`, `/mm-build`, and `/mm-explore`: Mirror load activates `◌ Mirror Mode`, Builder load activates `■ Builder Mode`, and Explorer load activates `△ Explorer Mode` for a selected journey. `welcome --status-line` renders compact orientation such as `◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓`. When the explicit mode is deactivated but journey context remains sticky, the status line returns to `◌ Mirror Mode`. New runtime session start clears stale explicit mode and sticky journey context so opening Mirror begins from present intention rather than accidental continuity with the last journey. The Pi logger extension refreshes the Mirror footer status at startup and after agent turns, while preserving Pi's built-in footer.
 
 Validation: focused operating-mode, welcome, build, and mode CLI tests passed; ruff checks passed for touched Python files; `.pi` TypeScript type-check passed; CLI smoke confirmed Builder activation, status rendering, explicit deactivation, and restoration.
 

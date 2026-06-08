@@ -201,8 +201,17 @@ class MemoryClient:
         tags=None,
         conversation_id=None,
         journey=None,
+        metadata=None,
     ) -> Memory:
-        return self.memories.add_journal(content, title, layer, tags, conversation_id, journey)
+        return self.memories.add_journal(
+            content,
+            title,
+            layer,
+            tags,
+            conversation_id,
+            journey,
+            metadata,
+        )
 
     # --- Identity ---
 

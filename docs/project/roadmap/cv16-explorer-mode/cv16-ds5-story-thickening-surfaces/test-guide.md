@@ -73,7 +73,7 @@ Start a fresh Pi session in this repository and activate Explorer Mode:
 Expected:
 
 - the assistant renders the `△ EXPLORER MODE ACTIVE` transition surface;
-- the footer/status line shows `Active Journey explorer-mode on △ Explorer Mode`;
+- the footer/status line shows `Explorer Mode on △ Explorer Mode`;
 - the response does not begin Builder work.
 
 Open an Exploratory Story through natural language:

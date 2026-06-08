@@ -37,7 +37,7 @@ Expected:
 
 - `/tmp/mirror-explore-load.txt` includes `△  EXPLORER MODE ACTIVE`;
 - mode status prints `Explorer Mode · explorer-mode`;
-- status line includes `Active Journey explorer-mode on △ Explorer Mode`.
+- status line includes `Explorer Mode on △ Explorer Mode`.
 
 Leave Explorer Mode:
 
@@ -51,7 +51,7 @@ Expected:
 
 - `/tmp/mirror-explore-deactivate.txt` visibly confirms the Explorer lens ended;
 - mode status prints `Mirror Mode`;
-- status line falls back to `Active Journey explorer-mode on ◌ Mirror Mode` when sticky journey context remains.
+- status line falls back to `Explorer Mode on ◌ Mirror Mode` when sticky journey context remains.
 
 ## Skill-Level Validation
 

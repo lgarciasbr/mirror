@@ -615,6 +615,7 @@ def test_welcome_status_line_healthy_without_cache(tmp_path, capsys):
 
 def test_welcome_status_line_includes_active_mode_context(tmp_path, capsys):
     mem, home = _mem(tmp_path, user="alisson-vale")
+    mem.set_identity("journey", "explorer-mode", "# Explorer Mode\n**Status:** active")
     from memory.services.operating_mode import activate_mode
 
     activate_mode(mem.store, mode="Builder Mode", journey="explorer-mode")
@@ -623,14 +624,13 @@ def test_welcome_status_line_includes_active_mode_context(tmp_path, capsys):
 
     main(["--mirror-home", home, "--status-line"])
 
-    assert (
-        capsys.readouterr().out.strip()
-        == "◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓"
-    )
+    assert capsys.readouterr().out.strip() == "◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓"
 
 
 def test_welcome_status_line_prefers_session_scoped_mode(tmp_path, capsys):
     mem, home = _mem(tmp_path, user="alisson-vale")
+    mem.set_identity("journey", "explorer-mode", "# Explorer Mode\n**Status:** active")
+    mem.set_identity("journey", "mirror-4-teams", "# Mirror For Teams\n**Status:** active")
     from memory.services.operating_mode import activate_mode
 
     mem.store.upsert_runtime_session("sess-a", interface="pi", active=True)
@@ -642,14 +642,12 @@ def test_welcome_status_line_prefers_session_scoped_mode(tmp_path, capsys):
 
     main(["--mirror-home", home, "--status-line", "--session-id", "sess-a"])
 
-    assert (
-        capsys.readouterr().out.strip()
-        == "◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓"
-    )
+    assert capsys.readouterr().out.strip() == "◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓"
 
 
 def test_welcome_status_line_returns_to_mirror_mode_context_after_deactivation(tmp_path, capsys):
     mem, home = _mem(tmp_path, user="alisson-vale")
+    mem.set_identity("journey", "explorer-mode", "# Explorer Mode\n**Status:** active")
     from memory.services.operating_mode import activate_mode, deactivate_mode
 
     mem.store.upsert_runtime_session("__global_sticky_defaults__", journey="explorer-mode")
@@ -660,7 +658,18 @@ def test_welcome_status_line_returns_to_mirror_mode_context_after_deactivation(t
 
     main(["--mirror-home", home, "--status-line"])
 
-    assert (
-        capsys.readouterr().out.strip()
-        == "◇ alisson-vale · Active Journey explorer-mode on ◌ Mirror Mode · ✓"
-    )
+    assert capsys.readouterr().out.strip() == "◇ alisson-vale · Explorer Mode on ◌ Mirror Mode · ✓"
+
+
+def test_welcome_status_line_uses_journey_name_for_soul_mode(tmp_path, capsys):
+    mem, home = _mem(tmp_path, user="alisson-vale")
+    mem.set_identity("journey", "soul-mode", "# Mirror Soul Mode\n**Status:** active")
+    from memory.services.operating_mode import activate_mode
+
+    activate_mode(mem.store, mode="Soul Mode", journey="soul-mode")
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", home, "--status-line"])
+
+    assert capsys.readouterr().out.strip() == "◇ alisson-vale · Mirror Soul Mode on ☾ Soul Mode · ✓"

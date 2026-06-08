@@ -20,6 +20,7 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     )
     memory_service.add_memory(title="Choice", content="A decision", memory_type="decision")
     memory_service.add_memory(title="Seed", content="An idea", memory_type="ideia")
+    memory_service.add_memory(title="Harvest", content="A journal entry", memory_type="journal")
 
     surfaces = SurfaceService(
         identity=identity_service,
@@ -49,6 +50,7 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     assert {card.title: card.count for card in memories_region.cards} == {
         "Decisions": 1,
         "Ideas": 1,
+        "Journal": 1,
         "Journeys": 1,
     }
     assert all(card.kind == "memory-category" for card in memories_region.cards)
@@ -84,6 +86,47 @@ def test_atlas_home_surfaces_real_identity_and_personas(
         "Avoidance",
         "Contradictions",
     )
+
+
+def test_atlas_home_pins_journal_memory_category_when_not_top_ranked(
+    identity_service,
+    journey_service,
+    memory_service,
+    conversation_service,
+    task_service,
+    mock_memory_embedding,
+) -> None:
+    for memory_type in [
+        "decision",
+        "learning",
+        "idea",
+        "insight",
+        "tension",
+        "reflection",
+        "commitment",
+        "pattern",
+    ]:
+        memory_service.add_memory(
+            title=f"{memory_type} memory",
+            content="Retained context.",
+            memory_type=memory_type,
+        )
+    memory_service.add_memory(title="Harvest", content="A journal entry", memory_type="journal")
+
+    surfaces = SurfaceService(
+        identity=identity_service,
+        journeys=journey_service,
+        memories=memory_service,
+        conversations=conversation_service,
+        tasks=task_service,
+    )
+
+    memories_region = next(region for region in surfaces.atlas_home().regions if region.id == "memories")
+    cards = {card.title: card for card in memories_region.cards}
+
+    assert "Journal" in cards
+    assert cards["Journal"].id == "memory-category:journal"
+    assert cards["Journal"].metadata["icon"] == "📓"
 
 
 def test_atlas_home_represents_empty_regions(

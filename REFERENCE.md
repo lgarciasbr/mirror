@@ -19,6 +19,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-mirror` | `$mm-mirror` | `/mm:mirror` | Loads identity, persona, journey, and attachments for Mirror Mode | `load [--persona P] [--journey J] [--query Q] [--org]`, `log "summary"`, `journeys` |
 | `/mm-build` | `$mm-build` | `/mm:build` | Builder Mode for a journey — loads context and project docs | `<slug>` |
 | `/mm-explore` | `$mm-explore` | `/mm:explore` | Explorer Mode for a journey, with explicit deactivation, in-session story surfaces, and Builder handoff artifacts — preserves uncertainty before construction | `<slug>`, `deactivate`, `story show|update|clear|open|thicken|snapshot|attractors|experiment|handoff|promote` |
+| `/mm-soul` | `$mm-soul` | `/mm:soul` | Soul Mode ritual entry and possible-listenings surface for inner-life listening | `[slug]` |
 | `python -m memory mode` | — | — | Internal explicit Mirror operating mode lifecycle used by runtime skills and status bars | `activate <mode> [--journey J]`, `deactivate`, `status` |
 | `/mm-identity` | `$mm-identity` | `/mm:identity` | Read and update identity directly in the database | `list [--layer L]`, `get <layer> <key>`, `set <layer> <key>`, `edit <layer> <key>` |
 | `/mm-consult` | `$mm-consult` | `/mm:consult` | Asks other LLMs through OpenRouter with Mirror context | `<family> [tier] "prompt"`, `credits` |
@@ -62,15 +63,16 @@ global fallback. Mode activation and deactivation are semantic operations.
 Rendering the Pi status line and clearing stale UI are internal effects of that
 lifecycle.
 
-The user-facing mode skills are `/mm-mirror`, `/mm-build`, and `/mm-explore`.
-The internal lifecycle command exists so Mirror can activate and leave explicit
-lenses through contained operations. Users are never in "no mode": when an
-explicit lens is deactivated, Mirror returns to Mirror Mode, preserving journey
-context when one remains active.
+The user-facing mode skills are `/mm-mirror`, `/mm-build`, `/mm-explore`, and
+`/mm-soul`. The internal lifecycle command exists so Mirror can activate and
+leave explicit lenses through contained operations. Users are never in "no
+mode": when an explicit lens is deactivated, Mirror returns to Mirror Mode,
+preserving journey context when one remains active.
 
 `memory mirror load` activates `◌ Mirror Mode`. `memory build load <slug>`
-activates `■ Builder Mode` for the selected journey. `memory explore load <slug>`
-activates `△ Explorer Mode` for the selected journey and resumes the active
+activates `■ Builder Mode` for the selected journey. `memory soul load [slug]`
+activates `☾ Soul Mode` and renders the ritual entry surface without opening a
+rite or writing to the journal. `memory explore load <slug>` activates `△ Explorer Mode` for the selected journey and resumes the active
 durable Exploratory Story when one exists. `memory explore story show|update|clear
 <slug>` manages the current Exploratory Story; `clear` archives the active story
 so it is no longer current but remains historical evidence. `memory explore story
@@ -100,14 +102,14 @@ conversation history.
 `memory welcome --status-line [--session-id ID]` includes active mode context when present:
 
 ```text
-◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓
+◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓
 ```
 
 When Builder Mode is deactivated while journey context remains active, the
 status line returns to Mirror Mode:
 
 ```text
-◇ alisson-vale · Active Journey explorer-mode on ◌ Mirror Mode · ✓
+◇ alisson-vale · Explorer Mode on ◌ Mirror Mode · ✓
 ```
 
 When no journey context is active it still shows the default mode:

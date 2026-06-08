@@ -16,6 +16,7 @@ Show the user the available commands (same on Pi and Gemini CLI):
 | | `--persona ID` · `--journey ID` · `--query "terms"` · `--org` |
 | `/mm-build <slug>` | Activates ■ Builder Mode for a journey |
 | `/mm-explore <slug>` | Activates △ Explorer Mode for a journey |
+| `/mm-soul [slug]` | Activates ☾ Soul Mode ritual entry |
 
 ## Journeys
 

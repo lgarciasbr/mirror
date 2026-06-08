@@ -18,6 +18,7 @@ MODE_ICONS = {
     "Mirror Mode": "◌",
     "Builder Mode": "■",
     "Explorer Mode": "△",
+    "Soul Mode": "☾",
 }
 
 MODE_STATE_SESSION_ID = "__global_operating_mode__"

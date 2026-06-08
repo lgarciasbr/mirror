@@ -74,7 +74,7 @@ Mirror Mode surface should orient the user around:
 - active journey, when present
 - `◌ Mirror Mode` as the active lens
 - persona routing examples (`when the topic asks: persona_1, persona_2, persona_3 and N more available`)
-- available lenses: `◌ Mirror Mode`, `■ Builder Mode`, `△ Explorer Mode`
+- available lenses: `◌ Mirror Mode`, `■ Builder Mode`, `△ Explorer Mode`, `☾ Soul Mode`
 
 Activated personas use `✦ Persona:`. Do not reuse the Mirror identity symbol
 `◇` for personas.

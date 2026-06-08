@@ -163,7 +163,7 @@ The command is cheap and cache-oriented. It includes active operating mode
 context when present, for example:
 
 ```text
-◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓
+◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓
 ```
 
 When no journey context is active, it still shows the default Mirror lens:

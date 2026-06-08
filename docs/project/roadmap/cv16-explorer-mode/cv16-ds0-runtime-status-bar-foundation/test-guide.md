@@ -45,11 +45,11 @@ Expected:
 - after `build load explorer-mode`, status line includes:
 
 ```text
-Active Journey explorer-mode on ■ Builder Mode
+Explorer Mode on ■ Builder Mode
 ```
 
 - after `mode deactivate`, status line no longer includes stale `Builder Mode`
-  text and returns to `Active Journey explorer-mode on ◌ Mirror Mode` when
+  text and returns to `Explorer Mode on ◌ Mirror Mode` when
   journey context remains active.
 
 ## Pi Manual Validation

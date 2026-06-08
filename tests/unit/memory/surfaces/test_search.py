@@ -83,3 +83,26 @@ def test_search_surface_reports_empty_memory_category(memory_service) -> None:
     assert results.query == "Patterns"
     assert results.results == ()
     assert results.empty_state == "No recent patterns memories are available yet."
+
+
+def test_search_surface_lists_journal_memories_as_journal_category(
+    memory_service, mock_memory_embedding
+) -> None:
+    journal = memory_service.add_memory(
+        title="Soul Mode Harvest",
+        content="Usefulness can remain a gift.",
+        memory_type="journal",
+        layer="self",
+    )
+    memory_service.add_memory(
+        title="Ordinary reflection",
+        content="A retained reflection.",
+        memory_type="reflection",
+    )
+
+    results = SearchSurface(memories=memory_service).memory_category("journal")
+
+    assert results.query == "Journal"
+    assert len(results.results) == 1
+    assert results.results[0].id == journal.id
+    assert results.results[0].metadata["memory_type"] == "journal"

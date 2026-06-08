@@ -39,6 +39,13 @@ Commands:
                        Usage: python -m memory build load <slug>
   explore              Explorer Mode context loader
                        Usage: python -m memory explore load <slug>
+  soul                 Soul Mode context loader and surface renderer
+                       Usage: python -m memory soul load [slug]
+                              python -m memory soul listen [--self TEXT] [--shadow TEXT] [--wisdom TEXT] [--beauty TEXT]
+                              python -m memory soul rite self|shadow [--says TEXT] [--listening-for TEXT]
+                              python -m memory soul fruit set|show|clear
+                              python -m memory soul harvest set|show|save|decline
+                              python -m memory soul prompt self
   memories             List memories with filters
                        Usage: python -m memory memories [--type T] [--layer L] [--journey J] [--search Q] [--mirror-home PATH]
   conversations        List recent conversations
@@ -214,6 +221,11 @@ def main() -> None:
         from memory.cli.explore import main as _explore_main
 
         _explore_main(sys.argv[2:])
+
+    elif command == "soul":
+        from memory.cli.soul import main as _soul_main
+
+        _soul_main(sys.argv[2:])
 
     elif command == "consult":
         sys.argv = [sys.argv[0], *sys.argv[2:]]

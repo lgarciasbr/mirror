@@ -23,7 +23,7 @@ status line can render a compact identity and health marker, for example:
 The desired next shape is:
 
 ```text
-◇ alisson-vale · Active Journey xxxx on ■ Builder Mode · ✓
+◇ alisson-vale · Journey Name on ■ Builder Mode · ✓
 ```
 
 The story should extend that existing status-line path instead of replacing the
@@ -101,7 +101,7 @@ mode context when available and fall back to the current compact line when not.
 Candidate formatting:
 
 ```text
-◇ alisson-vale · Active Journey explorer-mode on ■ Builder Mode · ✓
+◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓
 ```
 
 If the journey has a human title available cheaply, implementation may choose
@@ -128,7 +128,7 @@ And it does not include stale journey or explicit mode text
 ```gherkin
 Given Builder Mode has been activated for `explorer-mode`
 When `uv run python -m memory welcome --status-line` runs
-Then it includes `Active Journey explorer-mode on ■ Builder Mode`
+Then it includes `Explorer Mode on ■ Builder Mode`
 And it preserves the Mirror identity prefix and health marker suffix
 ```
 
@@ -137,7 +137,7 @@ Given Builder Mode has been activated for `explorer-mode`
 When the active mode is explicitly deactivated
 And `uv run python -m memory welcome --status-line` runs
 Then it no longer includes `■ Builder Mode`
-And it returns to `Active Journey explorer-mode on ◌ Mirror Mode`
+And it returns to `Explorer Mode on ◌ Mirror Mode`
 ```
 
 ```gherkin

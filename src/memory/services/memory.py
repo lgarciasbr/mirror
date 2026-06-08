@@ -27,6 +27,7 @@ class MemoryService:
         persona: str | None = None,
         tags: list[str] | None = None,
         conversation_id: str | None = None,
+        metadata: str | None = None,
     ) -> Memory:
         """Add a manual memory without automatic extraction."""
         embed_text = f"{title}. {content}"
@@ -46,6 +47,7 @@ class MemoryService:
             persona=persona,
             tags=json.dumps(tags) if tags else None,
             embedding=embedding_to_bytes(emb),
+            metadata=metadata,
         )
         return self.store.create_memory(mem)
 
@@ -110,6 +112,7 @@ class MemoryService:
         tags: list[str] | None = None,
         conversation_id: str | None = None,
         journey: str | None = None,
+        metadata: str | None = None,
     ) -> Memory:
         """Add a journal entry, classifying it with an LLM when needed."""
         from memory.intelligence.extraction import classify_journal_entry
@@ -144,4 +147,5 @@ class MemoryService:
             tags=tags,
             conversation_id=conversation_id,
             journey=journey,
+            metadata=metadata,
         )

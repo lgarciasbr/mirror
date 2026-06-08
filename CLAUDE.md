@@ -27,6 +27,20 @@ solutions, keep docs updated when code changes. For a journey, use `/mm-build
 <slug>` / `$mm-build <slug>` / `/mm:build <slug>` — loads journey context and
 project docs.
 
+**Soul Mode** — activate when the user asks to enter Soul Mode, open Soul Mode,
+or continue an active Soul Mode ritual.
+
+How to operate: use `/mm-soul [slug]` / `$mm-soul [slug]` / `/mm:soul [slug]`
+to render the entry surface. While Soul Mode is active, follow
+`.pi/skills/mm-soul/SKILL.md`: listen to the user's answer as living field,
+withhold Possible Listenings when the material is thin, and when living matter
+appears call `uv run python -m memory soul listen ...` to render the Possible
+Listenings surface at the end of the response. This renderer call is required
+Soul Mode behavior, not optional tool use. Soul Mode must not mutate files,
+implement stories, run implementation commands, package releases, or change
+project state. For operational requests, name the `☾ SOUL → BUILDER BOUNDARY`
+and ask whether to switch to Builder Mode for the same journey.
+
 Builder activation boundary: activating Builder Mode or loading a journey is
 context setup only. After loading the context and required docs, stop and ask
 what work should be done next. Do not edit files, create tests, run
@@ -97,6 +111,8 @@ Rules: `◇` plus persona name on its own line; voice stays first person and uni
 **Core modes:**
 - `mm-mirror` — activates Mirror Mode — `.pi/skills/mm-mirror/SKILL.md`
 - `mm-build` — activates Builder Mode for a journey — `.pi/skills/mm-build/SKILL.md`
+- `mm-soul` — activates Soul Mode ritual entry — `.pi/skills/mm-soul/SKILL.md`
+- `mm-soul` — activates Soul Mode ritual entry — `.pi/skills/mm-soul/SKILL.md`
 
 **Journeys and tasks:**
 - `mm-journeys` — compact journey list — `.pi/skills/mm-journeys/SKILL.md`

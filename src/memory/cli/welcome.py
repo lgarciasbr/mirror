@@ -156,9 +156,20 @@ def _mode_status_segment(home_path: Path, *, session_id: str | None = None) -> s
         if state is None:
             _, sticky_journey = mem.store.get_global_sticky_defaults()
             state = OperatingModeState(mode="Mirror Mode", journey=sticky_journey)
+        journey_name = _journey_display_name(mem, state.journey) if state.journey else None
     if state.journey:
-        return f"Active Journey {state.journey} on {state.label}"
+        return f"{journey_name or state.journey} on {state.label}"
     return state.label
+
+
+def _journey_display_name(mem: MemoryClient, journey: str) -> str | None:
+    content = mem.get_identity("journey", journey)
+    if not isinstance(content, str):
+        return None
+    first_line = content.split("\n", 1)[0].strip()
+    if first_line.startswith("# "):
+        first_line = first_line[2:].strip()
+    return first_line or None
 
 
 # --------- renderers -----------------------------------------------------

@@ -27,7 +27,7 @@ def render_mirror_mode_transition(
                 "Identity lens. Mirror reflects from memory, values, journeys, tensions, and personas.",
             ),
             ("persona routing", persona_line),
-            ("available lenses", "◌ Mirror Mode · ■ Builder Mode · △ Explorer Mode"),
+            ("available lenses", "◌ Mirror Mode · ■ Builder Mode · △ Explorer Mode · ☾ Soul Mode"),
         ]
     )
     return _box("◌  MIRROR MODE ACTIVE", rows)
@@ -68,6 +68,30 @@ def render_explorer_mode_transition(*, journey: str) -> str:
             ("boundary", "Explorer preserves uncertainty."),
         ],
     )
+
+
+def render_soul_mode_transition(*, journey: str | None = None) -> str:
+    del journey  # Soul Mode entry keeps journey context in state, not in the ritual card.
+    lines = [
+        "Mirror",
+        "╭" + "─" * WIDTH + "╮",
+        _line("        ☾  SOUL MODE ACTIVE"),
+        _line(""),
+    ]
+    for wrapped in _wrap("Soul Mode turns the day toward the inner life."):
+        lines.append(_line(f"  {wrapped}"))
+    lines.extend(
+        [
+            _line(""),
+            _line("  ✦  IN ORDER TO"),
+            _line("  remember who you are"),
+            _line(""),
+            _line("  ▹  START BY ANSWERING"),
+            _line("  how is your day going today?"),
+            "╰" + "─" * WIDTH + "╯",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def _persona_routing_line(personas: list[str]) -> str:

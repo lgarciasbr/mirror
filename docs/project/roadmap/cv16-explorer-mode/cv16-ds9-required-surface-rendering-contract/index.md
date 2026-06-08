@@ -16,7 +16,7 @@ During external validation, `explore story thicken` correctly returned the `△ 
 
 Explorer surfaces are product output, not internal evidence. Explorer is also not the right lens for mutating project files. When the user asks for a clear operational action, Mirror must not force that request into story thickening or exploration.
 
-DS9 also hardens a multisession leak discovered during validation: the Pi footer could show `Active Journey mirror-4-teams on △ Explorer Mode` in one session while another session was working in Builder Mode for `explorer-mode`. Operating mode display must be session-scoped when Pi supplies a session id.
+DS9 also hardens a multisession leak discovered during validation: the Pi footer could show `Mirror For Teams on △ Explorer Mode` in one session while another session was working in Builder Mode for `explorer-mode`. Operating mode display must be session-scoped when Pi supplies a session id.
 
 ---
 
