@@ -31,6 +31,15 @@ Surface footer:
 proposal only — no identity changed
 ```
 
+Before rendering a proposal, Mirror should load the current target identity when possible. The proposed content must be the exact target content to write, not an informal summary. If the target identity is a longer document, the proposal should contain a full replacement or explicit additive section so DS4 does not accidentally overwrite the whole layer with a fragment.
+
+Layer language:
+
+- Self: first-person principle adopted as practice, allowing good and bad days.
+- Shadow: first-person recognition of a protective part without shame.
+- Ego: operational behavior pattern.
+- Persona: public-role or presentation pattern, not essence.
+
 ## Validation
 
 ```bash

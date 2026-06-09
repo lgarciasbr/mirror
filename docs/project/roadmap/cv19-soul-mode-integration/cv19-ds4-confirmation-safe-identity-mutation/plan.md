@@ -23,10 +23,11 @@ Defaults:
 - `ego` → `behavior`
 - `persona` → requires `--key`
 
-The command uses `MemoryClient.set_identity()` and renders an identity-updated surface.
+The command uses `MemoryClient.set_identity()` and renders an identity-updated surface. Because this writes the exact target content, the assistant must confirm that the proposed text is the intended full target content or explicit additive section before applying. Do not overwrite a longer identity document with a short fragment unless that is explicitly the approved replacement.
 
 ## Validation
 
 - Missing `--confirm APPLY` exits without mutation.
 - Confirmed apply writes identity.
+- Apply uses the exact approved content, not a paraphrase.
 - Unsupported/missing keys fail safely.

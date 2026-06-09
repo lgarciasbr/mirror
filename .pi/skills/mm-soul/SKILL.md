@@ -342,14 +342,28 @@ identity diff, mutate Self/Shadow/Ego/persona identity, or change project state.
 It must not include journey identity or journey pattern; that category is not
 mature enough for this release.
 
-After Integration Review, if the user asks to see how something could be
-integrated, render a Psyche Enrichment Proposal. Do not mutate identity from the
-review surface itself.
+After Integration Review, offer clear paths without pushing mutation:
+
+```text
+Podemos deixar assim, ou posso transformar um desses pontos em uma proposta concreta — por exemplo Self, Shadow, Ego ou Persona.
+```
+
+If the user asks to see how something could be integrated, render a Psyche
+Enrichment Proposal. Do not mutate identity from the review surface itself.
 
 ## 8. Psyche Enrichment Proposal
 
 When the user asks how review material could remain in Self, Shadow, Ego, or a
-persona, render a proposal-only surface:
+persona, first load the current target identity when possible:
+
+```bash
+uv run python -m memory identity get self soul
+uv run python -m memory identity get shadow profile
+uv run python -m memory identity get ego behavior
+uv run python -m memory identity get persona <persona-id>
+```
+
+Then render a proposal-only surface:
 
 ```bash
 uv run python -m memory soul propose self \
@@ -369,7 +383,29 @@ Targets:
 The proposal must include `proposal only — no identity changed`. Do not apply it
 until the user explicitly confirms the exact proposed content.
 
+The `--proposed` text must be the exact target content to write, not an informal
+summary. If the target identity is a longer existing document, compose a complete
+replacement or an explicit additive section inside the proposed content; do not
+apply a short fragment that would accidentally overwrite the whole identity.
+
+Use layer-appropriate language:
+
+- Self: a first-person principle the user can adopt as practice while accepting good and bad days, e.g. `Meu compromisso verdadeiro nasce da verdade do trabalho, não da gestão da imagem.`
+- Shadow: a first-person recognition of a protective part without shame or command, e.g. `Uma parte minha tenta comprar segurança oferecendo disponibilidade excessiva quando teme ser julgada como descuidada.`
+- Ego: a behavioral pattern stated operationally, e.g. `Quando temo julgamento, posso compensar permanecendo disponível além da medida real.`
+- Persona: a public-role pattern stated as presentation, not essence, e.g. `Minha persona profissional pode confundir confiabilidade com disponibilidade visível em excesso.`
+
 ## 9. Confirmation And Safe Identity Mutation
+
+If the user asks to apply a proposal, first ask for explicit confirmation with the exact target and exact text:
+
+```text
+Posso aplicar exatamente esta proposta em `self/soul`:
+
+"..."
+
+Confirma aplicar exatamente esse texto?
+```
 
 If the user explicitly confirms applying a proposal, call:
 
@@ -382,7 +418,15 @@ uv run python -m memory soul apply self \
 Use the same target layer/key as the proposal. For persona, include `--key`.
 Never call `soul apply` without explicit user confirmation. Never apply a
 paraphrase that differs from the proposed content unless the user first approves
-the revised proposal.
+the revised proposal. Never apply a fragment over a longer identity document
+unless the proposed content intentionally contains the full resulting document or
+an explicit additive section.
+
+After applying, ask:
+
+```text
+Quer revisar mais alguma integração ou encerramos por aqui?
+```
 
 ## 10. Harvested Fruit And Journal Confirmation
 
