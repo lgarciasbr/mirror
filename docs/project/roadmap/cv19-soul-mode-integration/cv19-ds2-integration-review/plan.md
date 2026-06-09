@@ -59,7 +59,7 @@ After Closing Rite, Mirror should ask:
 Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?
 ```
 
-If the user says yes, Mirror renders Integration Proposal. After rendering, Mirror asks: `Quer registrar assim na sua identidade? Ou, se quiser, também podemos ajustar o que quiser.` If the user declines the post-closing invitation, Mirror may ask whether there is another theme from the day or whether to end.
+If the user says yes, Mirror renders Integration Proposal. After rendering, Mirror asks: `Quer registrar assim na sua identidade? Ou também podemos ajustar o que quiser.` If the user declines the post-closing invitation, Mirror may ask whether there is another theme from the day or whether to end.
 
 ## Category Rules
 

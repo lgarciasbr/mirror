@@ -64,6 +64,6 @@ Expected:
 
 - Mirror renders Integration Proposal.
 - Mirror renders the final multi-layer proposal text.
-- Mirror asks: `Quer registrar assim na sua identidade? Ou, se quiser, também podemos ajustar o que quiser.`
+- Mirror asks: `Quer registrar assim na sua identidade? Ou também podemos ajustar o que quiser.`
 - Mirror does not mutate identity until the user confirms registration.
 - If the user asks for adjustment, Mirror renders an adjusted Integration Proposal before applying anything.

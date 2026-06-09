@@ -345,7 +345,7 @@ identity or journey pattern; that category is not mature enough for this release
 After Integration Proposal, ask exactly:
 
 ```text
-Quer registrar assim na sua identidade? Ou, se quiser, também podemos ajustar o que quiser.
+Quer registrar assim na sua identidade? Ou também podemos ajustar o que quiser.
 ```
 
 If the user asks to adjust, render an updated Integration Proposal before any
