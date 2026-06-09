@@ -2,7 +2,7 @@
 
 # CV19.DS3 — Psyche Enrichment Proposal
 
-**Status:** 🟢 Implemented · awaiting Pi validation
+**Status:** ✅ Done
 
 **User-visible outcome:** The user can see how review material might become Self, Shadow, Ego, or persona identity without anything being written.
 

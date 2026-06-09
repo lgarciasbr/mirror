@@ -2,7 +2,7 @@
 
 # CV19.DS4 — Confirmation And Safe Identity Mutation
 
-**Status:** 🟢 Implemented · awaiting Pi validation
+**Status:** ✅ Done
 
 **User-visible outcome:** A proposal can be applied only after explicit confirmation.
 

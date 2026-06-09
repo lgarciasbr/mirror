@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-09 — v0.26.0 Soul Mode Integration packaged
+
+Packaged `v0.26.0 — Soul Mode Integration`. CV19 is now marked done, release notes were added, the release index was updated, and package metadata was bumped from `0.25.0` to `0.26.0`. The release includes Closing Rite, multi-layer Integration Proposal, explicit confirmation-only apply, additive identity content updates, atomic identity integration records, and the refined fruit-maturation/self-language contracts.
+
+Validation: `uv run pytest tests/unit/ tests/integration/ -m "not live" -q`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, `git diff --check`, `uv run python -m memory runtime release-notes latest`, and `uv run python -m memory runtime release-notes v0.26.0` passed before release-candidate commit.
+
 ### 2026-06-08 — Soul identity integrations made additive and atomic
 
 Reworked confirmed Soul identity apply so integration no longer overwrites prompt-facing identity content. Added `identity_integrations` as an atomic record table, with each confirmed Soul integration preserving layer/key/content/origin/provenance metadata. `memory soul apply` now records the individual integration and appends the exact confirmed text under layer-specific sections: Self `Novos Princípios Incorporados`, Shadow `Novas Necessidades Ocultas Reconhecidas`, Ego `Novos Padrões Operacionais Identificados`, and Persona `Novos Padrões de Participação Revelados`. Existing identity content is preserved by default.

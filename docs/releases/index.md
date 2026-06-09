@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.26.0 — Soul Mode Integration](v0.26.0.md) — minor release that adds Closing Rite, multi-layer Integration Proposal, explicit confirmation-only identity integration, additive identity updates, and atomic integration records.
 - [v0.25.0 — Soul Mode More Voices](v0.25.0.md) — minor release that adds active Wisdom Voice and Beauty Voice listening lenses, full voice-card utterances, source/aesthetic bridge guidance, and non-mutating Soul Mode voice boundaries.
 - [v0.24.0 — Soul Mode First Ritual](v0.24.0.md) — minor release that adds the first complete Soul Mode ritual: entry, Possible Listenings, Self and Shadow listening lenses, Fruit In Maturation, Harvested Fruit, journal persistence, and pre-release web/journal refinements.
 - [v0.23.0 — Durable Explorer Mode](v0.23.0.md) — minor release that completes the first Explorer Mode release with durable stories, source-evidence handoff artifacts, required surface rendering, Builder boundary routing, and session-scoped Pi mode status.
