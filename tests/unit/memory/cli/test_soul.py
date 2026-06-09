@@ -233,6 +233,45 @@ def test_soul_close_rejects_empty_closing_rite(capsys):
     assert "at least one closing section" in capsys.readouterr().err
 
 
+def test_soul_review_renders_integration_review(capsys):
+    soul.cmd_review(
+        journal="The fruit was saved as journal.",
+        self_material="Commitment may belong to truth rather than image management.",
+        shadow="A part fears being seen as careless without over-availability.",
+        ego="Staying late can become image management.",
+        persona="The committed professional persona may overperform availability.",
+        leave_open="How to sustain measure under uncertain gaze.",
+    )
+
+    out = capsys.readouterr().out
+    assert "☾  INTEGRATION REVIEW" in out
+    assert "journal" in out
+    assert "The fruit was saved as journal." in out
+    assert "self" in out
+    assert "Commitment may belong to truth" in out
+    assert "shadow" in out
+    assert "A part fears being seen" in out
+    assert "ego behavior" in out
+    assert "Staying late can become image" in out
+    assert "persona" in out
+    assert "committed professional persona" in out
+    assert "leave open" in out
+    assert "How to sustain measure" in out
+    assert "review only — no identity changed" in out
+    assert "journey" not in out.lower()
+
+
+def test_soul_review_rejects_empty_review(capsys):
+    try:
+        soul.cmd_review()
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "at least one integration review section" in capsys.readouterr().err
+
+
 def test_soul_fruit_set_stores_and_renders_fruit(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "alisson-vale"
     mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))

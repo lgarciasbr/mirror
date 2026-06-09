@@ -8,6 +8,7 @@ from memory.surfaces.soul import (
     render_closing_rite,
     render_fruit_in_maturation,
     render_harvested_fruit,
+    render_integration_review,
     render_possible_listenings,
 )
 
@@ -257,3 +258,45 @@ def test_closing_rite_converts_escaped_newlines():
     assert "Second line." in rendered
     assert "\\n" not in rendered
     assert "│                                        │" in rendered
+
+
+def test_integration_review_renders_all_sections():
+    rendered = render_integration_review(
+        journal="The fruit was saved as journal.",
+        self_material="Commitment may belong to truth rather than image management.",
+        shadow="A part fears being seen as careless without over-availability.",
+        ego="Staying late can become image management.",
+        persona="The committed professional persona may overperform availability.",
+        leave_open="How to sustain measure under uncertain gaze.",
+    )
+
+    assert "☾  INTEGRATION REVIEW" in rendered
+    assert "journal" in rendered
+    assert "The fruit was saved as journal." in rendered
+    assert "self" in rendered
+    assert "Commitment may belong to truth" in rendered
+    assert "shadow" in rendered
+    assert "A part fears being seen" in rendered
+    assert "ego behavior" in rendered
+    assert "Staying late can become image" in rendered
+    assert "persona" in rendered
+    assert "committed professional persona" in rendered
+    assert "leave open" in rendered
+    assert "How to sustain measure" in rendered
+    assert "review only — no identity changed" in rendered
+
+
+def test_integration_review_omits_empty_sections():
+    rendered = render_integration_review(self_material="A possible Self principle.", shadow=" ")
+
+    assert "☾  INTEGRATION REVIEW" in rendered
+    assert "self" in rendered
+    assert "A possible Self principle." in rendered
+    assert "shadow" not in rendered
+    assert "journal" not in rendered
+    assert "review only — no identity changed" in rendered
+
+
+def test_integration_review_requires_at_least_one_section():
+    with pytest.raises(ValueError, match="at least one integration review section"):
+        render_integration_review()

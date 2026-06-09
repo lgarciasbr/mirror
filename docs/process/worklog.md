@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — CV19.DS2 Integration Review implemented
+
+Implemented the Soul Mode Integration Review. `memory soul review` now renders a `☾ INTEGRATION REVIEW` card with optional review-only sections for journal, self, shadow, ego behavior, persona, and leave open. The renderer rejects empty reviews, omits empty categories, preserves the `review only — no identity changed` footer, and intentionally excludes journey identity because that category is not mature enough for this release. The Pi Soul Mode skill now uses the post-closing invitation `Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?` and routes affirmative responses to the review surface without proposing diffs or mutating identity.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, focused `uv run ruff check` / `ruff format --check` on touched Soul files, targeted `git diff --check`, and CLI smoke for `memory soul review` passed. Full-repo ruff was not used because unrelated untracked Builder files are present in the working tree.
+
 ### 2026-06-08 — CV19.DS1 Closing Rite implemented
 
 Implemented the Soul Mode Closing Rite. `memory soul close` now renders a `☾ CLOSING RITE` card with optional sections for what was harvested, what still echoes, what remains open, and what may want integration. The renderer rejects empty closing cards, preserves paragraph breaks, normalizes escaped newlines, and does not save journal entries or mutate identity. The Pi Soul Mode skill now routes natural closing requests to the contained renderer and preserves the boundary that closing is not integration. During validation, the Self Voice contract was tightened to reject one-line aphorisms, and `listening for` was removed from all active voice cards so every voice lives under `the voice says`. Harvest confirmation copy now asks whether to save as-is or change anything first. After a successful journal save, the Pi skill now immediately renders Closing Rite and asks `Mais algum tema que preencheu o dia ou encerramos por aqui hoje?`; if the user ends, Mirror deactivates Soul Mode and returns to Mirror Mode with a short farewell.

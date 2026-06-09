@@ -31,7 +31,7 @@ Closing is not integration yet. It is the threshold before integration. It also 
 - Add CLI rendering support for the closing rite.
 - Update the Pi Soul Mode skill so natural-language requests like “let's close”, “encerrar”, or “fechar o rito” render the Closing Rite.
 - Ensure closing does not save a journal entry, mutate identity, or apply integration.
-- After a successful journal save, route immediately into Closing Rite and ask whether another theme filled the day or whether to end.
+- After a successful journal save, route immediately into Closing Rite and ask whether the user wants to review what may want to remain.
 - If the user chooses to end after closing, exit Soul Mode back to Mirror Mode with a short farewell.
 
 ---
@@ -55,7 +55,7 @@ Given the Closing Rite renders, it includes what was harvested when available an
 
 Given the Closing Rite renders, no identity entry, journal entry, journey state, or project file is mutated automatically.
 
-Given a journal harvest is saved, Mirror immediately renders Closing Rite and asks: `Mais algum tema que preencheu o dia ou encerramos por aqui hoje?`
+Given a journal harvest is saved, Mirror immediately renders Closing Rite and asks: `Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?`
 
 Given the user indicates they are done after closing, Mirror exits Soul Mode and returns to Mirror Mode with a short farewell.
 

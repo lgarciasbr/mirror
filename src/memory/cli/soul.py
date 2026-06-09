@@ -30,6 +30,7 @@ from memory.surfaces.soul import (
     render_closing_rite,
     render_fruit_in_maturation,
     render_harvested_fruit,
+    render_integration_review,
     render_possible_listenings,
 )
 
@@ -108,6 +109,31 @@ def cmd_close(
                 echoes=echoes,
                 remains_open=remains_open,
                 integration=integration,
+            )
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_review(
+    *,
+    journal: str | None = None,
+    self_material: str | None = None,
+    shadow: str | None = None,
+    ego: str | None = None,
+    persona: str | None = None,
+    leave_open: str | None = None,
+) -> None:
+    try:
+        print(
+            render_integration_review(
+                journal=journal,
+                self_material=self_material,
+                shadow=shadow,
+                ego=ego,
+                persona=persona,
+                leave_open=leave_open,
             )
         )
     except ValueError as exc:
@@ -284,6 +310,19 @@ def main(argv: list[str] | None = None) -> None:
         help="What may want integration later",
     )
 
+    p_review = sub.add_parser("review", help="Render a Soul Mode Integration Review")
+    p_review.add_argument("--journal", default=None, help="Journal-only material")
+    p_review.add_argument("--self", dest="self_material", default=None)
+    p_review.add_argument("--shadow", default=None)
+    p_review.add_argument("--ego", default=None, help="Ego behavior material")
+    p_review.add_argument("--persona", default=None)
+    p_review.add_argument(
+        "--open",
+        dest="leave_open",
+        default=None,
+        help="Material to leave open",
+    )
+
     p_fruit = sub.add_parser("fruit", help="Manage provisional Soul Mode fruit")
     fruit_sub = p_fruit.add_subparsers(dest="fruit_action", required=True)
     p_fruit_set = fruit_sub.add_parser("set", help="Set and render fruit in maturation")
@@ -337,6 +376,15 @@ def main(argv: list[str] | None = None) -> None:
             echoes=args.echoes,
             remains_open=args.remains_open,
             integration=args.integration,
+        )
+    elif args.command == "review":
+        cmd_review(
+            journal=args.journal,
+            self_material=args.self_material,
+            shadow=args.shadow,
+            ego=args.ego,
+            persona=args.persona,
+            leave_open=args.leave_open,
         )
     elif args.command == "fruit":
         cmd_fruit(

@@ -57,7 +57,7 @@ Expected:
 
 - Mirror renders the Closing Rite surface.
 - The card gathers the material already present in the conversation.
-- Mirror asks exactly: `Mais algum tema que preencheu o dia ou encerramos por aqui hoje?`
+- Mirror asks exactly: `Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?`
 - Mirror does not apply integration.
 - Mirror can say that integration review is the next step/story if the user asks what should remain.
 
@@ -65,7 +65,7 @@ After saving a harvested fruit to journal, expected:
 
 - Mirror does not stop at `saved to journal`.
 - Mirror immediately renders Closing Rite.
-- Mirror asks whether another theme filled the day or whether to end.
+- Mirror asks whether the user wants to review what may want to remain.
 
 If the user says they are done, expected:
 

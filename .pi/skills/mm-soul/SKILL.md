@@ -268,8 +268,8 @@ faithful to the active voice, and revisable.
 
 The Closing Rite closes the Soul Mode session opened by the entry question
 "how is your day going today?" It is not necessarily an exit from Soul Mode.
-After the Closing Rite, Mirror asks whether there is another theme from the day
-or whether to end for today.
+After the Closing Rite, Mirror invites the user to review what may want to remain
+before ending.
 
 Render the Closing Rite when:
 
@@ -302,11 +302,11 @@ Paste the Closing Rite surface visibly before commentary.
 After the Closing Rite, ask exactly:
 
 ```text
-Mais algum tema que preencheu o dia ou encerramos por aqui hoje?
+Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?
 ```
 
-If the user inclines toward ending for today, exit Soul Mode by deactivating the
-active operating mode:
+If the user says yes, render Integration Review. If the user declines and inclines
+toward ending for today, exit Soul Mode by deactivating the active operating mode:
 
 ```bash
 uv run python -m memory mode deactivate
@@ -317,10 +317,36 @@ theme, stay in Soul Mode and treat it as a new answer to the day's living field.
 
 Closing is not integration. It must not save a journal entry by itself, propose
 an identity diff, mutate Self/Shadow/Ego/persona/journey identity, or change
-project state. If the user asks whether something should remain in identity,
-name that this belongs to Integration Review or a later explicit proposal step.
+project state.
 
-## 7. Harvested Fruit And Journal Confirmation
+## 7. Integration Review
+
+When the user accepts the post-closing invitation, or asks what may want to
+remain, render Integration Review:
+
+```bash
+uv run python -m memory soul review \
+  --journal "material that belongs only as record" \
+  --self "possible principle, value, or inner law" \
+  --shadow "possible rejected protection or hidden contract" \
+  --ego "possible behavior pattern" \
+  --persona "possible public role or presentation pattern" \
+  --open "question or material to leave open"
+```
+
+Only include sections with real material. At least one section is required.
+Paste the Integration Review surface visibly before commentary.
+
+Integration Review is review only. It must not save a journal entry, propose an
+identity diff, mutate Self/Shadow/Ego/persona identity, or change project state.
+It must not include journey identity or journey pattern; that category is not
+mature enough for this release.
+
+After Integration Review, if the user asks to apply something, name that this
+belongs to a later Psyche Enrichment Proposal step. Do not mutate identity in
+DS2.
+
+## 8. Harvested Fruit And Journal Confirmation
 
 When the user says they wish to harvest, close the current fruit into a Harvested
 Fruit surface:
@@ -349,8 +375,8 @@ This creates one structured Markdown journal entry and clears the harvested frui
 
 After a successful save, do not stop at "saved to journal". Immediately render
 the Closing Rite with `memory soul close`, using the harvested fruit and any
-remaining echoes/open questions from the conversation. Then ask: `Mais algum tema
-que preencheu o dia ou encerramos por aqui hoje?`
+remaining echoes/open questions from the conversation. Then ask: `Há material
+vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?`
 
 When the user declines saving, call:
 

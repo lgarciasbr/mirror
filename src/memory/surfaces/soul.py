@@ -126,28 +126,41 @@ def render_closing_rite(
     integration: str | None = None,
 ) -> str:
     """Render a Soul Mode Closing Rite surface."""
-    sections = [
-        ("what was harvested", harvested),
-        ("what still echoes", echoes),
-        ("what remains open", remains_open),
-        ("what may want integration", integration),
-    ]
-    normalized_sections = [
-        (label, _normalize_voice_text(value))
-        for label, value in sections
-        if isinstance(value, str) and value.strip()
-    ]
-    if not normalized_sections:
-        raise ValueError("at least one closing section is required")
+    return _render_section_card(
+        title="☾  CLOSING RITE",
+        sections=[
+            ("what was harvested", harvested),
+            ("what still echoes", echoes),
+            ("what remains open", remains_open),
+            ("what may want integration", integration),
+        ],
+        empty_error="at least one closing section is required",
+    )
 
-    lines = ["Soul Mode", "╭" + "─" * WIDTH + "╮", _line("   ☾  CLOSING RITE")]
-    for label, text in normalized_sections:
-        lines.append(_line(""))
-        lines.append(_line(f"   {label}"))
-        for wrapped in _wrap_blocks(text, indent="   "):
-            lines.append(_line(wrapped))
-    lines.append("╰" + "─" * WIDTH + "╯")
-    return "\n".join(lines)
+
+def render_integration_review(
+    *,
+    journal: str | None = None,
+    self_material: str | None = None,
+    shadow: str | None = None,
+    ego: str | None = None,
+    persona: str | None = None,
+    leave_open: str | None = None,
+) -> str:
+    """Render a review-only Soul Mode integration surface."""
+    return _render_section_card(
+        title="☾  INTEGRATION REVIEW",
+        sections=[
+            ("journal", journal),
+            ("self", self_material),
+            ("shadow", shadow),
+            ("ego behavior", ego),
+            ("persona", persona),
+            ("leave open", leave_open),
+        ],
+        empty_error="at least one integration review section is required",
+        footer="review only — no identity changed",
+    )
 
 
 def render_active_rite(
@@ -188,6 +201,35 @@ def render_active_rite(
 def _line(text: str) -> str:
     content = text[:WIDTH]
     return "│" + content.ljust(WIDTH) + "│"
+
+
+def _render_section_card(
+    *,
+    title: str,
+    sections: list[tuple[str, str | None]],
+    empty_error: str,
+    footer: str | None = None,
+) -> str:
+    normalized_sections = [
+        (label, _normalize_voice_text(value))
+        for label, value in sections
+        if isinstance(value, str) and value.strip()
+    ]
+    if not normalized_sections:
+        raise ValueError(empty_error)
+
+    lines = ["Soul Mode", "╭" + "─" * WIDTH + "╮", _line(f"   {title}")]
+    for label, text in normalized_sections:
+        lines.append(_line(""))
+        lines.append(_line(f"   {label}"))
+        for wrapped in _wrap_blocks(text, indent="   "):
+            lines.append(_line(wrapped))
+    if footer:
+        lines.append(_line(""))
+        for wrapped in _wrap_blocks(footer, indent="   "):
+            lines.append(_line(wrapped))
+    lines.append("╰" + "─" * WIDTH + "╯")
+    return "\n".join(lines)
 
 
 def _normalize_voice_text(text: str) -> str:
