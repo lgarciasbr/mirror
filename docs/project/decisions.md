@@ -11,6 +11,27 @@ resolved.
 
 ## Completed Decisions
 
+### Soul Mode active roadmap narrows after integration and web UI
+
+**Date:** 2026-06-08
+**Reference:** [CV18 Soul Mode More Voices](roadmap/cv18-soul-mode-more-voices/index.md)
+
+After validating Wisdom Voice and Beauty Voice, the Soul Mode roadmap is narrowed. Passagem, Return To Center, Closing Day / Daily Soul Ritual, and additional new voices are discarded from the active roadmap. They remain historical exploration context, not planned product commitments.
+
+The future Soul Mode sequence is:
+
+1. Soul Mode Integration: closing rite, review, and safe identity enrichment proposals with explicit confirmation.
+2. Soul Mode Web Ritual UI: a web experience for the ritual grammar already validated in text.
+
+Wisdom/Beauty source libraries remain dormant rather than planned. Mirror should not maintain a local canonical library of texts only for Soul Mode. Source/library work may return only if there is a strong API/provider solution that can retrieve or ground sources externally without embedding a bespoke library in the core framework.
+
+Consequences:
+
+- Do not open delivery stories for Passagem, Return To Center, Closing Day, or new voice expansion unless this decision is explicitly revisited.
+- Treat references to those rites in older Soul Mode docs as historical/exploratory context.
+- Keep source-provider/library ideas out of the active roadmap until an API-based approach is identified.
+- Prioritize integration first, then Web Soul Mode UI.
+
 ### Explorer persistence splits durable story state from handoff evidence
 
 **Date:** 2026-06-07

@@ -76,7 +76,7 @@ requests. See the [CV16 index](cv16-explorer-mode/index.md).
 
 ## CV17 — Soul Mode
 
-First ritual done. CV17 turns the Soul Mode exploration into the first usable ritual mode for inner life. The first release includes explicit Soul Mode entry, free listening to the living field, situated Possible Listenings, minimal Self Voice and Shadow Voice listening lenses, Fruit In Maturation, Harvested Fruit, and optional single-entry journal persistence. Future work remains for Wisdom Voice, Beauty Voice, Passagem, Return To Center, and psyche-layer enrichment. See the [CV17 index](cv17-soul-mode/index.md).
+First ritual done. CV17 turns the Soul Mode exploration into the first usable ritual mode for inner life. The first release includes explicit Soul Mode entry, free listening to the living field, situated Possible Listenings, minimal Self Voice and Shadow Voice listening lenses, Fruit In Maturation, Harvested Fruit, and optional single-entry journal persistence. Wisdom Voice and Beauty Voice shipped in CV18. Passagem, Return To Center, Closing Day, and additional new voices are no longer active roadmap items; the remaining Soul Mode horizon is integration followed by Web Soul Mode UI. See the [CV17 index](cv17-soul-mode/index.md).
 
 ## CV18 — Soul Mode More Voices
 

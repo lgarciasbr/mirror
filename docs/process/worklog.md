@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — Soul Mode post-integration roadmap narrowed
+
+Recorded the Soul Mode roadmap decision after v0.25.0 validation: Passagem, Return To Center, Closing Day / Daily Soul Ritual, and additional new voices are discarded from the active roadmap. Wisdom/Beauty source-library work remains dormant and should only return through an API/provider approach, not a local Mirror-maintained library. The remaining Soul Mode horizon is Integration followed by Web Soul Mode UI.
+
+Validation: documentation-only roadmap decision; `git diff --check` passed.
+
 ### 2026-06-08 — v0.25.0 Soul Mode More Voices prepared
 
 Completed CV18 and prepared `v0.25.0 — Soul Mode More Voices`. The release adds active Wisdom Voice and Beauty Voice listening lenses, full voice utterances inside ritual cards, no `listening for` field for the new voices, canonical Wisdom/Beauty prompts, source/aesthetic bridge guidance for Mirror outside the card, and safeguards requiring situated `--says` content so placeholder cards do not render. DS3 refinements were cancelled because the necessary tuning happened during direct DS1/DS2 Pi validation.
