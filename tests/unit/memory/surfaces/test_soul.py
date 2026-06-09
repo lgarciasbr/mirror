@@ -204,7 +204,8 @@ def test_harvested_fruit_renders_final_fruit():
     assert "Usefulness can remain a gift only" in rendered
     assert "when it stops being payment for" in rendered
     assert "belonging." in rendered
-    assert "save to journal?" in rendered
+    assert "save to journal as it is" in rendered
+    assert "or change anything first?" in rendered
     assert "FRUIT IN MATURATION" not in rendered
 
 

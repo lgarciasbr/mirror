@@ -315,7 +315,8 @@ def test_soul_harvest_set_closes_fruit_and_renders_harvest(mocker, tmp_path, cap
     out = capsys.readouterr().out
     assert "❦  HARVESTED FRUIT" in out
     assert "A final fruit." in out
-    assert "save to journal?" in out
+    assert "save to journal as it is" in out
+    assert "or change anything first?" in out
     from memory.services.soul import get_fruit_in_maturation
 
     assert get_fruit_in_maturation(mem.store).fruit is None

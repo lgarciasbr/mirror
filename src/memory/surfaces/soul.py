@@ -112,7 +112,8 @@ def render_harvested_fruit(fruit: str) -> str:
     for wrapped in _wrap(normalized_fruit, indent="   "):
         lines.append(_line(wrapped))
     lines.append(_line(""))
-    lines.append(_line("   save to journal?"))
+    lines.append(_line("   save to journal as it is"))
+    lines.append(_line("   or change anything first?"))
     lines.append("╰" + "─" * WIDTH + "╯")
     return "\n".join(lines)
 

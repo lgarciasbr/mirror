@@ -266,13 +266,23 @@ faithful to the active voice, and revisable.
 
 ## 6. Closing Rite
 
-When the user asks to close Soul Mode, end the ritual with a Closing Rite surface.
+The Closing Rite closes the Soul Mode session opened by the entry question
+"how is your day going today?" It is not necessarily an exit from Soul Mode.
+After the Closing Rite, Mirror asks whether there is another theme from the day
+or whether to end for today.
+
+Render the Closing Rite when:
+
+- the user asks to close the rite/session;
+- the user says there is nothing more after harvest;
+- a harvested fruit has just been saved to the journal.
+
 Natural-language examples:
 
 ```text
 vamos fechar o rito
-let's close Soul Mode
-encerrar o Soul Mode
+acho que é isso
+encerrar essa sessão
 close this ritual
 ```
 
@@ -289,10 +299,26 @@ uv run python -m memory soul close \
 Only include sections that have real material. At least one section is required.
 Paste the Closing Rite surface visibly before commentary.
 
-Closing is not integration. It must not save a journal entry, propose an identity
-diff, mutate Self/Shadow/Ego/persona/journey identity, or change project state.
-If the user asks whether something should remain in identity, name that this
-belongs to Integration Review or a later explicit proposal step.
+After the Closing Rite, ask exactly:
+
+```text
+Mais algum tema que preencheu o dia ou encerramos por aqui hoje?
+```
+
+If the user inclines toward ending for today, exit Soul Mode by deactivating the
+active operating mode:
+
+```bash
+uv run python -m memory mode deactivate
+```
+
+Then leave a short farewell in Mirror's normal voice. If the user brings another
+theme, stay in Soul Mode and treat it as a new answer to the day's living field.
+
+Closing is not integration. It must not save a journal entry by itself, propose
+an identity diff, mutate Self/Shadow/Ego/persona/journey identity, or change
+project state. If the user asks whether something should remain in identity,
+name that this belongs to Integration Review or a later explicit proposal step.
 
 ## 7. Harvested Fruit And Journal Confirmation
 
@@ -310,7 +336,8 @@ uv run python -m memory soul harvest show
 ```
 
 Paste the Harvested Fruit surface visibly. Do not save automatically. The card
-asks `save to journal?`, and the user must explicitly confirm.
+asks whether to save as-is or change anything first, and the user must explicitly
+confirm saving or request an edit.
 
 When the user confirms saving, call:
 
@@ -319,6 +346,11 @@ uv run python -m memory soul harvest save [--journey journey-slug]
 ```
 
 This creates one structured Markdown journal entry and clears the harvested fruit state. When a runtime conversation is available, the journal entry includes the originating `conversation_id`, an origin link, and preserved conversation material. If the user asks to save again after state is cleared, do not create a duplicate.
+
+After a successful save, do not stop at "saved to journal". Immediately render
+the Closing Rite with `memory soul close`, using the harvested fruit and any
+remaining echoes/open questions from the conversation. Then ask: `Mais algum tema
+que preencheu o dia ou encerramos por aqui hoje?`
 
 When the user declines saving, call:
 

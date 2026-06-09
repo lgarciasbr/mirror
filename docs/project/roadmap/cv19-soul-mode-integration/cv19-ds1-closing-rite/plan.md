@@ -4,7 +4,7 @@
 
 ## Boundary
 
-This story adds only the ritual closing surface and contained renderer/CLI support. It does not classify integration targets, propose identity diffs, write journal entries, or mutate psyche layers.
+This story adds the ritual closing surface, contained renderer/CLI support, and the runtime skill flow around closing the Soul Mode session. It does not classify integration targets, propose identity diffs, write journal entries by itself, or mutate psyche layers.
 
 ## Design
 
@@ -41,7 +41,15 @@ uv run python -m memory soul close \
   --integration "..."
 ```
 
-The Pi skill should call this renderer when the user asks to close Soul Mode in natural language.
+The Pi skill should call this renderer when the user asks to close the Soul Mode session in natural language, and immediately after a confirmed harvest has been saved to the journal.
+
+After rendering the card, Mirror asks:
+
+```text
+Mais algum tema que preencheu o dia ou encerramos por aqui hoje?
+```
+
+If the user chooses to end, Mirror deactivates the active mode and returns to Mirror Mode with a short farewell. If the user brings another theme, Mirror stays in Soul Mode and treats it as a new living-field opening.
 
 ## Implementation Notes
 
