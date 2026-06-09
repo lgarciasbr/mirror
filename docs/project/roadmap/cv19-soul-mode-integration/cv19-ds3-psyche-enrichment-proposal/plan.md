@@ -35,10 +35,10 @@ Before rendering a proposal, Mirror should load the current target identity when
 
 Layer language:
 
-- Self: first-person principle adopted as practice, allowing good and bad days.
-- Shadow: first-person recognition of a protective part without shame.
-- Ego: operational behavior pattern.
-- Persona: public-role or presentation pattern, not essence.
+- Self: principle I want to practice, phrased in first person without demanding perfection. Example: `Meu compromisso verdadeiro nasce da verdade do trabalho, não da gestão da imagem.`
+- Shadow: protective part I need to recognize, phrased without shame or command. Example: `Uma parte minha tenta comprar segurança oferecendo disponibilidade excessiva quando teme ser julgada como descuidada.`
+- Ego: operational behavior I tend to execute under tension. Example: `Quando temo julgamento, posso compensar permanecendo disponível além da medida real.`
+- Persona: public presentation pattern or role-mask, not essence. Example: `Minha persona profissional pode confundir confiabilidade com disponibilidade visível em excesso.`
 
 ## Validation
 
