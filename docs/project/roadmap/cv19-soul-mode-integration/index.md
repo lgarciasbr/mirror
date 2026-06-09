@@ -2,7 +2,7 @@
 
 # CV19 — Soul Mode Integration
 
-**Status:** 🟡 Planned
+**Status:** 🟢 In Progress
 
 **Previous release:** [CV18 — Soul Mode More Voices](../cv18-soul-mode-more-voices/index.md)
 
@@ -30,7 +30,7 @@ The user always remains in conversation with Mirror. Soul Mode may surface what 
 
 | Code | Delivery Story | Outcome | Status |
 |------|----------------|---------|--------|
-| [CV19.DS1](cv19-ds1-closing-rite/index.md) | Closing Rite | A user can close Soul Mode and see what was harvested, what still echoes, what remains open, and what may want integration | 🟡 Planned |
+| [CV19.DS1](cv19-ds1-closing-rite/index.md) | Closing Rite | A user can close Soul Mode and see what was harvested, what still echoes, what remains open, and what may want integration | 🟢 Implemented · awaiting Pi validation |
 | CV19.DS2 | Integration Review | Mirror can review ritual material without mutating identity | 🟡 Planned |
 | CV19.DS3 | Psyche Enrichment Proposal | Mirror can propose a safe, visible identity enrichment diff without applying it | 🟡 Planned |
 | CV19.DS4 | Confirmation And Safe Identity Mutation | Confirmed proposals can be applied with explicit consent, provenance, and cancellation safety | 🟡 Planned |

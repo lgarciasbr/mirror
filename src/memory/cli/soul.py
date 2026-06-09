@@ -27,6 +27,7 @@ from memory.surfaces.mode_transition import render_soul_mode_transition
 from memory.surfaces.soul import (
     SoulListeningOption,
     render_active_rite,
+    render_closing_rite,
     render_fruit_in_maturation,
     render_harvested_fruit,
     render_possible_listenings,
@@ -86,6 +87,27 @@ def cmd_rite(
                 utterance=utterance,
                 listening_for=listening_for,
                 question=question,
+            )
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_close(
+    *,
+    harvested: str | None = None,
+    echoes: str | None = None,
+    remains_open: str | None = None,
+    integration: str | None = None,
+) -> None:
+    try:
+        print(
+            render_closing_rite(
+                harvested=harvested,
+                echoes=echoes,
+                remains_open=remains_open,
+                integration=integration,
             )
         )
     except ValueError as exc:
@@ -247,6 +269,21 @@ def main(argv: list[str] | None = None) -> None:
     p_rite.add_argument("--listening-for", default=None, help="Situated listening focus")
     p_rite.add_argument("--question", default=None, help="Legacy alias for --says")
 
+    p_close = sub.add_parser("close", help="Render a Soul Mode Closing Rite")
+    p_close.add_argument("--harvested", default=None, help="What was harvested")
+    p_close.add_argument("--echoes", default=None, help="What still echoes")
+    p_close.add_argument(
+        "--open",
+        dest="remains_open",
+        default=None,
+        help="What remains open",
+    )
+    p_close.add_argument(
+        "--integration",
+        default=None,
+        help="What may want integration later",
+    )
+
     p_fruit = sub.add_parser("fruit", help="Manage provisional Soul Mode fruit")
     fruit_sub = p_fruit.add_subparsers(dest="fruit_action", required=True)
     p_fruit_set = fruit_sub.add_parser("set", help="Set and render fruit in maturation")
@@ -293,6 +330,13 @@ def main(argv: list[str] | None = None) -> None:
             utterance=args.utterance,
             listening_for=args.listening_for,
             question=args.question,
+        )
+    elif args.command == "close":
+        cmd_close(
+            harvested=args.harvested,
+            echoes=args.echoes,
+            remains_open=args.remains_open,
+            integration=args.integration,
         )
     elif args.command == "fruit":
         cmd_fruit(

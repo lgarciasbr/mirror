@@ -201,6 +201,38 @@ def test_soul_rite_rejects_unsupported_voice(capsys):
     assert "unsupported active rite voice" in capsys.readouterr().err
 
 
+def test_soul_close_renders_closing_rite(capsys):
+    soul.cmd_close(
+        harvested="A clear fruit became visible.",
+        echoes="A quiet sentence still echoes.",
+        remains_open="A question about belonging remains open.",
+        integration="This may later belong to Self.",
+    )
+
+    out = capsys.readouterr().out
+    assert "☾  CLOSING RITE" in out
+    assert "what was harvested" in out
+    assert "A clear fruit became visible." in out
+    assert "what still echoes" in out
+    assert "A quiet sentence still echoes." in out
+    assert "what remains open" in out
+    assert "A question about belonging remains" in out
+    assert "what may want integration" in out
+    assert "This may later belong to Self." in out
+    assert "Harvest saved to journal" not in out
+
+
+def test_soul_close_rejects_empty_closing_rite(capsys):
+    try:
+        soul.cmd_close()
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "at least one closing section" in capsys.readouterr().err
+
+
 def test_soul_fruit_set_stores_and_renders_fruit(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "alisson-vale"
     mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))

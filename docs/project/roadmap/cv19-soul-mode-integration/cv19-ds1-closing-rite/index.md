@@ -2,7 +2,7 @@
 
 # CV19.DS1 — Closing Rite
 
-**Status:** 🟡 Planned
+**Status:** 🟢 Implemented · awaiting Pi validation
 
 **Placement:** First story in `v0.26.0 — Soul Mode Integration`
 

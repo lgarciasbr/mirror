@@ -5,6 +5,7 @@ import pytest
 from memory.surfaces.soul import (
     SoulListeningOption,
     render_active_rite,
+    render_closing_rite,
     render_fruit_in_maturation,
     render_harvested_fruit,
     render_possible_listenings,
@@ -210,3 +211,48 @@ def test_harvested_fruit_renders_final_fruit():
 def test_harvested_fruit_rejects_empty_fruit():
     with pytest.raises(ValueError, match="fruit must not be empty"):
         render_harvested_fruit(" ")
+
+
+def test_closing_rite_renders_all_sections():
+    rendered = render_closing_rite(
+        harvested="A clear fruit became visible.",
+        echoes="A quiet sentence still echoes.",
+        remains_open="A question about belonging remains open.",
+        integration="This may later belong to Self.",
+    )
+
+    assert "☾  CLOSING RITE" in rendered
+    assert "what was harvested" in rendered
+    assert "A clear fruit became visible." in rendered
+    assert "what still echoes" in rendered
+    assert "A quiet sentence still echoes." in rendered
+    assert "what remains open" in rendered
+    assert "A question about belonging remains" in rendered
+    assert "what may want integration" in rendered
+    assert "This may later belong to Self." in rendered
+    assert "save to journal?" not in rendered
+
+
+def test_closing_rite_omits_empty_sections():
+    rendered = render_closing_rite(harvested="A clear fruit.", echoes=" ")
+
+    assert "☾  CLOSING RITE" in rendered
+    assert "what was harvested" in rendered
+    assert "A clear fruit." in rendered
+    assert "what still echoes" not in rendered
+    assert "what remains open" not in rendered
+    assert "what may want integration" not in rendered
+
+
+def test_closing_rite_requires_at_least_one_section():
+    with pytest.raises(ValueError, match="at least one closing section"):
+        render_closing_rite()
+
+
+def test_closing_rite_converts_escaped_newlines():
+    rendered = render_closing_rite(harvested="First line.\\n\\nSecond line.")
+
+    assert "First line." in rendered
+    assert "Second line." in rendered
+    assert "\\n" not in rendered
+    assert "│                                        │" in rendered

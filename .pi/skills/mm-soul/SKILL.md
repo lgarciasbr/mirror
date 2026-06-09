@@ -259,7 +259,37 @@ fruits or list separate takeaways.
 A good fruit is short, memorable, phrased as living insight rather than a task,
 faithful to the active voice, and revisable.
 
-## 6. Harvested Fruit And Journal Confirmation
+## 6. Closing Rite
+
+When the user asks to close Soul Mode, end the ritual with a Closing Rite surface.
+Natural-language examples:
+
+```text
+vamos fechar o rito
+let's close Soul Mode
+encerrar o Soul Mode
+close this ritual
+```
+
+Compose compact situated material from the conversation and call:
+
+```bash
+uv run python -m memory soul close \
+  --harvested "what was harvested" \
+  --echoes "what still echoes" \
+  --open "what remains open" \
+  --integration "what may want integration later"
+```
+
+Only include sections that have real material. At least one section is required.
+Paste the Closing Rite surface visibly before commentary.
+
+Closing is not integration. It must not save a journal entry, propose an identity
+diff, mutate Self/Shadow/Ego/persona/journey identity, or change project state.
+If the user asks whether something should remain in identity, name that this
+belongs to Integration Review or a later explicit proposal step.
+
+## 7. Harvested Fruit And Journal Confirmation
 
 When the user says they wish to harvest, close the current fruit into a Harvested
 Fruit surface:

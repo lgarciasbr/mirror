@@ -117,6 +117,38 @@ def render_harvested_fruit(fruit: str) -> str:
     return "\n".join(lines)
 
 
+def render_closing_rite(
+    *,
+    harvested: str | None = None,
+    echoes: str | None = None,
+    remains_open: str | None = None,
+    integration: str | None = None,
+) -> str:
+    """Render a Soul Mode Closing Rite surface."""
+    sections = [
+        ("what was harvested", harvested),
+        ("what still echoes", echoes),
+        ("what remains open", remains_open),
+        ("what may want integration", integration),
+    ]
+    normalized_sections = [
+        (label, _normalize_voice_text(value))
+        for label, value in sections
+        if isinstance(value, str) and value.strip()
+    ]
+    if not normalized_sections:
+        raise ValueError("at least one closing section is required")
+
+    lines = ["Soul Mode", "╭" + "─" * WIDTH + "╮", _line("   ☾  CLOSING RITE")]
+    for label, text in normalized_sections:
+        lines.append(_line(""))
+        lines.append(_line(f"   {label}"))
+        for wrapped in _wrap_blocks(text, indent="   "):
+            lines.append(_line(wrapped))
+    lines.append("╰" + "─" * WIDTH + "╯")
+    return "\n".join(lines)
+
+
 def render_active_rite(
     voice: str,
     *,

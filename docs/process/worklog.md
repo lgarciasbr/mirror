@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — CV19.DS1 Closing Rite implemented
+
+Implemented the Soul Mode Closing Rite. `memory soul close` now renders a `☾ CLOSING RITE` card with optional sections for what was harvested, what still echoes, what remains open, and what may want integration. The renderer rejects empty closing cards, preserves paragraph breaks, normalizes escaped newlines, and does not save journal entries or mutate identity. The Pi Soul Mode skill now routes natural closing requests to the contained renderer and preserves the boundary that closing is not integration.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, `git diff --check`, and CLI smoke for `memory soul close` passed.
+
 ### 2026-06-08 — CV19 Soul Mode Integration opened
 
 Opened CV19 as the next Soul Mode release: `v0.26.0 — Soul Mode Integration`. Added the CV19 roadmap index and the first delivery story, CV19.DS1 Closing Rite, with plan and test guide. The story boundary is explicit: Closing Rite can gather harvested material, echoes, open questions, and possible integration, but it does not classify, propose, write journal entries, or mutate identity.
