@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — Soul fruit maturation lineage tightened
+
+Tightened the Soul Mode skill contract so Fruit In Maturation thickens across turns instead of being replaced by the newest insight. The fruit should remain singular in form but plural in root: each revision synthesizes the current fruit with all new living elements that deepen the same fruit, while leaving out context, repetition, unrelated material, or unresolved open questions. Updated CV19.DS1 validation guidance to check that harvested fruit preserves lineage.
+
+Validation: documentation/skill-contract change; targeted `git diff --check` passed.
+
 ### 2026-06-08 — CV19.DS3 and DS4 psyche proposal/apply implemented
 
 Implemented Soul Mode psyche enrichment proposal and safe confirmed identity mutation. The former Integration Review was simplified into a multi-layer `☾ INTEGRATION PROPOSAL`: it now uses `origin` instead of `journal`, renders `proposal only — nothing changed`, and asks directly `Quer registrar assim na sua identidade? Ou também podemos ajustar o que quiser.` `memory soul propose self|shadow|ego|persona` remains available as a focused single-layer proposal/refinement surface. `memory soul apply self|shadow|ego|persona` writes identity only with `--confirm APPLY`, uses conservative default keys (`self/soul`, `shadow/profile`, `ego/behavior`), requires explicit persona keys, and renders a visible identity-updated card. Journey identity remains excluded. The Pi contract now asks the assistant to load current identity when possible, confirm exact target/content before apply, avoid overwriting longer identity documents with fragments, and use layer-specific language for Self, Shadow, Ego, and Persona proposals.

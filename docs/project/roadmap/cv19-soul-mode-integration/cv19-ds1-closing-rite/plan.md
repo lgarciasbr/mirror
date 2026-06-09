@@ -71,6 +71,10 @@ The Closing Rite may mention what wants integration, but it must not classify, p
 
 The surface should feel like a ritual threshold, not a meeting recap. It gathers the living material in compact phrases.
 
+### Fruit maturation becomes a last-turn filter
+
+If a fruit has matured across turns, the harvested fruit should preserve the lineage of the previous fruit while incorporating new living material. It should be one phrase with multiple roots, not a list and not merely the newest insight.
+
 ### Empty ritual card
 
 Reject calls with no material so the runtime does not render an empty Closing Rite.

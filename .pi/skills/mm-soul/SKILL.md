@@ -257,12 +257,33 @@ uv run python -m memory soul fruit set "provisional fruit text"
 
 Use `--session-id` when a Pi session id is available.
 
-Keep exactly one fruit in maturation. When the formulation improves, call
-`fruit set` again with the improved formulation; do not accumulate multiple
-fruits or list separate takeaways.
+Keep exactly one fruit in maturation. The fruit should thicken over turns.
+When new material appears, do not replace the fruit with the newest insight as a
+filter. Instead, synthesize the current fruit with the new living material and
+call `fruit set` with the denser formulation.
+
+If needed, render the current fruit first:
+
+```bash
+uv run python -m memory soul fruit show
+```
+
+Fruit maturation replaces the wording, not the lineage. Preserve the previous
+living core unless the user explicitly rejects it.
+
+The fruit should remain singular in form but plural in root. If more than one
+living element appears in a turn, do not choose only one by default. Preserve
+every element that deepens the same fruit, then compress them into one living
+phrase. Do not turn the fruit into a list, a summary, or a bundle of separate
+takeaways.
+
+Include multiple new elements when they deepen the same living fruit. Leave out
+elements that belong to another fruit, are only context, merely repeat what is
+already present, weaken the phrase, or should remain an unresolved open question.
 
 A good fruit is short, memorable, phrased as living insight rather than a task,
-faithful to the active voice, and revisable.
+faithful to the active voice, revisable, and dense enough to carry the lineage of
+what has already appeared.
 
 ## 6. Closing Rite
 
