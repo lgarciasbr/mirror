@@ -417,7 +417,7 @@ apply a short fragment that would accidentally overwrite the whole identity.
 
 Use layer-appropriate language:
 
-- Self: a first-person principle the user can adopt as practice while accepting good and bad days, e.g. `Meu compromisso verdadeiro nasce da verdade do trabalho, não da gestão da imagem.`
+- Self: an affirmative first-person principle the user adopts as practice while accepting good and bad days. Do not use possibility language such as `posso`, `pode`, `talvez`, or `precisa` as the center of the Self statement. Prefer direct principle language, e.g. `Cuido de vínculos sem transformar disponibilidade imediata em prova moral de amor; minha medida interna também pertence ao cuidado.` or `Meu compromisso verdadeiro nasce da verdade do trabalho, não da gestão da imagem.`
 - Shadow: a first-person recognition of a protective part without shame or command, e.g. `Uma parte minha tenta comprar segurança oferecendo disponibilidade excessiva quando teme ser julgada como descuidada.`
 - Ego: a behavioral pattern stated operationally, e.g. `Quando temo julgamento, posso compensar permanecendo disponível além da medida real.`
 - Persona: a public-role pattern stated as presentation, not essence, e.g. `Minha persona profissional pode confundir confiabilidade com disponibilidade visível em excesso.`

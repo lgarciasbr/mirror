@@ -64,7 +64,7 @@ If the user says yes, Mirror renders Integration Proposal. After rendering, Mirr
 ## Category Rules
 
 - `origin`: where this material came from; context only, not applied to identity.
-- `self`: first-person principle/practice.
+- `self`: affirmative first-person principle/practice; avoid possibility language as the center of the statement.
 - `shadow`: protective part recognized without shame.
 - `ego behavior`: operational pattern or repeated reaction.
 - `persona`: public role, mask, presentation style, or social identity pattern.

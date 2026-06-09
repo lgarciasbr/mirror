@@ -25,7 +25,7 @@ Run:
 ```bash
 uv run python -m memory soul review \
   --origin "The fruit was already saved as journal." \
-  --self "Commitment may need to belong to truth, not image management." \
+  --self "Meu compromisso verdadeiro nasce da verdade do trabalho, não da gestão da imagem." \
   --shadow "A part fears being seen as careless without over-availability." \
   --ego "Staying late can become image management." \
   --persona "The committed professional persona may overperform availability." \
@@ -64,6 +64,7 @@ Expected:
 
 - Mirror renders Integration Proposal.
 - Mirror renders the final multi-layer proposal text.
+- Self wording is affirmative principle language, not possibility language.
 - Mirror asks: `Quer registrar assim na sua identidade? Ou também podemos ajustar o que quiser.`
 - Mirror does not mutate identity until the user confirms registration.
 - If the user asks for adjustment, Mirror renders an adjusted Integration Proposal before applying anything.

@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — Soul Self integration language made affirmative
+
+Tightened Soul integration proposal guidance for Self material. Self proposals must be affirmative first-person principles adopted as practice, not possibility language. The contract now explicitly avoids `posso`, `pode`, `talvez`, or `precisa` as the center of the Self statement, preferring language such as `Cuido de vínculos sem transformar disponibilidade imediata em prova moral de amor; minha medida interna também pertence ao cuidado.`
+
+Validation: documentation/skill-contract change; targeted `git diff --check` passed.
+
 ### 2026-06-08 — Soul fruit maturation lineage tightened
 
 Tightened the Soul Mode skill contract so Fruit In Maturation thickens across turns instead of being replaced by the newest insight. The fruit should remain singular in form but plural in root: each revision synthesizes the current fruit with all new living elements that deepen the same fruit, while leaving out context, repetition, unrelated material, or unresolved open questions. Updated CV19.DS1 validation guidance to check that harvested fruit preserves lineage.
