@@ -118,7 +118,38 @@ specific story to execute.
 
 Context activation is not execution consent.
 
-## 4. Work In Builder Mode
+## 4. Inspect Builder Method
+
+When the user asks in natural language which Builder method governs the active
+journey, what method this journey uses, or to show the Builder method, inspect
+the current Builder method state:
+
+```bash
+uv run python -m memory build inspect-method
+```
+
+If the user names a specific journey, inspect that journey explicitly:
+
+```bash
+uv run python -m memory build inspect-method --journey <slug>
+```
+
+Render the command output visibly. If no Builder journey is active yet, say so
+plainly and ask the user to activate or name a journey. If the journey has not
+adopted a Builder method yet, say so plainly. Do not adopt Ariad, mutate runtime
+state, or infer that Ariad governs the journey just because Ariad is available.
+
+When the user asks what Ariad is as a Builder method, inspect the available
+built-in method defaults:
+
+```bash
+uv run python -m memory build inspect-method ariad
+```
+
+This is read-only inspection, not Builder activation, adoption, resume, or
+lifecycle execution.
+
+## 5. Work In Builder Mode
 
 Once the user explicitly authorizes work:
 
@@ -126,7 +157,7 @@ Once the user explicitly authorizes work:
 - Keep project docs updated as the code evolves
 - Commit at the end of each session with a descriptive English commit message
 
-## 5. Project Docs Maintenance
+## 6. Project Docs Maintenance
 
 Follow the project's existing documentation structure. Do not create a generic docs scaffold unless the user explicitly asks for one.
 
@@ -140,7 +171,7 @@ Follow the project's existing documentation structure. Do not create a generic d
 - `docs/process/worklog.md`: a meaningful milestone is completed
 - `docs/product/principles.md`: product, code, testing, or process principles change
 
-## 6. Configure `project_path`
+## 7. Configure `project_path`
 
 If the journey does not yet have an associated project:
 
@@ -148,7 +179,7 @@ If the journey does not yet have an associated project:
 uv run python -m memory journey set-path <slug> /path/to/project
 ```
 
-## 7. Finalize Session
+## 8. Finalize Session
 
 When the user says "End the session":
 

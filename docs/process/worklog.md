@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-10 — CV20 Method DSL Foundation completed
+
+Completed CV20.DS1 Method DSL Foundation. Builder now has typed method-definition structures, a built-in Ariad `MethodDefinition` fixture, and read-only method inspection through `memory build inspect-method`. The Pi Builder skill now routes natural-language questions about which Builder method governs the active journey to the inspection command. Validation confirmed the journey-not-adopted path: `builder-mode-evolution` reports no adopted Builder method yet while listing Ariad as available, without executing adoption.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_build.py tests/unit/memory/builder/test_ariad_method.py tests/unit/memory/builder/test_method_definition.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, `uv run mypy src/memory/builder src/memory/cli/build.py`, CLI smoke for `build inspect-method`, and Pi/Mirror natural-language validation passed.
+
 ### 2026-06-10 — v0.26.1 Soul Mode English Integration Copy packaged
 
 Packaged `v0.26.1 — Soul Mode English Integration Copy`. Replaced Portuguese hard-coded Soul Mode integration prompts with English baseline copy in the Pi skill contract and aligned CV19 documentation. Confirmed identity integration section headings now use English defaults in code and tests: Self `New Incorporated Principles`, Shadow `New Hidden Needs Recognized`, Ego `New Operational Patterns Identified`, and Persona `New Participation Patterns Revealed`. This keeps Soul Mode consistent with Mirror Mind's English internal language until explicit localization exists.

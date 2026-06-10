@@ -30,7 +30,7 @@ Ariad governs the first implementation. The architecture must remain open enough
 
 | Code | Delivery Story | Outcome | Status |
 |------|----------------|---------|--------|
-| [CV20.DS1](cv20-ds1-method-dsl-foundation/index.md) | Method DSL Foundation | Builder can load and validate Ariad as a declarative method definition, with taxonomy, lifecycle, checkpoints, policies, and surfaces represented as data | 🟢 Active |
+| [CV20.DS1](cv20-ds1-method-dsl-foundation/index.md) | Method DSL Foundation | Builder can load and validate Ariad as a declarative method definition, with taxonomy, lifecycle, checkpoints, policies, and surfaces represented as data | ✅ Done |
 | CV20.DS2 | Ariad Adoption | A journey can be configured to use Ariad, with documentation inventory, template generation, method config, and initial runtime sync | 🟡 Planned |
 | CV20.DS3 | Builder Resume Surface | Builder load resumes an Ariad journey with briefing, roadmap position, active item, checkpoint, and allowed next actions | 🟡 Planned |
 | CV20.DS4 | Story Lifecycle Runtime | Builder can execute the Pull, Prepare, Plan, Implement, Validation, Review, Coherence, and Done lifecycle with deterministic checkpoint gates | 🟡 Planned |

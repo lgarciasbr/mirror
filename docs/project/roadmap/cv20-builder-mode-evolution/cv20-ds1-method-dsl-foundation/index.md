@@ -2,7 +2,7 @@
 
 # CV20.DS1 — Method DSL Foundation
 
-**Status:** 🟢 Active
+**Status:** ✅ Done
 
 ---
 
@@ -30,13 +30,13 @@ The method definition represents taxonomy, state semantics, lifecycle events, ch
 |------|-------|------|---------|--------|
 | [CV20.DS1.TS1](cv20-ds1-ts1-method-definition-model/index.md) | Method definition model | Technical Story | Runtime has typed structures for method DSL concepts | ✅ Done |
 | [CV20.DS1.TS2](cv20-ds1-ts2-ariad-method-fixture/index.md) | Ariad method fixture | Technical Story | Ariad lifecycle, taxonomy, checkpoints, and policies are represented as data | ✅ Done |
-| CV20.DS1.US1 | Inspect effective method | User Story | Navigator can inspect the effective Ariad method configuration and active overrides | 🟡 Planned |
+| [CV20.DS1.US1](cv20-ds1-us1-inspect-effective-method/index.md) | Inspect effective method | User Story | Navigator can inspect the effective Ariad method configuration and active overrides | ✅ Done |
 
 ---
 
 ## Done Condition
 
-DS1 is done when Builder can load, validate, resolve, and inspect the Ariad method definition without executing delivery work.
+DS1 is done. Builder can load, validate, and inspect the Ariad method definition without executing delivery work. Full project/journey override resolution remains deferred to later delivery stories where adoption and effective method state are introduced.
 
 ---
 

@@ -6,10 +6,21 @@ import argparse
 import sys
 from pathlib import Path
 
+from memory.builder.ariad_method import get_ariad_method
+from memory.builder.method_inspection import (
+    AVAILABLE_METHODS,
+    render_available_method,
+    render_journey_without_adopted_method,
+    render_no_active_journey,
+)
 from memory.cli.conversation_logger import switch_conversation
 from memory.cli.runtime import inspect_clone_role
 from memory.client import MemoryClient
-from memory.services.operating_mode import activate_mode, resolve_operating_session_id
+from memory.services.operating_mode import (
+    activate_mode,
+    get_active_mode,
+    resolve_operating_session_id,
+)
 from memory.skills.mirror import _persist_global_sticky_defaults
 from memory.surfaces.mode_transition import render_builder_mode_transition
 
@@ -101,10 +112,11 @@ def cmd_load(
         project_path=project_path,
     )
     _print_builder_banner(slug, project_path)
+    journey_text = journey_content if isinstance(journey_content, str) else slug
     print(
         render_builder_mode_transition(
             journey=slug,
-            journey_content=journey_content,
+            journey_content=journey_text,
             project_path=project_path,
         )
     )
@@ -112,8 +124,7 @@ def cmd_load(
     context = mem.load_mirror_context(persona="engineer", journey=slug)
     print(context)
 
-    raw_content = journey_content if isinstance(journey_content, str) else slug
-    query_text = _extract_query(raw_content, slug)
+    query_text = _extract_query(journey_text, slug)
     scoped = mem.search(query_text, limit=5, journey=slug)
     global_ = mem.search(query_text, limit=5)
     seen_ids: set[str] = set()
@@ -149,6 +160,42 @@ def cmd_load(
         )
 
 
+def cmd_inspect_method(
+    method: str | None,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient() if journey or method is None else None
+    if journey:
+        journey_content = mem.get_identity("journey", journey) if mem else None
+        if not journey_content:
+            print(f"Error: journey '{journey}' not found.", file=sys.stderr)
+            sys.exit(1)
+        print(render_journey_without_adopted_method(journey))
+        return
+
+    if method is None:
+        if mem:
+            resolved_session_id = resolve_operating_session_id(mem.store, session_id)
+            active_mode = get_active_mode(mem.store, session_id=resolved_session_id)
+            if active_mode and active_mode.mode == "Builder Mode" and active_mode.journey:
+                print(render_journey_without_adopted_method(active_mode.journey))
+                return
+        print(render_no_active_journey())
+        return
+
+    if method != "ariad":
+        requested = method or "<none>"
+        print(
+            f"Error: Builder method '{requested}' not found. "
+            f"Available methods: {', '.join(AVAILABLE_METHODS)}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(render_available_method(get_ariad_method()))
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Build skill — DB context loader")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -167,6 +214,26 @@ def main(argv: list[str] | None = None) -> None:
         help="Runtime session id for session-scoped operating mode state",
     )
 
+    p_inspect = sub.add_parser(
+        "inspect-method",
+        help="Inspect a Builder method or the effective method state for a journey",
+    )
+    p_inspect.add_argument(
+        "method",
+        nargs="?",
+        help="Builder method id to inspect, such as 'ariad'",
+    )
+    p_inspect.add_argument(
+        "--journey",
+        default=None,
+        help="Journey slug whose effective Builder method state should be inspected",
+    )
+    p_inspect.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "load":
@@ -175,3 +242,5 @@ def main(argv: list[str] | None = None) -> None:
             ignore_production_role=args.ignore_production_role,
             session_id=args.session_id,
         )
+    elif args.command == "inspect-method":
+        cmd_inspect_method(args.method, journey=args.journey, session_id=args.session_id)
