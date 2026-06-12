@@ -2,6 +2,7 @@ import pytest
 
 from memory.builder.method_definition import (
     CheckpointDefinition,
+    ContractDefinition,
     DslResolution,
     LifecycleEvent,
     MethodDefinition,
@@ -55,6 +56,15 @@ def _valid_definition() -> MethodDefinition:
                 blocks=("implement",),
                 required_artifacts=("plan",),
                 required_confirmations=("navigator_approval",),
+            ),
+        ),
+        contracts=(
+            ContractDefinition(
+                id="plan_contract",
+                applies_at="plan",
+                rules=("define acceptance behavior",),
+                stop_conditions=("navigator_approval_required",),
+                required_outputs=("validation_route",),
             ),
         ),
         policies={"history": {"commit": {"mode": "propose_and_wait"}}},
@@ -177,6 +187,30 @@ def test_rejects_state_semantics_for_disallowed_states() -> None:
     )
 
     with pytest.raises(MethodDefinitionError, match="state semantics"):
+        validate_method_definition(definition)
+
+
+def test_rejects_contract_references_unknown_lifecycle_event() -> None:
+    definition = _valid_definition().replace(
+        contracts=(ContractDefinition(id="plan_contract", applies_at="unknown", rules=("rule",)),)
+    )
+
+    with pytest.raises(MethodDefinitionError, match="unknown lifecycle event"):
+        validate_method_definition(definition)
+
+
+def test_rejects_duplicate_contract_rules() -> None:
+    definition = _valid_definition().replace(
+        contracts=(
+            ContractDefinition(
+                id="plan_contract",
+                applies_at="plan",
+                rules=("define scope", "define scope"),
+            ),
+        )
+    )
+
+    with pytest.raises(MethodDefinitionError, match="duplicate contract"):
         validate_method_definition(definition)
 
 

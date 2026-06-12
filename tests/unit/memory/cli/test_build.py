@@ -119,6 +119,7 @@ Candidate Delivery Stories:
 
     out = capsys.readouterr().out
     assert "ROADMAP SNAPSHOT" in out
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in out
     assert "🟪[CV2]  Checkout Flow" in out
     assert "Ariad Pull Candidates" in out
     assert "CV2.DS1 — Checkout Flow / Checkout entry and address capture" in out
@@ -232,6 +233,9 @@ def test_build_inspect_method_renders_ariad_defaults(capsys):
     assert "history.commit" in out
     assert "push" in out
     assert "release" in out
+    assert "contracts" in out
+    assert "plan_contract: plan" in out
+    assert "implement_contract: implement" in out
     assert "templates" in out
     assert "docs/project/roadmap/templates/plan.md" in out
 
@@ -659,6 +663,7 @@ Candidate Delivery Stories:
 
     out = capsys.readouterr().out
     assert "ROADMAP SNAPSHOT" in out
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in out
     assert "🟪[CV2]  Checkout Flow" in out
     assert "view                         overview" in out
     assert "Ariad Pull Candidates" in out
@@ -685,6 +690,7 @@ def test_build_pull_item_updates_cursor(mocker, tmp_path, capsys):
     )
 
     out = capsys.readouterr().out
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in out
     assert "DELIVERY STORY IDENTIFIED" in out
     assert "roadmap candidate" in out
     assert "active item: CHECKOUT-FLOW" in out
@@ -717,6 +723,7 @@ def test_build_prepare_item_updates_cursor(mocker, tmp_path, capsys):
     build.cmd_prepare_item("ariad", journey="sandbox-pet-store")
 
     out = capsys.readouterr().out
+    assert "Ariad: ✓ Pull | ◉ Prepare | ○ Plan" in out
     assert "PREPARE FIELD READING" in out
     assert "🟦[CHECKOUT-FLOW]" in out
     assert "✓ docs/process/development-guide.md: present" in out

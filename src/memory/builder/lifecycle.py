@@ -10,6 +10,7 @@ from memory.builder.delivery_cursor import (
     get_delivery_cursor,
     set_delivery_cursor,
 )
+from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
 from memory.storage.store import Store
 
 _ALLOWED_PULL_LEVELS = ("delivery_story", "user_story", "technical_story")
@@ -133,6 +134,8 @@ def render_pull_report(report: BuilderPullReport) -> str:
         "\n".join(
             [
                 "Delivery",
+                render_lifecycle_ribbon("pull"),
+                "",
                 "╭────────────────────────────────────────────────────────╮",
                 "│        🟪■  DELIVERY STORY IDENTIFIED                  │",
                 "│                                                        │",
@@ -171,6 +174,8 @@ def render_prepare_report(report: BuilderPrepareReport) -> str:
         "\n".join(
             [
                 "Delivery",
+                render_lifecycle_ribbon("prepare"),
+                "",
                 "╭────────────────────────────────────────────────────────╮",
                 "│        🧭  PREPARE FIELD READING                       │",
                 "│                                                        │",

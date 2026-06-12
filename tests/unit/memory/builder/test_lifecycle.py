@@ -40,6 +40,7 @@ def test_pull_lifecycle_item_updates_cursor_and_renders_report(tmp_path):
     assert cursor.active_item == "CHECKOUT-FLOW"
     assert cursor.last_delivery_event == "pull"
     rendered = render_pull_report(report)
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in rendered
     assert "DELIVERY STORY IDENTIFIED" in rendered
     assert "roadmap candidate" in rendered
     assert "roadmap placement" in rendered
@@ -112,6 +113,7 @@ def test_prepare_lifecycle_item_updates_cursor_and_renders_report(tmp_path):
     assert cursor.active_item == "CHECKOUT-FLOW"
     assert cursor.last_delivery_event == "prepare"
     rendered = render_prepare_report(report)
+    assert "Ariad: ✓ Pull | ◉ Prepare | ○ Plan" in rendered
     assert "PREPARE FIELD READING" in rendered
     assert "🟦[CHECKOUT-FLOW]" in rendered
     assert "✓ README.md: present" in rendered

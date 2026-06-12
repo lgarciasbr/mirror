@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from memory.builder.method_definition import (
     CheckpointDefinition,
+    ContractDefinition,
     DslResolution,
     LifecycleEvent,
     MethodDefinition,
@@ -400,6 +401,117 @@ ARIAD_METHOD = MethodDefinition(
             blocks=("coherence",),
             required_artifacts=("review_report",),
             required_confirmations=("navigator_debt_decision",),
+        ),
+    ),
+    contracts=(
+        ContractDefinition(
+            id="pull_contract",
+            applies_at="pull",
+            rules=(
+                "choose an explicit focus before delivery work begins",
+                "classify the pulled work as delivery_story, user_story, technical_story, task, or maintenance",
+                "do not start roadmap candidates automatically",
+                "preserve Navigator choice as the commitment boundary",
+            ),
+            required_outputs=("selected_item", "pull_level", "why_this_level_now"),
+        ),
+        ContractDefinition(
+            id="prepare_contract",
+            applies_at="prepare",
+            rules=(
+                "read relevant story, project, code, tests, decisions, and local guide context",
+                "identify story shape, risks, applicable rules, and local guide overrides",
+                "decide whether expand or collapse is needed before Plan",
+                "do not create a Plan or start implementation during Prepare",
+            ),
+            required_outputs=(
+                "context_summary",
+                "story_shape_assessment",
+                "risk_summary",
+                "applicable_rules",
+            ),
+        ),
+        ContractDefinition(
+            id="plan_contract",
+            applies_at="plan",
+            rules=(
+                "define scope, non-goals, acceptance behavior, validation route, documentation impact, and implementation contract",
+                "express User Story acceptance behavior with Given/When/Then/And when practical",
+                "decide whether E2E validation is required for user-visible flows or cross-system behavior",
+                "block implementation until Navigator approves the Plan checkpoint",
+            ),
+            stop_conditions=("navigator_approval_required",),
+            required_outputs=(
+                "scope",
+                "non_goals",
+                "acceptance_behavior",
+                "validation_route",
+                "implementation_contract",
+            ),
+        ),
+        ContractDefinition(
+            id="implement_contract",
+            applies_at="implement",
+            rules=(
+                "follow the approved Plan",
+                "use TDD or characterization tests for behavior changes when testable",
+                "keep changes scoped to the active story",
+                "add or update E2E tests when required by the approved Plan",
+                "do not silently absorb new scope into implementation",
+            ),
+            stop_conditions=(
+                "scope_change_detected",
+                "plan_rule_conflict",
+                "failing_required_check_without_clear_fix",
+                "navigator_decision_needed",
+            ),
+        ),
+        ContractDefinition(
+            id="validation_contract",
+            applies_at="validation",
+            rules=(
+                "run automated checks required by the Plan and local guide",
+                "run E2E tests required by the approved Plan or local guide",
+                "provide Navigator validation route with expected observation, pass condition, and fail condition",
+                "record validation evidence before Review",
+            ),
+            required_outputs=(
+                "automated_evidence",
+                "navigator_validation_route",
+                "validation_evidence",
+            ),
+        ),
+        ContractDefinition(
+            id="debt_review_contract",
+            applies_at="review",
+            rules=(
+                "name debt paid, debt introduced, and debt carried forward",
+                "record revisit trigger for carried debt",
+                "decide whether a durable debt ledger entry is required",
+            ),
+            required_outputs=("review_report", "debt_decision"),
+        ),
+        ContractDefinition(
+            id="coherence_contract",
+            applies_at="coherence",
+            rules=(
+                "verify Process, Project, and Product alignment",
+                "surface differences between Ariad defaults and the local development guide",
+                "verify docs, roadmap, worklog, decisions, and runtime state match actual behavior",
+                "verify lifecycle contract compliance before Done",
+            ),
+            required_outputs=("coherence_result",),
+        ),
+        ContractDefinition(
+            id="done_contract",
+            applies_at="done",
+            rules=(
+                "close the story only after validation, review, and coherence are satisfied",
+                "record history at coherent story boundaries unless local policy overrides",
+                "update worklog for meaningful milestones",
+                "recommend next pull, parent collapse, or release boundary when relevant",
+            ),
+            required_outputs=("closure_summary", "history_action", "next_recommendation"),
         ),
     ),
     policies={

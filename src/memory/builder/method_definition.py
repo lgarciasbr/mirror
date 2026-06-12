@@ -75,6 +75,18 @@ class SurfaceDefinition:
 
 
 @dataclass(frozen=True)
+class ContractDefinition:
+    id: str
+    applies_at: str
+    rules: tuple[str, ...] = ()
+    stop_conditions: tuple[str, ...] = ()
+    required_outputs: tuple[str, ...] = ()
+
+    def replace(self, **changes: Any) -> ContractDefinition:
+        return replace(self, **changes)
+
+
+@dataclass(frozen=True)
 class SurfaceRoute:
     trigger: str
     surfaces: tuple[str, ...]
@@ -103,6 +115,7 @@ class MethodDefinition:
     taxonomy: Taxonomy = Taxonomy()
     lifecycle: tuple[LifecycleEvent, ...] = ()
     checkpoints: tuple[CheckpointDefinition, ...] = ()
+    contracts: tuple[ContractDefinition, ...] = ()
     policies: Mapping[str, Any] | None = None
     surfaces: tuple[SurfaceDefinition, ...] = ()
     surface_routes: tuple[SurfaceRoute, ...] = ()
@@ -125,6 +138,7 @@ def validate_method_definition(definition: MethodDefinition) -> None:
     _validate_taxonomy(definition.taxonomy)
     _validate_lifecycle(definition.lifecycle)
     _validate_checkpoints(definition.checkpoints, lifecycle_ids=definition.lifecycle_ids)
+    _validate_contracts(definition.contracts, lifecycle_ids=definition.lifecycle_ids)
     _validate_surfaces(definition.surfaces, lifecycle_ids=definition.lifecycle_ids)
     _validate_surface_routes(definition.surface_routes, surfaces=definition.surfaces)
     _validate_templates(definition.templates)
@@ -198,6 +212,25 @@ def _validate_checkpoints(
                 lifecycle_ids=lifecycle_ids,
                 owner=f"checkpoint {checkpoint.id}",
             )
+
+
+def _validate_contracts(
+    contracts: tuple[ContractDefinition, ...],
+    *,
+    lifecycle_ids: set[str],
+) -> None:
+    contract_ids = [contract.id for contract in contracts]
+    _require_unique(contract_ids, "contract")
+    for contract in contracts:
+        _require_non_empty(contract.id, "contract id")
+        _require_known_event(
+            contract.applies_at,
+            lifecycle_ids=lifecycle_ids,
+            owner=f"contract {contract.id}",
+        )
+        _require_unique(contract.rules, f"contract {contract.id} rule")
+        _require_unique(contract.stop_conditions, f"contract {contract.id} stop condition")
+        _require_unique(contract.required_outputs, f"contract {contract.id} required output")
 
 
 def _validate_surfaces(

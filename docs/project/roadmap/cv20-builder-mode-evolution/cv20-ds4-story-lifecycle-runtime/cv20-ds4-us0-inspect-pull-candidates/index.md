@@ -2,7 +2,7 @@
 
 # CV20.DS4.US0 — Inspect Pull Candidates
 
-**Status:** 🟢 Active
+**Status:** ✅ Done
 **Type:** User Story
 
 ---

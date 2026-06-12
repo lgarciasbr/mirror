@@ -31,6 +31,8 @@ def render_available_method(method: MethodDefinition) -> str:
     lines.extend(f"- {_event_label(event.id)} {event.meaning}" for event in method.lifecycle)
     lines.extend(["", "checkpoints"])
     lines.extend(_render_checkpoints(method))
+    lines.extend(["", "contracts"])
+    lines.extend(_render_contracts(method))
     lines.extend(["", "policies"])
     lines.extend(_render_policies(method.policies or {}))
     lines.extend(["", "surfaces"])
@@ -196,6 +198,21 @@ def _render_checkpoints(method: MethodDefinition) -> list[str]:
             lines.append(
                 f"  requires confirmations: {', '.join(checkpoint.required_confirmations)}"
             )
+    return lines
+
+
+def _render_contracts(method: MethodDefinition) -> list[str]:
+    if not method.contracts:
+        return ["none"]
+    lines: list[str] = []
+    for contract in method.contracts:
+        lines.append(f"- {contract.id}: {contract.applies_at}")
+        if contract.rules:
+            lines.append(f"  rules: {len(contract.rules)}")
+        if contract.stop_conditions:
+            lines.append(f"  stop conditions: {', '.join(contract.stop_conditions)}")
+        if contract.required_outputs:
+            lines.append(f"  required outputs: {', '.join(contract.required_outputs)}")
     return lines
 
 

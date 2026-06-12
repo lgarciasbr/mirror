@@ -29,6 +29,7 @@ def test_inspect_roadmap_snapshot_reads_capability_table(tmp_path):
     rendered = render_roadmap_snapshot_report(report)
     assert "ROADMAP SNAPSHOT" in rendered
     assert "Delivery field overview" in rendered
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in rendered
     assert "view                         overview" in rendered
     assert "result of roadmap-snapshot      no pull candidates" in rendered
     assert "🟪[CV2]  Checkout Flow" in rendered

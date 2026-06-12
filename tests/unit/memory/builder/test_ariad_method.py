@@ -63,6 +63,30 @@ def test_after_plan_checkpoint_blocks_implement_until_approval() -> None:
     assert after_plan.required_confirmations == ("navigator_approval",)
 
 
+def test_ariad_contracts_cover_lifecycle_rules() -> None:
+    method = get_ariad_method()
+    contracts = {contract.id: contract for contract in method.contracts}
+
+    assert set(contracts) == {
+        "pull_contract",
+        "prepare_contract",
+        "plan_contract",
+        "implement_contract",
+        "validation_contract",
+        "debt_review_contract",
+        "coherence_contract",
+        "done_contract",
+    }
+    assert contracts["pull_contract"].applies_at == "pull"
+    assert contracts["debt_review_contract"].applies_at == "review"
+    assert "Given/When/Then/And" in " ".join(contracts["plan_contract"].rules)
+    assert "E2E validation" in " ".join(contracts["plan_contract"].rules)
+    assert "TDD" in " ".join(contracts["implement_contract"].rules)
+    assert "scoped to the active story" in " ".join(contracts["implement_contract"].rules)
+    assert "E2E tests" in " ".join(contracts["validation_contract"].rules)
+    assert "local development guide" in " ".join(contracts["coherence_contract"].rules)
+
+
 def test_ariad_policies_capture_history_push_and_release() -> None:
     method = get_ariad_method()
     policies = method.policies or {}

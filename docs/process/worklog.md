@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-10 — CV20 Ariad lifecycle contracts added
+
+Added phase-specific Ariad lifecycle contracts to the Builder method DSL. `ContractDefinition` now lets Ariad declare Pull, Prepare, Plan, Implement, Validation, Debt Review, Coherence, and Done rules as method data, including E2E placement across Plan/Implement/Validation and story-scoped/TDD implementation expectations. Method inspection now surfaces contracts, and Ariad docs were synced in `/Users/alissonvale/Code/ariad/docs/delivery/story-lifecycle.md`.
+
+Validation: focused method-definition, Ariad fixture, and CLI build tests passed; ruff, format, and mypy passed.
+
 ### 2026-06-10 — CV20 Ariad roadmap inspection, pull, and prepare added
 
 Implemented the first DS4 lifecycle slice. Ariad-adopted journeys can now show the roadmap field with `ROADMAP SNAPSHOT` plus pull candidates, use method-declared surface routing, pull a candidate into active Delivery Work with `Delivery Story Identified` grammar, and prepare the pulled item with `Prepare Field Reading` grammar. Builder load now shows roadmap/candidates for Ariad journeys with no active item while preserving base Builder behavior for non-Ariad journeys. A reset script was added for the sandbox fixture at `/Users/alissonvale/Code/mirror-dev/scripts/reset_sandbox_pet_store.py`, with wrapper `/Users/alissonvale/reset-sandbox-pet-store.sh`.

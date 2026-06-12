@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
+
 _CANDIDATE_STATUSES = ("Planned", "Active", "Blocked", "Candidate")
 _STATUS_RE = re.compile(r"\*\*Status:\*\*\s*(?P<status>.+?)\s*$", re.MULTILINE)
 _HEADING_RE = re.compile(r"^#\s+(?P<code>[A-Z0-9.]+)\s+[—-]\s+(?P<title>.+?)\s*$", re.MULTILINE)
@@ -107,6 +109,7 @@ def render_roadmap_snapshot_report(
     lines = [
         "ROADMAP SNAPSHOT",
         "Delivery field overview",
+        render_lifecycle_ribbon("pull"),
         "",
         "view                         overview",
         f"result of roadmap-snapshot      {result}",
