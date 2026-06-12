@@ -37,7 +37,7 @@ def test_resume_state_requires_cursor_after_adoption(tmp_path):
     assert state.allowed_next_actions == ("sync_cursor", "inspect_method")
 
 
-def test_resume_state_reads_adopted_method_and_cursor(tmp_path):
+def test_resume_state_without_active_item_recommends_roadmap_inspection(tmp_path):
     _client, store = _store(tmp_path)
     set_adopted_method(store, "sandbox-pet-store", "ariad")
     cursor = set_delivery_cursor(
@@ -53,7 +53,33 @@ def test_resume_state_reads_adopted_method_and_cursor(tmp_path):
     assert state.reason is None
     assert state.adopted_method == "ariad"
     assert state.cursor == cursor
-    assert "pull_next_story" in state.allowed_next_actions
+    assert state.allowed_next_actions == (
+        "inspect_roadmap",
+        "pull_candidate_if_known",
+        "inspect_method",
+    )
+
+
+def test_resume_state_with_active_item_recommends_prepare(tmp_path):
+    _client, store = _store(tmp_path)
+    set_adopted_method(store, "sandbox-pet-store", "ariad")
+    cursor = set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        last_delivery_event="pull",
+    )
+
+    state = read_builder_resume_state(store, "sandbox-pet-store")
+
+    assert state.resumable is True
+    assert state.cursor == cursor
+    assert state.allowed_next_actions == (
+        "prepare_active_item",
+        "inspect_roadmap",
+        "inspect_method",
+    )
 
 
 def test_resume_state_pending_confirmation_constrains_next_actions(tmp_path):

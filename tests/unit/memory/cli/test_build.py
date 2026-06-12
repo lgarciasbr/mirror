@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from memory import MemoryClient
-from memory.builder.delivery_cursor import set_delivery_cursor
+from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cursor
 from memory.builder.method_adoption import set_adopted_method
 from memory.cli import build
 from memory.cli.runtime import CloneRole
@@ -72,16 +72,32 @@ def test_build_load_refuses_when_journey_project_path_is_production_clone(mocker
     inspect.assert_called_once_with(project_path.resolve())
 
 
-def test_build_load_renders_resume_surface_for_adopted_journey(mocker, tmp_path, capsys):
+def test_build_load_renders_roadmap_snapshot_when_adopted_journey_has_no_active_item(
+    mocker, tmp_path, capsys
+):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
     mem = MemoryClient(env="test", db_path=db_path)
     mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
     project_path = tmp_path / "project"
-    roadmap = project_path / "docs/project/roadmap/cv20/index.md"
+    roadmap = project_path / "docs/project/roadmap/index.md"
     roadmap.parent.mkdir(parents=True)
     roadmap.write_text(
-        "# CV20 — Builder Mode Evolution\n\n**Status:** 🟢 Active\n", encoding="utf-8"
+        """# Roadmap
+
+| Code | Capability Value | Status |
+|------|------------------|--------|
+| CV2 | Checkout Flow | Candidate |
+
+## CV2: Checkout Flow
+
+**Status:** Candidate
+
+Candidate Delivery Stories:
+
+- DS1 Checkout entry and address capture.
+""",
+        encoding="utf-8",
     )
     mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
     set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
@@ -102,13 +118,77 @@ def test_build_load_renders_resume_surface_for_adopted_journey(mocker, tmp_path,
     build.cmd_load("sandbox-pet-store")
 
     out = capsys.readouterr().out
+    assert "ROADMAP SNAPSHOT" in out
+    assert "🟪[CV2]  Checkout Flow" in out
+    assert "Ariad Pull Candidates" in out
+    assert "CV2.DS1 — Checkout Flow / Checkout entry and address capture" in out
+    assert "BUILDER RESUME" not in out
+    assert "No item was pulled" in out
+
+
+def test_build_load_renders_resume_surface_when_adopted_journey_has_active_item(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/cv20/index.md"
+    roadmap.parent.mkdir(parents=True)
+    roadmap.write_text(
+        "# CV20 — Builder Mode Evolution\n\n**Status:** 🟢 Active\n", encoding="utf-8"
+    )
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        last_delivery_event="pull",
+    )
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+    mocker.patch("memory.cli.build.switch_conversation")
+    mocker.patch("memory.cli.build._persist_global_sticky_defaults")
+    mocker.patch("memory.cli.build._is_mirror_mind_checkout", return_value=False)
+    mocker.patch.object(mem, "load_mirror_context", return_value="context")
+    mocker.patch.object(mem, "search", return_value=[])
+
+    build.cmd_load("sandbox-pet-store")
+
+    out = capsys.readouterr().out
     assert "BUILDER RESUME" in out
-    assert "journey\nsandbox-pet-store" in out
-    assert "adopted method\nariad" in out
-    assert "resumable\nyes" in out
-    assert "CV20 — Builder Mode Evolution" in out
-    assert "last delivery event\ntemplate_preparation" in out
-    assert "no story lifecycle work was executed" in out
+    assert "active item\nCV2.DS1" in out
+    assert "- prepare_active_item" in out
+    assert "ROADMAP SNAPSHOT" not in out
+
+
+def test_build_load_preserves_base_behavior_for_non_ariad_journey(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "custom-method-journey", JOURNEY_CONTENT)
+    project_path = tmp_path / "project"
+    mem.journeys.set_project_path("custom-method-journey", str(project_path))
+    set_adopted_method(mem.store, "custom-method-journey", "custom")
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+    mocker.patch("memory.cli.build.switch_conversation")
+    mocker.patch("memory.cli.build._persist_global_sticky_defaults")
+    mocker.patch("memory.cli.build._is_mirror_mind_checkout", return_value=False)
+    mocker.patch.object(mem, "load_mirror_context", return_value="context")
+    mocker.patch.object(mem, "search", return_value=[])
+
+    build.cmd_load("custom-method-journey")
+
+    out = capsys.readouterr().out
+    assert "project_path=" in out
+    assert "context" in out
+    assert "ROADMAP SNAPSHOT" not in out
+    assert "Ariad Pull Candidates" not in out
+    assert "BUILDER RESUME" not in out
 
 
 def test_build_load_allows_non_mirror_project_without_clone_role_guard(mocker, tmp_path, capsys):
@@ -544,6 +624,144 @@ def test_build_sync_cursor_requires_journey_context(mocker, tmp_path, capsys):
     assert exc.value.code == 1
     err = capsys.readouterr().err
     assert "Builder method cursor sync requires a journey" in err
+
+
+def test_build_pull_candidates_lists_roadmap_items(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/index.md"
+    roadmap.parent.mkdir(parents=True)
+    roadmap.write_text(
+        """# Roadmap
+
+| Code | Capability Value | Status |
+|------|------------------|--------|
+| CV2 | Checkout Flow | Candidate |
+
+## CV2: Checkout Flow
+
+**Status:** Candidate
+
+Candidate Delivery Stories:
+
+- DS1 Checkout entry and address capture.
+""",
+        encoding="utf-8",
+    )
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_pull_candidates("ariad", journey="sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    assert "ROADMAP SNAPSHOT" in out
+    assert "🟪[CV2]  Checkout Flow" in out
+    assert "view                         overview" in out
+    assert "Ariad Pull Candidates" in out
+    assert "CV2.DS1 — Checkout Flow / Checkout entry and address capture" in out
+    assert "No item was pulled" in out
+
+
+def test_build_pull_item_updates_cursor(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(mem.store, journey="sandbox-pet-store", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_pull_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        item_code="CHECKOUT-FLOW",
+        item_title="Checkout Flow",
+        item_level="user_story",
+        why_now="next candidate capability",
+    )
+
+    out = capsys.readouterr().out
+    assert "DELIVERY STORY IDENTIFIED" in out
+    assert "roadmap candidate" in out
+    assert "active item: CHECKOUT-FLOW" in out
+    assert "Prepare" in out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_item == "CHECKOUT-FLOW"
+    assert cursor.last_delivery_event == "pull"
+
+
+def test_build_prepare_item_updates_cursor(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    (project_path / "docs/process").mkdir(parents=True)
+    (project_path / "docs/process/development-guide.md").write_text("# Dev\n", encoding="utf-8")
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CHECKOUT-FLOW",
+        last_delivery_event="pull",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_prepare_item("ariad", journey="sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    assert "PREPARE FIELD READING" in out
+    assert "🟦[CHECKOUT-FLOW]" in out
+    assert "✓ docs/process/development-guide.md: present" in out
+    assert "Plan" in out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.last_delivery_event == "prepare"
+
+
+def test_build_pull_item_requires_adoption(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_delivery_cursor(mem.store, journey="sandbox-pet-store", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_pull_item(
+            "ariad",
+            journey="sandbox-pet-store",
+            item_code="CHECKOUT-FLOW",
+            item_title="Checkout Flow",
+            item_level="user_story",
+            why_now="next candidate capability",
+        )
+
+    assert exc.value.code == 1
+    assert "has not adopted Ariad yet" in capsys.readouterr().err
+
+
+def test_build_prepare_item_requires_active_item(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(mem.store, journey="sandbox-pet-store", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_prepare_item("ariad", journey="sandbox-pet-store")
+
+    assert exc.value.code == 1
+    assert "active item" in capsys.readouterr().err
 
 
 def test_build_load_allows_production_clone_when_override_passed(mocker, tmp_path, capsys):

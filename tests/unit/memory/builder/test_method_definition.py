@@ -7,6 +7,7 @@ from memory.builder.method_definition import (
     MethodDefinition,
     MethodDefinitionError,
     SurfaceDefinition,
+    SurfaceRoute,
     Taxonomy,
     TaxonomyLevel,
     TemplateDefinition,
@@ -59,6 +60,13 @@ def _valid_definition() -> MethodDefinition:
         policies={"history": {"commit": {"mode": "propose_and_wait"}}},
         surfaces=(
             SurfaceDefinition(id="plan_checkpoint", event="plan", stops_for="navigator_approval"),
+        ),
+        surface_routes=(
+            SurfaceRoute(
+                trigger="show_roadmap",
+                surfaces=("plan_checkpoint",),
+                intents=("show roadmap",),
+            ),
         ),
         templates=(
             TemplateDefinition(
@@ -169,6 +177,24 @@ def test_rejects_state_semantics_for_disallowed_states() -> None:
     )
 
     with pytest.raises(MethodDefinitionError, match="state semantics"):
+        validate_method_definition(definition)
+
+
+def test_rejects_surface_route_references_unknown_surface() -> None:
+    definition = _valid_definition().replace(
+        surface_routes=(SurfaceRoute(trigger="show_roadmap", surfaces=("missing",)),)
+    )
+
+    with pytest.raises(MethodDefinitionError, match="unknown surface"):
+        validate_method_definition(definition)
+
+
+def test_rejects_surface_route_without_surfaces() -> None:
+    definition = _valid_definition().replace(
+        surface_routes=(SurfaceRoute(trigger="show_roadmap", surfaces=()),)
+    )
+
+    with pytest.raises(MethodDefinitionError, match="at least one surface"):
         validate_method_definition(definition)
 
 

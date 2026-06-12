@@ -8,6 +8,7 @@ from memory.builder.method_definition import (
     LifecycleEvent,
     MethodDefinition,
     SurfaceDefinition,
+    SurfaceRoute,
     Taxonomy,
     TaxonomyLevel,
     TemplateDefinition,
@@ -427,6 +428,8 @@ ARIAD_METHOD = MethodDefinition(
     surfaces=(
         SurfaceDefinition(id="adoption_report", event="adoption"),
         SurfaceDefinition(id="builder_resume", event="on_builder_load"),
+        SurfaceDefinition(id="roadmap_snapshot", event="roadmap_inspection"),
+        SurfaceDefinition(id="pull_candidates", event="roadmap_inspection"),
         SurfaceDefinition(id="pull_report", event="pull"),
         SurfaceDefinition(id="prepare_report", event="prepare"),
         SurfaceDefinition(
@@ -446,6 +449,18 @@ ARIAD_METHOD = MethodDefinition(
         ),
         SurfaceDefinition(id="coherence_report", event="coherence"),
         SurfaceDefinition(id="done_report", event="done"),
+    ),
+    surface_routes=(
+        SurfaceRoute(
+            trigger="show_roadmap",
+            surfaces=("roadmap_snapshot", "pull_candidates"),
+            intents=(
+                "show roadmap",
+                "inspect roadmap",
+                "see pull candidates",
+                "what can I pull now",
+            ),
+        ),
     ),
     open_questions={
         "maintenance_and_operational_updates": {

@@ -15,7 +15,7 @@ def test_render_builder_resume_surface_shows_cursor_and_next_actions():
         ),
         resumable=True,
         reason=None,
-        allowed_next_actions=("inspect_method", "pull_next_story"),
+        allowed_next_actions=("inspect_roadmap", "pull_candidate_if_known", "inspect_method"),
     )
     position = RoadmapPosition(
         code="CV20",
@@ -33,7 +33,8 @@ def test_render_builder_resume_surface_shows_cursor_and_next_actions():
     assert "CV20 — Builder Mode Evolution" in rendered
     assert "active item\nnone" in rendered
     assert "last delivery event\ntemplate_preparation" in rendered
-    assert "- pull_next_story" in rendered
+    assert "- inspect_roadmap" in rendered
+    assert "- pull_candidate_if_known" in rendered
     assert "no story lifecycle work was executed" in rendered
 
 

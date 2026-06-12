@@ -16,15 +16,11 @@ Pi and Gemini CLI:
 /mm-build <journey-slug>
 ```
 
-**Example:** `/mm-build my-journey`
-
 Codex:
 
 ```
 $mm-build <journey-slug>
 ```
-
-**Example:** `$mm-build my-journey`
 
 Claude Code:
 
@@ -32,9 +28,12 @@ Claude Code:
 /mm:build <journey-slug>
 ```
 
-**Example:** `/mm:build my-journey`
-
 ---
+
+# Base Builder Mode Behavior
+
+This is the default behavior for every journey, including journeys that have not
+adopted Ariad or any Builder method.
 
 ## 1. Load Context (DB)
 
@@ -43,6 +42,7 @@ uv run python -m memory build load <slug>
 ```
 
 The command:
+
 - Activates `■ Builder Mode` in the operating-mode lifecycle
 - Renders the Mode Transition Surface (`■ BUILDER MODE ACTIVE`)
 - Prints identity context (soul + ego + user + journey, persona=engineer)
@@ -52,14 +52,21 @@ The command:
 
 ## 1.1 Transition Surface
 
-The `build load` output includes the conversational transition surface. For
-Ariad-adopted journeys, it can also include the Builder Resume Surface
-(`■ BUILDER RESUME`). Render both surfaces visibly to the user before continuing
-with project-doc loading or substantive Builder work. Do not summarize the
-Builder Resume Surface away; preserve its operational fields, including active
-item, active checkpoint, pending confirmation, last delivery event, and allowed
-next actions. Do not recreate the surfaces from scratch unless the command failed
-to render them; copy the rendered surfaces from the command output.
+Render the `build load` transition surface visibly before continuing with project
+doc loading or substantive Builder work.
+
+For journeys without adopted Ariad, preserve original Builder behavior:
+
+- load context;
+- read project docs;
+- stop at the Builder Activation Boundary;
+- ask what work should be done next.
+
+Do not render Ariad surfaces, Ariad lifecycle suggestions, roadmap snapshot,
+pull candidates, cursor state, or checkpoint language for journeys that have not
+adopted Ariad.
+
+For Ariad-adopted journeys, see **Ariad Runtime Behavior** below.
 
 Builder Mode surface should orient the user around:
 
@@ -71,9 +78,11 @@ Builder Mode surface should orient the user around:
 
 ## 2. Read Project Docs
 
-Parse `project_path` from the last output line above. If `project_path` is not set, skip this step and proceed — the journey has no associated project yet.
+Parse `project_path` from the last output line above. If `project_path` is not
+set, skip this step and proceed — the journey has no associated project yet.
 
-Use file tools to load project documentation. Prefer the project's actual documentation structure over any fixed scaffold.
+Use file tools to load project documentation. Prefer the project's actual
+documentation structure over any fixed scaffold.
 
 ### Always read when present
 
@@ -122,113 +131,21 @@ specific story to execute.
 
 Context activation is not execution consent.
 
-## 4. Inspect Builder Method
-
-When the user asks in natural language which Builder method governs the active
-journey, what method this journey uses, or to show the Builder method, inspect
-the current Builder method state:
-
-```bash
-uv run python -m memory build inspect-method
-```
-
-If the user names a specific journey, inspect that journey explicitly:
-
-```bash
-uv run python -m memory build inspect-method --journey <slug>
-```
-
-Render the command output visibly. If no Builder journey is active yet, say so
-plainly and ask the user to activate or name a journey. If the journey has not
-adopted a Builder method yet, say so plainly. Do not adopt Ariad, mutate runtime
-state, or infer that Ariad governs the journey just because Ariad is available.
-
-When the user asks what Ariad is as a Builder method, inspect the available
-built-in method defaults:
-
-```bash
-uv run python -m memory build inspect-method ariad
-```
-
-This is read-only inspection, not Builder activation, adoption, resume, or
-lifecycle execution.
-
-## 5. Adopt Builder Method
-
-When the user asks in natural language to adopt Ariad for the active journey,
-configure this journey to use Ariad, or make Ariad the Builder method for this
-journey, run:
-
-```bash
-uv run python -m memory build adopt --method ariad
-```
-
-If the user names a specific journey, pass it explicitly:
-
-```bash
-uv run python -m memory build adopt --journey <slug> --method ariad
-```
-
-Render the adoption report visibly. This is an explicit mutation of Builder
-method state, but it must not generate roadmap templates, create a delivery
-cursor, execute lifecycle work, change story status, commit, push, or release.
-If no Builder journey is active and no journey is named, ask the user to activate
-or name a journey.
-
-## 6. Prepare Ariad Templates
-
-When the user asks in natural language to prepare Ariad templates, generate
-Ariad adoption templates, or make the adopted journey documentation-ready, run:
-
-```bash
-uv run python -m memory build prepare-templates --method ariad
-```
-
-If the user names a specific journey, pass it explicitly:
-
-```bash
-uv run python -m memory build prepare-templates --journey <slug> --method ariad
-```
-
-Render the template preparation report visibly. The operation may create missing
-method-declared template files in the journey project path, but must preserve
-existing files and must not create a delivery cursor, execute lifecycle work,
-change story status, commit, push, or release. If Ariad has not been adopted yet,
-ask the user to adopt Ariad first. If no project path is configured, ask the user
-to configure the journey project path first.
-
-## 7. Sync Delivery Cursor
-
-When the user asks in natural language to sync the initial Builder delivery
-cursor for an Ariad-adopted journey, run:
-
-```bash
-uv run python -m memory build sync-cursor --method ariad
-```
-
-If the user names a specific journey, pass it explicitly:
-
-```bash
-uv run python -m memory build sync-cursor --journey <slug> --method ariad
-```
-
-Render the cursor sync report visibly. This operation persists runtime resume
-state only. It must not infer an active roadmap item, execute Pull/Prepare/Plan,
-change story status, commit, push, or release.
-
-## 8. Work In Builder Mode
+## 4. Work In Builder Mode
 
 Once the user explicitly authorizes work:
 
-- Work from `project_path` - read, edit, and create project files normally
+- Work from `project_path` — read, edit, and create project files normally
 - Keep project docs updated as the code evolves
 - Commit at the end of each session with a descriptive English commit message
 
-## 9. Project Docs Maintenance
+## 5. Project Docs Maintenance
 
-Follow the project's existing documentation structure. Do not create a generic docs scaffold unless the user explicitly asks for one.
+Follow the project's existing documentation structure. Do not create a generic
+docs scaffold unless the user explicitly asks for one.
 
 **When to update docs:**
+
 - `README.md`: public positioning, setup, stack, or usage changes
 - `REFERENCE.md`: CLI behavior, configuration, runtime contracts, or operational details change
 - `docs/project/briefing.md`: stable architectural premises change
@@ -238,7 +155,7 @@ Follow the project's existing documentation structure. Do not create a generic d
 - `docs/process/worklog.md`: a meaningful milestone is completed
 - `docs/product/principles.md`: product, code, testing, or process principles change
 
-## 10. Configure `project_path`
+## 6. Configure `project_path`
 
 If the journey does not yet have an associated project:
 
@@ -246,10 +163,186 @@ If the journey does not yet have an associated project:
 uv run python -m memory journey set-path <slug> /path/to/project
 ```
 
-## 11. Finalize Session
+## 7. Finalize Session
 
 When the user says "End the session":
 
 ```bash
 uv run python -m memory mirror log "SESSION_SUMMARY"
 ```
+
+---
+
+# Adopted Method Behavior
+
+A journey may adopt a Builder method. Method-specific behavior applies only when
+that method has been adopted for the active journey.
+
+Currently implemented method-specific runtime: **Ariad**.
+
+For journeys without adopted Ariad:
+
+- preserve Base Builder Mode behavior;
+- do not render Ariad surfaces;
+- do not route roadmap, pull, prepare, template, cursor, or lifecycle requests to Ariad commands;
+- if the user asks for Ariad behavior, explain that Ariad must be adopted first.
+
+## Inspect Builder Method
+
+When the user asks which Builder method governs the active journey, inspect the
+current Builder method state:
+
+```bash
+uv run python -m memory build inspect-method
+```
+
+If the user names a specific journey:
+
+```bash
+uv run python -m memory build inspect-method --journey <slug>
+```
+
+Render the command output visibly. If no Builder journey is active yet, say so
+plainly and ask the user to activate or name a journey. If the journey has not
+adopted a Builder method yet, say so plainly. Do not infer that Ariad governs the
+journey just because Ariad is available.
+
+When the user asks what Ariad is as a Builder method, inspect the built-in method
+defaults:
+
+```bash
+uv run python -m memory build inspect-method ariad
+```
+
+This is read-only inspection.
+
+## Adopt Ariad
+
+When the user explicitly asks to adopt Ariad for the active journey, run:
+
+```bash
+uv run python -m memory build adopt --method ariad
+```
+
+If the user names a specific journey:
+
+```bash
+uv run python -m memory build adopt --journey <slug> --method ariad
+```
+
+Render the adoption report visibly. This mutates Builder method state only. It
+must not generate templates, create a delivery cursor, execute lifecycle work,
+change story status, commit, push, or release.
+
+---
+
+# Ariad Runtime Behavior
+
+This section applies **only when the active journey has adopted Ariad**
+(`adopted_method == ariad`).
+
+## Ariad Activation Surfaces
+
+For Ariad-adopted journeys with no active item, `build load` can emit:
+
+- `ROADMAP SNAPSHOT`
+- `■ Ariad Pull Candidates`
+
+For Ariad-adopted journeys with an active item or pending confirmation,
+`build load` can emit:
+
+- `■ BUILDER RESUME`
+
+These surfaces are mandatory activation output. The final response to the user
+must include them verbatim from the command output. Do not replace them with a
+bullet summary, prose synthesis, or a generic "estado atual" list. If the command
+output contains `ROADMAP SNAPSHOT`, the response is invalid unless the visible
+reply also contains `ROADMAP SNAPSHOT` and `■ Ariad Pull Candidates`.
+
+Preserve headings, card layout, operational fields, recommendations, and
+boundaries from the command output. After rendering these surfaces, do not ask a
+generic question such as "inspeção runtime, planejamento de Delivery, ou
+exploração?". For an Ariad journey with no active item, ask whether the Navigator
+wants to pull the recommended candidate or inspect the roadmap further.
+
+## Prepare Ariad Templates
+
+When the user asks to prepare Ariad templates or make the adopted journey
+documentation-ready, run:
+
+```bash
+uv run python -m memory build prepare-templates --method ariad
+```
+
+If the user names a specific journey:
+
+```bash
+uv run python -m memory build prepare-templates --journey <slug> --method ariad
+```
+
+Render the report visibly. The operation may create missing method-declared
+template files, but must preserve existing files and must not create a delivery
+cursor, execute lifecycle work, change story status, commit, push, or release.
+
+## Sync Delivery Cursor
+
+When the user asks to sync the initial Builder delivery cursor for an
+Ariad-adopted journey, run:
+
+```bash
+uv run python -m memory build sync-cursor --method ariad
+```
+
+If the user names a specific journey:
+
+```bash
+uv run python -m memory build sync-cursor --journey <slug> --method ariad
+```
+
+Render the cursor sync report visibly. This persists runtime resume state only.
+It must not infer an active roadmap item, execute Pull/Prepare/Plan, change story
+status, commit, push, or release.
+
+## Inspect Roadmap And Pull Candidates
+
+When the user asks to see the roadmap, inspect the roadmap, show roadmap
+candidates, see what can be pulled, choose the next story, or asks "o que posso
+puxar agora?", run:
+
+```bash
+uv run python -m memory build pull-candidates --method ariad
+```
+
+If the user names a specific journey, pass `--journey <slug>`. Render the
+configured Ariad surfaces visibly, currently `ROADMAP SNAPSHOT` and `■ Ariad Pull
+Candidates`. This is read-only: it must not pull an item, update the cursor,
+execute lifecycle work, change story status, commit, push, or release.
+
+## Pull And Prepare Ariad Work
+
+When the user asks to pull a roadmap item into active Ariad work, run the
+contained Pull command with explicit item metadata:
+
+```bash
+uv run python -m memory build pull-item --method ariad \
+  --item-code <code> \
+  --item-title "<title>" \
+  --item-level <delivery_story|user_story|technical_story> \
+  --why-now "<why this level now>"
+```
+
+If the user names a specific journey, pass `--journey <slug>`. Render the Pull
+report visibly. Pull may update runtime cursor active item, but must not execute
+Prepare, Plan, Implement, Validation, Review, Coherence, Done, commit, push, or
+release.
+
+When the user asks to prepare the pulled item, run:
+
+```bash
+uv run python -m memory build prepare-item --method ariad
+```
+
+If the user names a specific journey, pass `--journey <slug>`. Render the Prepare
+report visibly. Prepare may update the runtime cursor last delivery event, but
+must not create a Plan, approve a checkpoint, start implementation, change story
+status, commit, push, or release.

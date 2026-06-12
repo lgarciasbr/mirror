@@ -103,10 +103,21 @@ def test_ariad_surfaces_bind_to_lifecycle_and_entrypoint_events() -> None:
 
     assert surfaces["adoption_report"].event == "adoption"
     assert surfaces["builder_resume"].event == "on_builder_load"
+    assert surfaces["roadmap_snapshot"].event == "roadmap_inspection"
+    assert surfaces["pull_candidates"].event == "roadmap_inspection"
     assert surfaces["plan_checkpoint"].event == "plan"
     assert surfaces["plan_checkpoint"].stops_for == "navigator_approval"
     assert surfaces["validation_checkpoint"].event == "validation"
     assert surfaces["review_checkpoint"].event == "review"
+
+
+def test_ariad_surface_routes_configure_roadmap_inspection() -> None:
+    method = get_ariad_method()
+    routes = {route.trigger: route for route in method.surface_routes}
+
+    show_roadmap = routes["show_roadmap"]
+    assert show_roadmap.surfaces == ("roadmap_snapshot", "pull_candidates")
+    assert "show roadmap" in show_roadmap.intents
 
 
 def test_ariad_open_questions_preserve_deferred_design_areas() -> None:

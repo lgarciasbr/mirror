@@ -8,11 +8,15 @@ from memory.builder.delivery_cursor import BuilderDeliveryCursor, get_delivery_c
 from memory.builder.method_adoption import get_adopted_method
 from memory.storage.store import Store
 
-DEFAULT_ALLOWED_NEXT_ACTIONS = (
+NO_ACTIVE_ITEM_ACTIONS = (
+    "inspect_roadmap",
+    "pull_candidate_if_known",
     "inspect_method",
-    "prepare_templates",
-    "sync_cursor",
-    "pull_next_story",
+)
+ACTIVE_ITEM_ACTIONS = (
+    "prepare_active_item",
+    "inspect_roadmap",
+    "inspect_method",
 )
 PENDING_CONFIRMATION_ACTIONS = ("answer_pending_confirmation", "inspect_method")
 
@@ -52,11 +56,13 @@ def read_builder_resume_state(store: Store, journey: str) -> BuilderResumeState:
             allowed_next_actions=("sync_cursor", "inspect_method"),
         )
 
-    allowed_next_actions = (
-        PENDING_CONFIRMATION_ACTIONS
-        if cursor.pending_confirmation
-        else DEFAULT_ALLOWED_NEXT_ACTIONS
-    )
+    allowed_next_actions: tuple[str, ...]
+    if cursor.pending_confirmation:
+        allowed_next_actions = PENDING_CONFIRMATION_ACTIONS
+    elif cursor.active_item:
+        allowed_next_actions = ACTIVE_ITEM_ACTIONS
+    else:
+        allowed_next_actions = NO_ACTIVE_ITEM_ACTIONS
     return BuilderResumeState(
         journey=normalized_journey,
         adopted_method=adopted_method,

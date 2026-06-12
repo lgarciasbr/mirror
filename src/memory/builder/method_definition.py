@@ -75,6 +75,16 @@ class SurfaceDefinition:
 
 
 @dataclass(frozen=True)
+class SurfaceRoute:
+    trigger: str
+    surfaces: tuple[str, ...]
+    intents: tuple[str, ...] = ()
+
+    def replace(self, **changes: Any) -> SurfaceRoute:
+        return replace(self, **changes)
+
+
+@dataclass(frozen=True)
 class TemplateDefinition:
     id: str
     path: str
@@ -95,6 +105,7 @@ class MethodDefinition:
     checkpoints: tuple[CheckpointDefinition, ...] = ()
     policies: Mapping[str, Any] | None = None
     surfaces: tuple[SurfaceDefinition, ...] = ()
+    surface_routes: tuple[SurfaceRoute, ...] = ()
     templates: tuple[TemplateDefinition, ...] = ()
     open_questions: Mapping[str, Any] | None = None
 
@@ -115,6 +126,7 @@ def validate_method_definition(definition: MethodDefinition) -> None:
     _validate_lifecycle(definition.lifecycle)
     _validate_checkpoints(definition.checkpoints, lifecycle_ids=definition.lifecycle_ids)
     _validate_surfaces(definition.surfaces, lifecycle_ids=definition.lifecycle_ids)
+    _validate_surface_routes(definition.surface_routes, surfaces=definition.surfaces)
     _validate_templates(definition.templates)
 
 
@@ -197,7 +209,11 @@ def _validate_surfaces(
     _require_unique(surface_ids, "surface")
     for surface in surfaces:
         _require_non_empty(surface.id, "surface id")
-        if surface.event is not None and surface.event in {"adoption", "on_builder_load"}:
+        if surface.event is not None and surface.event in {
+            "adoption",
+            "on_builder_load",
+            "roadmap_inspection",
+        }:
             continue
         if surface.event is not None:
             _require_known_event(
@@ -205,6 +221,29 @@ def _validate_surfaces(
                 lifecycle_ids=lifecycle_ids,
                 owner=f"surface {surface.id}",
             )
+
+
+def _validate_surface_routes(
+    routes: tuple[SurfaceRoute, ...],
+    *,
+    surfaces: tuple[SurfaceDefinition, ...],
+) -> None:
+    route_triggers = [route.trigger for route in routes]
+    _require_unique(route_triggers, "surface route")
+    surface_ids = {surface.id for surface in surfaces}
+    for route in routes:
+        _require_non_empty(route.trigger, "surface route trigger")
+        if not route.surfaces:
+            raise MethodDefinitionError(
+                f"surface route {route.trigger} must declare at least one surface"
+            )
+        _require_unique(route.surfaces, f"surface route {route.trigger} surface")
+        _require_unique(route.intents, f"surface route {route.trigger} intent")
+        for surface_id in route.surfaces:
+            if surface_id not in surface_ids:
+                raise MethodDefinitionError(
+                    f"surface route {route.trigger} references unknown surface {surface_id}"
+                )
 
 
 def _validate_templates(templates: tuple[TemplateDefinition, ...]) -> None:

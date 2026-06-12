@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-10 — CV20 Ariad roadmap inspection, pull, and prepare added
+
+Implemented the first DS4 lifecycle slice. Ariad-adopted journeys can now show the roadmap field with `ROADMAP SNAPSHOT` plus pull candidates, use method-declared surface routing, pull a candidate into active Delivery Work with `Delivery Story Identified` grammar, and prepare the pulled item with `Prepare Field Reading` grammar. Builder load now shows roadmap/candidates for Ariad journeys with no active item while preserving base Builder behavior for non-Ariad journeys. A reset script was added for the sandbox fixture at `/Users/alissonvale/Code/mirror-dev/scripts/reset_sandbox_pet_store.py`, with wrapper `/Users/alissonvale/reset-sandbox-pet-store.sh`.
+
+Validation: focused lifecycle, pull-candidate, resume, and CLI build tests passed; ruff, formatting, and mypy passed. Pi/Mirror validation with `sandbox-pet-store` passed for roadmap activation, Pull, and Prepare. Ariad visual grammar was updated in `/Users/alissonvale/Code/ariad/docs/delivery/visual-grammar.md` with `Prepare Field Reading`.
+
 ### 2026-06-10 — CV20 Builder resume surface added
 
 Implemented CV20.DS3 Builder Resume Surface. Builder now composes Ariad adoption state, runtime delivery cursor state, and compact roadmap position into a resume surface during `memory build load` for adopted journeys. Pi/Mirror validation with `sandbox-pet-store` showed `■ BUILDER RESUME`, method `ariad`, resumability, cursor fields, allowed next actions, and preserved the boundary that no story lifecycle work runs during load.

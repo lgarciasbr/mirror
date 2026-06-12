@@ -8,8 +8,16 @@ from pathlib import Path
 
 from memory.builder.ariad_method import get_ariad_method
 from memory.builder.delivery_cursor import (
+    get_delivery_cursor,
     render_delivery_cursor_sync_report,
     set_delivery_cursor,
+)
+from memory.builder.lifecycle import (
+    BuilderLifecycleItem,
+    prepare_lifecycle_item,
+    pull_lifecycle_item,
+    render_prepare_report,
+    render_pull_report,
 )
 from memory.builder.method_adoption import get_adopted_method, set_adopted_method
 from memory.builder.method_inspection import (
@@ -18,6 +26,12 @@ from memory.builder.method_inspection import (
     render_journey_method_state,
     render_method_adoption_report,
     render_no_active_journey,
+)
+from memory.builder.pull_candidates import (
+    inspect_pull_candidates,
+    inspect_roadmap_snapshot,
+    render_pull_candidates_report,
+    render_roadmap_snapshot_report,
 )
 from memory.builder.resume_state import read_builder_resume_state
 from memory.builder.resume_surface import render_builder_resume_surface
@@ -134,6 +148,15 @@ def cmd_load(
         )
     )
 
+    adopted_method = get_adopted_method(mem.store, slug)
+    if adopted_method == "ariad":
+        _print_builder_entry_surface(
+            mem,
+            slug=slug,
+            adopted_method=adopted_method,
+            project_path=project_path,
+        )
+
     context = mem.load_mirror_context(persona="engineer", journey=slug)
     print(context)
 
@@ -154,17 +177,6 @@ def cmd_load(
             print(f"\n[{memory.layer}] {memory.title}")
             print(memory.content)
 
-    adopted_method = get_adopted_method(mem.store, slug)
-    if adopted_method:
-        print(
-            render_builder_resume_surface(
-                read_builder_resume_state(mem.store, slug),
-                roadmap_position=resolve_roadmap_position(Path(project_path))
-                if project_path
-                else None,
-            )
-        )
-
     _persist_global_sticky_defaults(mem, persona="engineer", journey=slug)
     resolved_session_id = resolve_operating_session_id(mem.store, session_id)
     activate_mode(
@@ -182,6 +194,41 @@ def cmd_load(
             f"\n[Journey '{slug}' has no project_path configured. "
             f"Run: python -m memory journey set-path {slug} /path/to/project]"
         )
+
+
+def _print_builder_entry_surface(
+    mem: MemoryClient,
+    *,
+    slug: str,
+    adopted_method: str,
+    project_path: str | None,
+) -> None:
+    resume_state = read_builder_resume_state(mem.store, slug)
+    project_root = Path(project_path) if project_path else None
+    if (
+        resume_state.cursor
+        and not resume_state.cursor.active_item
+        and not resume_state.cursor.pending_confirmation
+    ):
+        candidates_report = inspect_pull_candidates(
+            project_root,
+            journey=slug,
+            method=adopted_method,
+        )
+        print(
+            render_roadmap_snapshot_report(
+                inspect_roadmap_snapshot(project_root, journey=slug, method=adopted_method),
+                candidates=candidates_report.candidates,
+            )
+        )
+        print(render_pull_candidates_report(candidates_report))
+        return
+    print(
+        render_builder_resume_surface(
+            resume_state,
+            roadmap_position=resolve_roadmap_position(project_root) if project_root else None,
+        )
+    )
 
 
 def cmd_inspect_method(
@@ -341,6 +388,18 @@ def cmd_prepare_templates(
     print(render_template_preparation_report(report))
 
 
+def _require_delivery_cursor(mem: MemoryClient, journey: str) -> None:
+    if get_delivery_cursor(mem.store, journey) is not None:
+        return
+    print(
+        f"Error: journey '{journey}' has no Builder delivery cursor. "
+        "Run: uv run python -m memory build sync-cursor --journey "
+        f"{journey} --method ariad",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
 def cmd_sync_cursor(
     method: str,
     *,
@@ -369,6 +428,127 @@ def cmd_sync_cursor(
         last_delivery_event="template_preparation",
     )
     print(render_delivery_cursor_sync_report(cursor))
+
+
+def cmd_pull_candidates(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="pull candidates inspection",
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+    project_path = mem.journeys.get_project_path(resolved_journey)
+    root = Path(project_path) if project_path else None
+    method_definition = get_ariad_method()
+    surfaces = _surfaces_for_trigger(method_definition, "show_roadmap")
+    rendered: list[str] = []
+    candidates_report = inspect_pull_candidates(root, journey=resolved_journey, method=method)
+    if "roadmap_snapshot" in surfaces:
+        rendered.append(
+            render_roadmap_snapshot_report(
+                inspect_roadmap_snapshot(root, journey=resolved_journey, method=method),
+                candidates=candidates_report.candidates,
+            )
+        )
+    if "pull_candidates" in surfaces:
+        rendered.append(render_pull_candidates_report(candidates_report))
+    print("\n".join(part.rstrip() for part in rendered) + "\n")
+
+
+def _surfaces_for_trigger(method_definition: object, trigger: str) -> tuple[str, ...]:
+    routes = getattr(method_definition, "surface_routes", ())
+    for route in routes:
+        if getattr(route, "trigger", None) == trigger:
+            return tuple(getattr(route, "surfaces", ()))
+    return ("pull_candidates",)
+
+
+def cmd_pull_item(
+    method: str,
+    *,
+    item_code: str,
+    item_title: str,
+    item_level: str,
+    why_now: str,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="pull",
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+    _require_delivery_cursor(mem, resolved_journey)
+    try:
+        report = pull_lifecycle_item(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            item=BuilderLifecycleItem(
+                code=item_code,
+                title=item_title,
+                level=item_level,
+                why_now=why_now,
+            ),
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_pull_report(report))
+
+
+def cmd_prepare_item(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="prepare",
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+    _require_delivery_cursor(mem, resolved_journey)
+    project_path = mem.journeys.get_project_path(resolved_journey)
+    try:
+        report = prepare_lifecycle_item(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            project_path=Path(project_path) if project_path else None,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_prepare_report(report))
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -469,6 +649,50 @@ def main(argv: list[str] | None = None) -> None:
         help="Runtime session id for resolving the active Builder journey",
     )
 
+    p_candidates = sub.add_parser(
+        "pull-candidates",
+        help="Inspect Ariad roadmap items that can be pulled",
+    )
+    p_candidates.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_candidates.add_argument("--journey", default=None, help="Journey slug for inspection")
+    p_candidates.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
+    p_pull = sub.add_parser(
+        "pull-item",
+        help="Pull an Ariad lifecycle item into active Builder work",
+    )
+    p_pull.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_pull.add_argument("--journey", default=None, help="Journey slug for the pull")
+    p_pull.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+    p_pull.add_argument("--item-code", required=True, help="Roadmap item code")
+    p_pull.add_argument("--item-title", required=True, help="Roadmap item title")
+    p_pull.add_argument(
+        "--item-level",
+        required=True,
+        help="Roadmap item level: delivery_story, user_story, or technical_story",
+    )
+    p_pull.add_argument("--why-now", required=True, help="Why this item/level is pulled now")
+
+    p_prepare = sub.add_parser(
+        "prepare-item",
+        help="Prepare the pulled Ariad lifecycle item",
+    )
+    p_prepare.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_prepare.add_argument("--journey", default=None, help="Journey slug for Prepare")
+    p_prepare.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "load":
@@ -485,3 +709,17 @@ def main(argv: list[str] | None = None) -> None:
         cmd_prepare_templates(args.method, journey=args.journey, session_id=args.session_id)
     elif args.command == "sync-cursor":
         cmd_sync_cursor(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "pull-candidates":
+        cmd_pull_candidates(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "pull-item":
+        cmd_pull_item(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            item_code=args.item_code,
+            item_title=args.item_title,
+            item_level=args.item_level,
+            why_now=args.why_now,
+        )
+    elif args.command == "prepare-item":
+        cmd_prepare_item(args.method, journey=args.journey, session_id=args.session_id)

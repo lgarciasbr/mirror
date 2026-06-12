@@ -2,7 +2,7 @@
 
 # CV20.DS4 — Story Lifecycle Runtime
 
-**Status:** 🟡 Planned
+**Status:** 🟢 Active
 
 ---
 
@@ -16,7 +16,9 @@ Builder can guide one Ariad story through Pull, Prepare, Plan, Implement, Valida
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV20.DS4.US1 | Pull and Prepare | User Story | Navigator can pull DS/US/TS work and see Prepare assess context, risks, rules, and granularity | 🟡 Planned |
+| [CV20.DS4.TS1](cv20-ds4-ts1-surface-routing-definitions/index.md) | Surface Routing Definitions | Technical Story | Ariad method data declares which surfaces roadmap inspection emits | ✅ Done |
+| [CV20.DS4.US0](cv20-ds4-us0-inspect-pull-candidates/index.md) | Inspect Pull Candidates | User Story | Navigator can ask to see the roadmap and pull candidates before selecting active work | 🟢 Active |
+| [CV20.DS4.US1](cv20-ds4-us1-pull-and-prepare/index.md) | Pull and Prepare | User Story | Navigator can pull DS/US/TS work and see Prepare assess context, risks, rules, and granularity | ✅ Done |
 | CV20.DS4.US2 | Plan checkpoint gate | User Story | Builder creates a plan surface and blocks implementation until Navigator approval | 🟡 Planned |
 | CV20.DS4.US3 | Validation checkpoint | User Story | Builder runs automated checks and presents a concrete Navigator validation route | 🟡 Planned |
 | CV20.DS4.US4 | Coherence and Done gate | User Story | Builder verifies traces, records history according to policy, closes the story, and recommends next Pull | 🟡 Planned |
