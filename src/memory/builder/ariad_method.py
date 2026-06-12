@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from memory.builder.method_definition import (
+    CadenceProfileDefinition,
     CheckpointDefinition,
     ContractDefinition,
     DslResolution,
@@ -13,6 +14,7 @@ from memory.builder.method_definition import (
     Taxonomy,
     TaxonomyLevel,
     TemplateDefinition,
+    WorkItemLevelDefinition,
 )
 
 _STATE_VOCABULARY = (
@@ -101,6 +103,12 @@ When debt is deferred, record the defer reason and revisit trigger.
 
 ---
 
+## User Story
+
+As a [user persona],
+I want to [action/feature],
+So that [benefit/value].
+
 ## Outcome
 
 <Navigator-visible behavior or capability.>
@@ -138,6 +146,13 @@ Then <observable result>
 **Type:** Technical Story
 
 ---
+
+## Technical Story
+
+In order to [achieve a technical benefit/business capability],
+As [an engineering team/system component],
+I want to [perform a technical action],
+So that [expected technical outcome].
 
 ## Outcome
 
@@ -373,12 +388,51 @@ ARIAD_METHOD = MethodDefinition(
     lifecycle=(
         LifecycleEvent(id="pull", meaning="escolhe o foco"),
         LifecycleEvent(id="prepare", meaning="lê o terreno"),
+        LifecycleEvent(id="expand", meaning="desdobra granularidade"),
         LifecycleEvent(id="plan", meaning="firma o contrato"),
         LifecycleEvent(id="implement", meaning="muda o sistema"),
         LifecycleEvent(id="validation", meaning="prova comportamento"),
         LifecycleEvent(id="review", meaning="encara a dívida"),
         LifecycleEvent(id="coherence", meaning="integra os rastros"),
         LifecycleEvent(id="done", meaning="registra e fecha"),
+    ),
+    work_item_levels=(
+        WorkItemLevelDefinition(
+            id="delivery_story",
+            label="Delivery Story",
+            implementable_by_default=False,
+            expands_to=("user_story", "technical_story"),
+        ),
+        WorkItemLevelDefinition(id="user_story", label="User Story", implementable_by_default=True),
+        WorkItemLevelDefinition(
+            id="technical_story",
+            label="Technical Story",
+            implementable_by_default=True,
+        ),
+    ),
+    cadence_profiles=(
+        CadenceProfileDefinition(
+            id="stepwise",
+            label="Stepwise",
+            stop_policy="stop_after_every_phase",
+        ),
+        CadenceProfileDefinition(
+            id="checkpoint",
+            label="Checkpoint",
+            stop_policy="continue_until_next_method_checkpoint",
+        ),
+        CadenceProfileDefinition(
+            id="accelerated",
+            label="Accelerated",
+            stop_policy="future_continue_through_soft_stops",
+            active=False,
+        ),
+        CadenceProfileDefinition(
+            id="autonomous",
+            label="Autonomous",
+            stop_policy="future_continue_until_hard_constraint",
+            active=False,
+        ),
     ),
     checkpoints=(
         CheckpointDefinition(
@@ -422,6 +476,7 @@ ARIAD_METHOD = MethodDefinition(
                 "read relevant story, project, code, tests, decisions, and local guide context",
                 "identify story shape, risks, applicable rules, and local guide overrides",
                 "decide whether expand or collapse is needed before Plan",
+                "identify whether the active item is implementable by default or requires a granularity decision",
                 "do not create a Plan or start implementation during Prepare",
             ),
             required_outputs=(
@@ -432,9 +487,20 @@ ARIAD_METHOD = MethodDefinition(
             ),
         ),
         ContractDefinition(
+            id="expand_contract",
+            applies_at="expand",
+            rules=(
+                "expand Delivery Stories into User Stories and Technical Stories when they are not implementable as one coherent unit",
+                "Delivery Stories always expand before implementation and are never planned as the implementable unit",
+                "materialize child User Story and Technical Story packages during expansion",
+            ),
+            required_outputs=("granularity_decision", "child_story_candidates"),
+        ),
+        ContractDefinition(
             id="plan_contract",
             applies_at="plan",
             rules=(
+                "plan only implementable User Stories or Technical Stories",
                 "define scope, non-goals, acceptance behavior, validation route, documentation impact, and implementation contract",
                 "express User Story acceptance behavior with Given/When/Then/And when practical",
                 "decide whether E2E validation is required for user-visible flows or cross-system behavior",

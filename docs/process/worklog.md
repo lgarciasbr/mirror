@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-10 — CV20 Ariad planning lifecycle hardened
+
+Reworked DS4 planning around methodological consistency instead of a narrow Plan gate. Ariad method data now declares `expand`, work item implementability, and cadence profiles; Delivery Stories always expand into User/Technical Stories before Plan. Builder runtime now persists active item title/level/cadence/granularity metadata, automatically prepares and expands pulled Delivery Stories, materializes story packages (`index.md`, `plan.md`, `test-guide.md`) for implementable stories, and supports deterministic Plan approval before implementation is allowed.
+
+Validation: focused Builder method, lifecycle, cursor, CLI, surface, ruff, format, and mypy checks passed.
+
 ### 2026-06-10 — CV20 Ariad lifecycle contracts added
 
 Added phase-specific Ariad lifecycle contracts to the Builder method DSL. `ContractDefinition` now lets Ariad declare Pull, Prepare, Plan, Implement, Validation, Debt Review, Coherence, and Done rules as method data, including E2E placement across Plan/Implement/Validation and story-scoped/TDD implementation expectations. Method inspection now surfaces contracts, and Ariad docs were synced in `/Users/alissonvale/Code/ariad/docs/delivery/story-lifecycle.md`.

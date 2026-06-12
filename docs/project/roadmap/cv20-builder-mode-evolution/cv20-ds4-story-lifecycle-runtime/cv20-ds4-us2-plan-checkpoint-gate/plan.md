@@ -26,20 +26,30 @@ Risks:
 
 - Plan may become implementation. It must stop at approval.
 - Plan may be generated without Prepare. It should require `last_delivery_event=prepare`.
-- Plan checkpoint state may be only prose. It must persist in runtime cursor.
+- Plan checkpoint state may be only prose. It must persist in runtime cursor and produce a visible Plan artifact.
 - Approval/implementation flow can grow too large. This story should create the gate and block implementation, not execute implementation.
 
-Applicable rules:
+Applicable Ariad contracts:
 
-- Use TDD.
+- `plan_contract`: define scope, non-goals, acceptance behavior, validation route, documentation impact, implementation contract, E2E decision, and approval gate.
+- `implement_contract`: follow approved Plan, use TDD/characterization tests for testable behavior changes, keep changes scoped to the active story, add/update E2E when required, stop on scope change or Navigator decision.
+- `validation_contract`: run required checks, run E2E when required by Plan/local guide, provide Navigator validation route, record evidence.
+
+Applicable Mirror local rules:
+
+- Use `uv run` for Python commands and tests.
+- Do not use `git add .`; commit only story-scoped files.
+- Use descriptive English commit messages explaining why.
 - Preserve Ariad visual grammar.
-- Require explicit Navigator approval before implementation.
 - Keep runtime state in SQLite cursor.
-- Do not mutate project files for the pulled item.
+- Do not mutate project files for the pulled item during Plan.
 
 ## Dependency
 
-This story depends on `CV20.DS4.TS2 — Lifecycle Contract Definitions`. Plan should render method-declared contracts rather than hardcoding implementation rules.
+This story depends on:
+
+- `CV20.DS4.TS2 — Lifecycle Contract Definitions`: Plan should render method-declared contracts rather than hardcoding implementation rules.
+- `CV20.DS4.TS3 — Deterministic Ariad Surface Delivery`: Plan Checkpoint output must be wrapped as a deterministic Ariad surface block so the agent returns runtime output instead of summarizing it.
 
 ## Scope
 
@@ -56,7 +66,8 @@ Likely additions:
 
 Plan behavior:
 
-- reads Ariad `plan_contract`, `implement_contract`, and validation-contract summary from the method definition;
+- reads Ariad `plan_contract`, `implement_contract`, and `validation_contract` from the method definition;
+- combines method contract rules with Mirror local implementation rules in the rendered surface;
 - requires delivery cursor;
 - requires `active_item`;
 - requires `last_delivery_event == "prepare"`;
@@ -67,12 +78,15 @@ Plan behavior:
 - renders Plan Checkpoint with:
   - lifecycle ribbon at Plan;
   - active item;
+  - plan artifact path;
   - objective;
   - scope stance;
   - non-goals;
-  - acceptance/validation placeholder;
-  - method-declared implementation contract rules;
-  - E2E validation decision prompt/placeholder;
+  - acceptance behavior section using Given/When/Then/And when practical;
+  - validation route section with automated checks, Navigator route, expected observation, pass/fail condition, and E2E decision;
+  - method-declared Plan/Implement/Validation contract rules;
+  - Mirror local implementation rules;
+  - explicit stop conditions from `implement_contract`;
   - implementation blocked;
   - Navigator decision prompt.
 
@@ -98,8 +112,8 @@ Route natural-language requests like `planeje o item puxado` to `plan-item` only
 
 ## Non-Goals
 
-- No project file mutation.
-- No creation of story folder or `plan.md` yet.
+- No implementation file mutation.
+- No mutation beyond the Plan-stage `plan.md` artifact.
 - No approval command.
 - No implementation execution.
 - No validation/review/coherence/done.
@@ -109,11 +123,18 @@ Route natural-language requests like `planeje o item puxado` to `plan-item` only
 
 TDD first:
 
-1. Extend `/Users/alissonvale/Code/mirror-dev/tests/unit/memory/builder/test_lifecycle.py` for Plan behavior.
-2. Extend `/Users/alissonvale/Code/mirror-dev/tests/unit/memory/cli/test_build.py` for CLI Plan and implementation guard.
-3. Implement lifecycle plan operation and renderer.
-4. Wire CLI commands.
-5. Update Pi skill.
+1. Add failing lifecycle tests in `/Users/alissonvale/Code/mirror-dev/tests/unit/memory/builder/test_lifecycle.py`:
+   - Plan requires active item and previous Prepare.
+   - Plan persists `active_checkpoint=after_plan`, `pending_confirmation=navigator_approval`, and `last_delivery_event=plan`.
+   - Plan renderer includes lifecycle ribbon, active item, contract sections, E2E decision, stop conditions, and blocked implementation language.
+   - Implementation guard refuses while pending confirmation exists.
+2. Add failing CLI tests in `/Users/alissonvale/Code/mirror-dev/tests/unit/memory/cli/test_build.py`:
+   - `memory build plan-item --method ariad` renders Plan Checkpoint.
+   - `memory build check-implementation --method ariad` refuses when approval is pending.
+   - non-Ariad/default journeys do not receive Ariad-specific behavior.
+3. Implement lifecycle plan operation and renderer in `/Users/alissonvale/Code/mirror-dev/src/memory/builder/lifecycle.py`.
+4. Wire CLI commands in `/Users/alissonvale/Code/mirror-dev/src/memory/cli/build.py`.
+5. Update Pi skill routing in `/Users/alissonvale/Code/mirror-dev/.pi/skills/mm-build/SKILL.md` for Ariad-only Plan requests.
 6. Validate automated checks.
 7. Stop for Navigator validation through Pi/Mirror.
 

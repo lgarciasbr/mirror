@@ -5,6 +5,7 @@ from __future__ import annotations
 LIFECYCLE_STAGES = (
     "pull",
     "prepare",
+    "expand",
     "plan",
     "implement",
     "validate",
@@ -16,6 +17,7 @@ LIFECYCLE_STAGES = (
 _STAGE_LABELS = {
     "pull": "Pull",
     "prepare": "Prepare",
+    "expand": "Expand",
     "plan": "Plan",
     "implement": "Implement",
     "validate": "Validate",

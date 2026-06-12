@@ -27,9 +27,11 @@ def test_inspect_roadmap_snapshot_reads_capability_table(tmp_path):
         ("CV2", "Checkout Flow", "Candidate"),
     ]
     rendered = render_roadmap_snapshot_report(report)
+    assert "<<<ARIAD:ROADMAP_SNAPSHOT>>>" in rendered
+    assert "<<<END:ROADMAP_SNAPSHOT>>>" in rendered
     assert "ROADMAP SNAPSHOT" in rendered
     assert "Delivery field overview" in rendered
-    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in rendered
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in rendered
     assert "view                         overview" in rendered
     assert "result of roadmap-snapshot      no pull candidates" in rendered
     assert "🟪[CV2]  Checkout Flow" in rendered
@@ -106,6 +108,8 @@ def test_render_pull_candidates_report_preserves_boundary(tmp_path):
 
     rendered = render_pull_candidates_report(report)
 
+    assert "<<<ARIAD:PULL_CANDIDATES>>>" in rendered
+    assert "<<<END:PULL_CANDIDATES>>>" in rendered
     assert "Ariad Pull Candidates" in rendered
     assert "journey\nsandbox-pet-store" in rendered
     assert "CV2.DS1 — Checkout Flow" in rendered

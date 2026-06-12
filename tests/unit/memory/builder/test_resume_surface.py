@@ -26,6 +26,8 @@ def test_render_builder_resume_surface_shows_cursor_and_next_actions():
 
     rendered = render_builder_resume_surface(state, roadmap_position=position)
 
+    assert "<<<ARIAD:BUILDER_RESUME>>>" in rendered
+    assert "<<<END:BUILDER_RESUME>>>" in rendered
     assert "BUILDER RESUME" in rendered
     assert "journey\nsandbox-pet-store" in rendered
     assert "adopted method\nariad" in rendered

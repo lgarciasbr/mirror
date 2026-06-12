@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -14,8 +15,15 @@ from memory.builder.delivery_cursor import (
 )
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
+    approve_plan_checkpoint,
+    assert_implementation_allowed,
+    expand_delivery_story,
+    plan_lifecycle_item,
     prepare_lifecycle_item,
     pull_lifecycle_item,
+    render_expand_report,
+    render_plan_approval,
+    render_plan_checkpoint,
     render_prepare_report,
     render_pull_report,
 )
@@ -426,6 +434,7 @@ def cmd_sync_cursor(
         journey=resolved_journey,
         method=method,
         last_delivery_event="template_preparation",
+        cadence_profile="stepwise",
     )
     print(render_delivery_cursor_sync_report(cursor))
 
@@ -515,6 +524,253 @@ def cmd_pull_item(
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
     print(render_pull_report(report))
+    project_path = mem.journeys.get_project_path(resolved_journey)
+    prepare_report = prepare_lifecycle_item(
+        mem.store,
+        journey=resolved_journey,
+        method=method,
+        project_path=Path(project_path) if project_path else None,
+    )
+    print(render_prepare_report(prepare_report))
+    if item_level == "delivery_story":
+        if not project_path:
+            print("Error: Delivery Story expansion requires project_path.", file=sys.stderr)
+            sys.exit(1)
+        expand_report = expand_delivery_story(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            project_path=Path(project_path),
+        )
+        print(render_expand_report(expand_report))
+
+
+_MIRROR_LOCAL_IMPLEMENTATION_RULES = (
+    "Use uv run for Python commands and tests.",
+    "Do not use git add .; commit only story-scoped files.",
+    "Use descriptive English commit messages explaining why.",
+)
+
+
+def cmd_set_cadence(
+    method: str,
+    *,
+    profile: str,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    if profile not in {"stepwise", "checkpoint"}:
+        print("Error: cadence profile must be one of stepwise, checkpoint", file=sys.stderr)
+        sys.exit(1)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="cadence profile update",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    cursor = get_delivery_cursor(mem.store, resolved_journey)
+    if cursor is None:
+        print(
+            f"Error: journey '{resolved_journey}' has no Builder delivery cursor.", file=sys.stderr
+        )
+        sys.exit(1)
+    updated = set_delivery_cursor(
+        mem.store,
+        journey=resolved_journey,
+        method=method,
+        active_item=cursor.active_item,
+        active_item_title=cursor.active_item_title,
+        active_item_level=cursor.active_item_level,
+        active_checkpoint=cursor.active_checkpoint,
+        pending_confirmation=cursor.pending_confirmation,
+        last_delivery_event=cursor.last_delivery_event,
+        cadence_profile=profile,
+        granularity_decision=cursor.granularity_decision,
+    )
+    print(render_delivery_cursor_sync_report(updated))
+
+
+def cmd_plan_item(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    objective: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="plan",
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+    _require_delivery_cursor(mem, resolved_journey)
+    try:
+        project_path = mem.journeys.get_project_path(resolved_journey)
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        context = _roadmap_plan_context(project_path, cursor)
+        report = plan_lifecycle_item(
+            mem.store,
+            journey=resolved_journey,
+            method=get_ariad_method(),
+            objective=objective or str(context["objective"]),
+            scope=tuple(context["scope"]),
+            non_goals=tuple(context["non_goals"]),
+            acceptance_behavior=tuple(context["acceptance_behavior"]),
+            validation_route=tuple(context["validation_route"]),
+            e2e_decision=str(context["e2e_decision"]),
+            local_rules=_MIRROR_LOCAL_IMPLEMENTATION_RULES,
+            plan_artifact_path=_plan_artifact_path(project_path, cursor),
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_plan_checkpoint(report))
+
+
+def _roadmap_plan_context(
+    project_path: str | None, cursor: object
+) -> dict[str, tuple[str, ...] | str]:
+    active_item = getattr(cursor, "active_item", None)
+    title_parts: tuple[str, ...] = ()
+    siblings: tuple[str, ...] = ()
+    if project_path and active_item:
+        project_root = Path(project_path)
+        candidates = inspect_pull_candidates(project_root, journey="", method="ariad").candidates
+        active = next(
+            (candidate for candidate in candidates if candidate.code == active_item), None
+        )
+        if active:
+            title_parts = tuple(part.strip() for part in active.title.split("/") if part.strip())
+            prefix = str(active_item).split(".")[0]
+            siblings = tuple(
+                candidate.title.split("/")[-1].strip()
+                for candidate in candidates
+                if candidate.code != active_item and candidate.code.startswith(f"{prefix}.")
+            )
+    title = title_parts[-1] if title_parts else str(active_item or "the active item")
+    sibling_non_goals = tuple(
+        f"Do not implement sibling roadmap item: {sibling}." for sibling in siblings
+    )
+    return {
+        "objective": f"Plan the smallest coherent, testable slice for {title}.",
+        "scope": (
+            f"Deliver {title} as an observable slice.",
+            "Keep the implementation narrow enough to validate at the Plan-defined checkpoint.",
+        ),
+        "non_goals": sibling_non_goals or ("Do not silently absorb adjacent roadmap work.",),
+        "acceptance_behavior": (
+            f"Given the starting state needed for {title}",
+            f"When the Navigator exercises {title}",
+            "Then the planned observable behavior is visible",
+            "And out-of-scope sibling roadmap items remain untouched",
+        ),
+        "validation_route": (
+            "Run automated tests that cover the planned behavior.",
+            "Provide a Navigator-visible route with expected observation, pass condition, and fail condition.",
+        ),
+        "e2e_decision": "required unless Navigator explicitly accepts a narrower fixture-level validation route",
+    }
+
+
+def _plan_artifact_path(
+    project_path: str | None,
+    cursor: object,
+) -> Path | None:
+    active_item = getattr(cursor, "active_item", None)
+    if not project_path or not active_item:
+        return None
+    project_root = Path(project_path)
+    active_code = str(active_item)
+    title_parts = _roadmap_title_parts(project_root, active_code)
+    code_parts = active_code.lower().replace("_", "-").split(".")
+    if not code_parts:
+        return None
+    roadmap_path = project_root / "docs" / "project" / "roadmap"
+    accumulated: list[str] = []
+    for index, code_part in enumerate(code_parts):
+        accumulated.append(code_part)
+        code_prefix = "-".join(accumulated)
+        title_slug = _slugify(title_parts[index]) if index < len(title_parts) else ""
+        folder = f"{code_prefix}-{title_slug}" if title_slug else code_prefix
+        roadmap_path = roadmap_path / folder
+    return roadmap_path / "plan.md"
+
+
+def _roadmap_title_parts(project_root: Path, active_code: str) -> tuple[str, ...]:
+    candidates = inspect_pull_candidates(project_root, journey="", method="ariad").candidates
+    for candidate in candidates:
+        if candidate.code == active_code:
+            return tuple(part.strip() for part in candidate.title.split("/") if part.strip())
+    return ()
+
+
+def _slugify(text: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return re.sub(r"-+", "-", slug)
+
+
+def cmd_approve_plan(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="plan approval",
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = approve_plan_checkpoint(mem.store, journey=resolved_journey, method=method)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_plan_approval(cursor))
+
+
+def cmd_check_implementation(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="implementation check",
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        assert_implementation_allowed(mem.store, journey=resolved_journey)
+    except PermissionError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print("Implementation allowed: no pending Builder approval gate.")
 
 
 def cmd_prepare_item(
@@ -681,6 +937,61 @@ def main(argv: list[str] | None = None) -> None:
     )
     p_pull.add_argument("--why-now", required=True, help="Why this item/level is pulled now")
 
+    p_plan = sub.add_parser(
+        "plan-item",
+        help="Create the Ariad Plan checkpoint for the prepared lifecycle item",
+    )
+    p_plan.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_plan.add_argument("--journey", default=None, help="Journey slug for Plan")
+    p_plan.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+    p_plan.add_argument(
+        "--objective",
+        default=None,
+        help="Optional objective to show in the Plan checkpoint",
+    )
+    p_approve = sub.add_parser(
+        "approve-plan",
+        help="Approve the active Ariad Plan checkpoint",
+    )
+    p_approve.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_approve.add_argument("--journey", default=None, help="Journey slug for Plan approval")
+    p_approve.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
+    p_cadence = sub.add_parser(
+        "set-cadence",
+        help="Set Ariad Builder cadence profile",
+    )
+    p_cadence.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_cadence.add_argument(
+        "--profile", required=True, help="Cadence profile: stepwise or checkpoint"
+    )
+    p_cadence.add_argument("--journey", default=None, help="Journey slug for cadence update")
+    p_cadence.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
+    p_check = sub.add_parser(
+        "check-implementation",
+        help="Check whether implementation is allowed by the Builder cursor gate",
+    )
+    p_check.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_check.add_argument("--journey", default=None, help="Journey slug for the check")
+    p_check.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
     p_prepare = sub.add_parser(
         "prepare-item",
         help="Prepare the pulled Ariad lifecycle item",
@@ -711,6 +1022,24 @@ def main(argv: list[str] | None = None) -> None:
         cmd_sync_cursor(args.method, journey=args.journey, session_id=args.session_id)
     elif args.command == "pull-candidates":
         cmd_pull_candidates(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "plan-item":
+        cmd_plan_item(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            objective=args.objective,
+        )
+    elif args.command == "approve-plan":
+        cmd_approve_plan(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "set-cadence":
+        cmd_set_cadence(
+            args.method,
+            profile=args.profile,
+            journey=args.journey,
+            session_id=args.session_id,
+        )
+    elif args.command == "check-implementation":
+        cmd_check_implementation(args.method, journey=args.journey, session_id=args.session_id)
     elif args.command == "pull-item":
         cmd_pull_item(
             args.method,

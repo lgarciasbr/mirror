@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from memory.builder.resume_state import BuilderResumeState
 from memory.builder.roadmap_position import RoadmapPosition
+from memory.builder.surface_protocol import wrap_ariad_surface
 
 
 def render_builder_resume_surface(
@@ -52,7 +53,7 @@ def render_builder_resume_surface(
             "Builder resumes context only; no story lifecycle work was executed.",
         ]
     )
-    return "\n".join(lines) + "\n"
+    return wrap_ariad_surface("builder_resume", "\n".join(lines) + "\n")
 
 
 def _format_roadmap_position(position: RoadmapPosition | None) -> str:

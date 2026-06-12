@@ -112,7 +112,7 @@ For Mirror Mind, the primary docs are:
 - `<project_path>/docs/process/worklog.md`
 - `<project_path>/docs/product/principles.md`
 
-When working inside a CV/Epic/Story, also read the relevant:
+When working inside a CV/Delivery Story/User Story/Technical Story, also read the relevant:
 
 - `index.md`
 - `plan.md`
@@ -151,7 +151,7 @@ docs scaffold unless the user explicitly asks for one.
 - `docs/project/briefing.md`: stable architectural premises change
 - `docs/project/decisions.md`: an incremental design decision is made
 - `docs/product/specs/runtime-interface/index.md`: runtime lifecycle, hooks, skills, or extension contracts change
-- `docs/project/roadmap/`: CV/Epic/Story status, plans, or verification guides change
+- `docs/project/roadmap/`: CV/Delivery Story/User Story/Technical Story status, plans, or verification guides change
 - `docs/process/worklog.md`: a meaningful milestone is completed
 - `docs/product/principles.md`: product, code, testing, or process principles change
 
@@ -241,6 +241,41 @@ change story status, commit, push, or release.
 This section applies **only when the active journey has adopted Ariad**
 (`adopted_method == ariad`).
 
+## Deterministic Ariad Surface Delivery
+
+Ariad runtime commands emit deterministic surfaces wrapped as:
+
+```text
+<<<ARIAD:<SURFACE_ID>>>
+...
+<<<END:<SURFACE_ID>>>
+```
+
+For any `memory build ...` command that emits one or more Ariad surface blocks,
+the final assistant response must return those blocks from stdout verbatim. Do
+not summarize, translate, reorder, trim, reformat, or mix prose inside a wrapped
+surface.
+
+After the complete surface block, add a conversational interpretation for the
+Navigator. This interpretation should explain what happened, what it means, what
+is blocked or allowed now, and what the next Ariad step is. It may be complete
+and helpful, not merely a one-line summary, but it must stay outside the surface
+block and must not contradict the runtime boundary.
+
+Use this pattern:
+
+```text
+<<<ARIAD:<SURFACE_ID>>>
+...
+<<<END:<SURFACE_ID>>>
+
+What happened:
+...
+
+Next step:
+...
+```
+
 ## Ariad Activation Surfaces
 
 For Ariad-adopted journeys with no active item, `build load` can emit:
@@ -254,16 +289,15 @@ For Ariad-adopted journeys with an active item or pending confirmation,
 - `■ BUILDER RESUME`
 
 These surfaces are mandatory activation output. The final response to the user
-must include them verbatim from the command output. Do not replace them with a
-bullet summary, prose synthesis, or a generic "estado atual" list. If the command
-output contains `ROADMAP SNAPSHOT`, the response is invalid unless the visible
-reply also contains `ROADMAP SNAPSHOT` and `■ Ariad Pull Candidates`.
+must include the wrapped Ariad surface blocks verbatim from the command output.
+If the command output contains `<<<ARIAD:ROADMAP_SNAPSHOT>>>`,
+the response is invalid unless the visible reply also contains the complete
+matching begin/end block and the complete `PULL_CANDIDATES` block.
 
-Preserve headings, card layout, operational fields, recommendations, and
-boundaries from the command output. After rendering these surfaces, do not ask a
-generic question such as "inspeção runtime, planejamento de Delivery, ou
-exploração?". For an Ariad journey with no active item, ask whether the Navigator
-wants to pull the recommended candidate or inspect the roadmap further.
+After rendering these surfaces, do not ask a generic question such as "inspeção
+runtime, planejamento de Delivery, ou exploração?". For an Ariad journey with no
+active item, ask whether the Navigator wants to pull the recommended candidate or
+inspect the roadmap further only after the verbatim blocks.
 
 ## Prepare Ariad Templates
 
@@ -320,6 +354,14 @@ execute lifecycle work, change story status, commit, push, or release.
 
 ## Pull And Prepare Ariad Work
 
+When the user asks to change testing/runtime cadence, use:
+
+```bash
+uv run python -m memory build set-cadence --method ariad --profile <stepwise|checkpoint>
+```
+
+Use `stepwise` for detailed dogfooding. Use `checkpoint` for normal Ariad cadence. In current Ariad, Pull is the Navigator signal to Prepare; pulling a Delivery Story also expands it into implementable User/Technical Stories and stops for confirmation of the recommended next story.
+
 When the user asks to pull a roadmap item into active Ariad work, run the
 contained Pull command with explicit item metadata:
 
@@ -331,10 +373,17 @@ uv run python -m memory build pull-item --method ariad \
   --why-now "<why this level now>"
 ```
 
-If the user names a specific journey, pass `--journey <slug>`. Render the Pull
-report visibly. Pull may update runtime cursor active item, but must not execute
-Prepare, Plan, Implement, Validation, Review, Coherence, Done, commit, push, or
-release.
+If the user names a specific journey, pass `--journey <slug>`. Render all emitted
+surfaces visibly. Pull may update runtime cursor active item and automatically
+run Prepare. If the pulled item is a Delivery Story, Pull also expands it into
+implementable child stories and recommends the next User/Technical Story to plan.
+Pull must not create a Plan, approve a checkpoint, implement, validate, review,
+close, commit, push, or release.
+
+When the Navigator confirms the recommended child story after an Expand surface,
+pull that child story explicitly with `--item-level user_story` or
+`--item-level technical_story` using the recommended code/title from the surface.
+Then plan that implementable story when requested.
 
 When the user asks to prepare the pulled item, run:
 
@@ -346,3 +395,42 @@ If the user names a specific journey, pass `--journey <slug>`. Render the Prepar
 report visibly. Prepare may update the runtime cursor last delivery event, but
 must not create a Plan, approve a checkpoint, start implementation, change story
 status, commit, push, or release.
+
+## Plan Ariad Work
+
+When the user asks to plan the pulled item, create a plan for the active item, or
+says a natural-language equivalent such as `planeje o item puxado`, run:
+
+```bash
+uv run python -m memory build plan-item --method ariad
+```
+
+If the user names a specific journey, pass `--journey <slug>`. Render the Plan
+Checkpoint visibly and include the `plan artifact` path from the command output
+in the reply. The response must show the actual plan content in Navigator-facing
+language: scope, non-goals, acceptance behavior, validation route, E2E decision,
+and approval question. Keep runtime cursor fields compact; do not let technical
+metadata replace the plan itself.
+
+Plan may update runtime cursor checkpoint state and may create/update the
+Plan-stage story package (`index.md`, `plan.md`, and `test-guide.md`) only for an
+implementable User Story or Technical Story. Delivery Stories are never planned
+as the implementable unit; they must expand first. Plan must not approve the
+checkpoint, start implementation, change implementation files for the pulled
+item, change story status, commit, push, or release.
+
+When the Navigator approves the Plan checkpoint, run:
+
+```bash
+uv run python -m memory build approve-plan --method ariad
+```
+
+If the user asks to implement while the Plan checkpoint is pending, run the guard
+before doing any implementation work:
+
+```bash
+uv run python -m memory build check-implementation --method ariad
+```
+
+If the guard reports that Navigator approval is required, render the refusal and
+stop. Do not mutate files.

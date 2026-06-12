@@ -29,6 +29,10 @@ def render_available_method(method: MethodDefinition) -> str:
     lines.extend(f"- {layer}" for layer in method.resolution.layers)
     lines.extend(["", "lifecycle"])
     lines.extend(f"- {_event_label(event.id)} {event.meaning}" for event in method.lifecycle)
+    lines.extend(["", "work item levels"])
+    lines.extend(_render_work_item_levels(method))
+    lines.extend(["", "cadence profiles"])
+    lines.extend(_render_cadence_profiles(method))
     lines.extend(["", "checkpoints"])
     lines.extend(_render_checkpoints(method))
     lines.extend(["", "contracts"])
@@ -180,6 +184,30 @@ def render_method_adoption_report(
 
 def _event_label(event_id: str) -> str:
     return event_id.replace("_", " ").title()
+
+
+def _render_work_item_levels(method: MethodDefinition) -> list[str]:
+    if not method.work_item_levels:
+        return ["none"]
+    lines: list[str] = []
+    for level in method.work_item_levels:
+        lines.append(f"- {level.id}: {level.label}")
+        lines.append(
+            f"  implementable by default: {'yes' if level.implementable_by_default else 'no'}"
+        )
+        if level.expands_to:
+            lines.append(f"  expands to: {', '.join(level.expands_to)}")
+    return lines
+
+
+def _render_cadence_profiles(method: MethodDefinition) -> list[str]:
+    if not method.cadence_profiles:
+        return ["none"]
+    lines: list[str] = []
+    for profile in method.cadence_profiles:
+        status = "active" if profile.active else "future"
+        lines.append(f"- {profile.id}: {profile.stop_policy} ({status})")
+    return lines
 
 
 def _render_checkpoints(method: MethodDefinition) -> list[str]:

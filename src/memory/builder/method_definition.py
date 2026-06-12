@@ -53,6 +53,28 @@ class LifecycleEvent:
 
 
 @dataclass(frozen=True)
+class WorkItemLevelDefinition:
+    id: str
+    label: str
+    implementable_by_default: bool = False
+    expands_to: tuple[str, ...] = ()
+
+    def replace(self, **changes: Any) -> WorkItemLevelDefinition:
+        return replace(self, **changes)
+
+
+@dataclass(frozen=True)
+class CadenceProfileDefinition:
+    id: str
+    label: str
+    stop_policy: str
+    active: bool = True
+
+    def replace(self, **changes: Any) -> CadenceProfileDefinition:
+        return replace(self, **changes)
+
+
+@dataclass(frozen=True)
 class CheckpointDefinition:
     id: str
     occurs_after: str | None = None
@@ -114,6 +136,8 @@ class MethodDefinition:
     resolution: DslResolution = DslResolution()
     taxonomy: Taxonomy = Taxonomy()
     lifecycle: tuple[LifecycleEvent, ...] = ()
+    work_item_levels: tuple[WorkItemLevelDefinition, ...] = ()
+    cadence_profiles: tuple[CadenceProfileDefinition, ...] = ()
     checkpoints: tuple[CheckpointDefinition, ...] = ()
     contracts: tuple[ContractDefinition, ...] = ()
     policies: Mapping[str, Any] | None = None
@@ -137,6 +161,8 @@ def validate_method_definition(definition: MethodDefinition) -> None:
     _validate_resolution(definition.resolution)
     _validate_taxonomy(definition.taxonomy)
     _validate_lifecycle(definition.lifecycle)
+    _validate_work_item_levels(definition.work_item_levels)
+    _validate_cadence_profiles(definition.cadence_profiles)
     _validate_checkpoints(definition.checkpoints, lifecycle_ids=definition.lifecycle_ids)
     _validate_contracts(definition.contracts, lifecycle_ids=definition.lifecycle_ids)
     _validate_surfaces(definition.surfaces, lifecycle_ids=definition.lifecycle_ids)
@@ -189,6 +215,30 @@ def _validate_lifecycle(events: tuple[LifecycleEvent, ...]) -> None:
     for event in events:
         _require_non_empty(event.id, "lifecycle event id")
         _require_non_empty(event.meaning, f"lifecycle event {event.id} meaning")
+
+
+def _validate_work_item_levels(levels: tuple[WorkItemLevelDefinition, ...]) -> None:
+    level_ids = [level.id for level in levels]
+    _require_unique(level_ids, "work item level")
+    known = set(level_ids)
+    for level in levels:
+        _require_non_empty(level.id, "work item level id")
+        _require_non_empty(level.label, f"work item level {level.id} label")
+        _require_unique(level.expands_to, f"work item level {level.id} expansion target")
+        for target in level.expands_to:
+            if target not in known:
+                raise MethodDefinitionError(
+                    f"work item level {level.id} expands to unknown level {target}"
+                )
+
+
+def _validate_cadence_profiles(profiles: tuple[CadenceProfileDefinition, ...]) -> None:
+    profile_ids = [profile.id for profile in profiles]
+    _require_unique(profile_ids, "cadence profile")
+    for profile in profiles:
+        _require_non_empty(profile.id, "cadence profile id")
+        _require_non_empty(profile.label, f"cadence profile {profile.id} label")
+        _require_non_empty(profile.stop_policy, f"cadence profile {profile.id} stop policy")
 
 
 def _validate_checkpoints(

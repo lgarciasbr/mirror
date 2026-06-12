@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
+from memory.builder.surface_protocol import wrap_ariad_surface
 
 _CANDIDATE_STATUSES = ("Planned", "Active", "Blocked", "Candidate")
 _STATUS_RE = re.compile(r"\*\*Status:\*\*\s*(?P<status>.+?)\s*$", re.MULTILINE)
@@ -180,7 +181,7 @@ def render_roadmap_snapshot_report(
             "Roadmap was inspected only. No item was pulled. No lifecycle work was executed.",
         ]
     )
-    return "\n".join(lines) + "\n"
+    return wrap_ariad_surface("roadmap_snapshot", "\n".join(lines) + "\n")
 
 
 def render_pull_candidates_report(report: PullCandidatesReport) -> str:
@@ -203,7 +204,7 @@ def render_pull_candidates_report(report: PullCandidatesReport) -> str:
         "boundary",
         "No item was pulled. No lifecycle work was executed.",
     ]
-    return "\n".join(lines) + "\n"
+    return wrap_ariad_surface("pull_candidates", "\n".join(lines) + "\n")
 
 
 def _snapshot_items_from_content(content: str) -> list[RoadmapSnapshotItem]:

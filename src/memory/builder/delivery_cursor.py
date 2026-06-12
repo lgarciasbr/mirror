@@ -15,9 +15,13 @@ class BuilderDeliveryCursor:
     journey: str
     method: str
     active_item: str | None = None
+    active_item_title: str | None = None
+    active_item_level: str | None = None
     active_checkpoint: str | None = None
     pending_confirmation: str | None = None
     last_delivery_event: str | None = None
+    cadence_profile: str | None = None
+    granularity_decision: str | None = None
 
 
 def get_delivery_cursor(store: Store, journey: str) -> BuilderDeliveryCursor | None:
@@ -39,9 +43,13 @@ def get_delivery_cursor(store: Store, journey: str) -> BuilderDeliveryCursor | N
         journey=normalized_journey,
         method=method,
         active_item=_optional_string(data.get("active_item")),
+        active_item_title=_optional_string(data.get("active_item_title")),
+        active_item_level=_optional_string(data.get("active_item_level")),
         active_checkpoint=_optional_string(data.get("active_checkpoint")),
         pending_confirmation=_optional_string(data.get("pending_confirmation")),
         last_delivery_event=_optional_string(data.get("last_delivery_event")),
+        cadence_profile=_optional_string(data.get("cadence_profile")),
+        granularity_decision=_optional_string(data.get("granularity_decision")),
     )
 
 
@@ -51,9 +59,13 @@ def set_delivery_cursor(
     journey: str,
     method: str,
     active_item: str | None = None,
+    active_item_title: str | None = None,
+    active_item_level: str | None = None,
     active_checkpoint: str | None = None,
     pending_confirmation: str | None = None,
     last_delivery_event: str | None = None,
+    cadence_profile: str | None = None,
+    granularity_decision: str | None = None,
 ) -> BuilderDeliveryCursor:
     """Persist the Builder delivery cursor for a journey."""
     normalized_journey = _normalize_required(journey, "journey")
@@ -62,9 +74,13 @@ def set_delivery_cursor(
         journey=normalized_journey,
         method=normalized_method,
         active_item=_normalize_optional(active_item),
+        active_item_title=_normalize_optional(active_item_title),
+        active_item_level=_normalize_optional(active_item_level),
         active_checkpoint=_normalize_optional(active_checkpoint),
         pending_confirmation=_normalize_optional(pending_confirmation),
         last_delivery_event=_normalize_optional(last_delivery_event),
+        cadence_profile=_normalize_optional(cadence_profile),
+        granularity_decision=_normalize_optional(granularity_decision),
     )
     store.upsert_runtime_session(
         _session_id(normalized_journey),
@@ -75,9 +91,13 @@ def set_delivery_cursor(
             {
                 "method": cursor.method,
                 "active_item": cursor.active_item,
+                "active_item_title": cursor.active_item_title,
+                "active_item_level": cursor.active_item_level,
                 "active_checkpoint": cursor.active_checkpoint,
                 "pending_confirmation": cursor.pending_confirmation,
                 "last_delivery_event": cursor.last_delivery_event,
+                "cadence_profile": cursor.cadence_profile,
+                "granularity_decision": cursor.granularity_decision,
             },
             ensure_ascii=False,
         ),
@@ -112,6 +132,15 @@ def render_delivery_cursor_sync_report(cursor: BuilderDeliveryCursor) -> str:
                 "",
                 "active item",
                 cursor.active_item or "none",
+                "",
+                "active item title",
+                cursor.active_item_title or "none",
+                "",
+                "active item level",
+                cursor.active_item_level or "none",
+                "",
+                "cadence profile",
+                cursor.cadence_profile or "stepwise",
                 "",
                 "active checkpoint",
                 cursor.active_checkpoint or "none",

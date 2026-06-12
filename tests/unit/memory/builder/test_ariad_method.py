@@ -43,6 +43,7 @@ def test_ariad_lifecycle_matches_exploration_spine() -> None:
     assert [(event.id, event.meaning) for event in method.lifecycle] == [
         ("pull", "escolhe o foco"),
         ("prepare", "lê o terreno"),
+        ("expand", "desdobra granularidade"),
         ("plan", "firma o contrato"),
         ("implement", "muda o sistema"),
         ("validation", "prova comportamento"),
@@ -70,6 +71,7 @@ def test_ariad_contracts_cover_lifecycle_rules() -> None:
     assert set(contracts) == {
         "pull_contract",
         "prepare_contract",
+        "expand_contract",
         "plan_contract",
         "implement_contract",
         "validation_contract",
@@ -79,6 +81,7 @@ def test_ariad_contracts_cover_lifecycle_rules() -> None:
     }
     assert contracts["pull_contract"].applies_at == "pull"
     assert contracts["debt_review_contract"].applies_at == "review"
+    assert contracts["expand_contract"].applies_at == "expand"
     assert "Given/When/Then/And" in " ".join(contracts["plan_contract"].rules)
     assert "E2E validation" in " ".join(contracts["plan_contract"].rules)
     assert "TDD" in " ".join(contracts["implement_contract"].rules)

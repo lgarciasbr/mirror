@@ -119,7 +119,7 @@ Candidate Delivery Stories:
 
     out = capsys.readouterr().out
     assert "ROADMAP SNAPSHOT" in out
-    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in out
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in out
     assert "🟪[CV2]  Checkout Flow" in out
     assert "Ariad Pull Candidates" in out
     assert "CV2.DS1 — Checkout Flow / Checkout entry and address capture" in out
@@ -190,6 +190,171 @@ def test_build_load_preserves_base_behavior_for_non_ariad_journey(mocker, tmp_pa
     assert "ROADMAP SNAPSHOT" not in out
     assert "Ariad Pull Candidates" not in out
     assert "BUILDER RESUME" not in out
+
+
+def test_build_plan_item_renders_checkpoint_and_updates_cursor(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/index.md"
+    roadmap.parent.mkdir(parents=True)
+    roadmap.write_text(
+        """# Roadmap
+
+## CV2: Checkout Flow
+
+**Status:** Candidate
+
+Candidate Delivery Stories:
+
+- DS1 Checkout entry and address capture.
+""",
+        encoding="utf-8",
+    )
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_item_title="Checkout Flow / Checkout entry and address capture",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_plan_item("ariad", journey="sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_checkpoint == "after_plan"
+    assert cursor.pending_confirmation == "navigator_approval"
+    assert cursor.last_delivery_event == "plan"
+    assert "PLAN CHECKPOINT" in out
+    assert "Ariad: ✓ Pull | ✓ Prepare | ✓ Expand | ◉ Plan" in out
+    assert "🟦[CV2.DS1]" in out
+    assert "story package" in out
+    assert "index_artifact_path=" in out
+    assert "test_guide_artifact_path=" in out
+    assert "pending: navigator_approval" in out
+    assert "Implementation remains blocked" in out
+    plan_path = project_path / (
+        "docs/project/roadmap/cv2-checkout-flow/cv2-ds1-checkout-entry-and-address-capture/plan.md"
+    )
+    assert (plan_path.parent / "index.md").exists()
+    assert plan_path.exists()
+    assert (plan_path.parent / "test-guide.md").exists()
+    plan_text = plan_path.read_text(encoding="utf-8")
+    assert "# Plan — CV2.DS1" in plan_text
+    assert "Checkout entry and address capture" in plan_text
+    assert "E2E decision: required" in plan_text
+
+
+def test_build_plan_item_refuses_delivery_story(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project_path = tmp_path / "project"
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_item_title="Checkout Flow / Checkout entry and address capture",
+        active_item_level="delivery_story",
+        last_delivery_event="prepare",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_plan_item("ariad", journey="sandbox-pet-store")
+
+    assert exc.value.code == 1
+    assert "Plan requires a User Story or Technical Story" in capsys.readouterr().err
+
+
+def test_build_approve_plan_allows_implementation_guard(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        active_checkpoint="after_plan",
+        pending_confirmation="navigator_approval",
+        last_delivery_event="plan",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_approve_plan("ariad", journey="sandbox-pet-store")
+    build.cmd_check_implementation("ariad", journey="sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.pending_confirmation is None
+    assert cursor.last_delivery_event == "plan_approved"
+    assert "PLAN APPROVED" in out
+    assert "Implementation allowed" in out
+
+
+def test_build_check_implementation_refuses_pending_approval(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_checkpoint="after_plan",
+        pending_confirmation="navigator_approval",
+        last_delivery_event="plan",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_check_implementation("ariad", journey="sandbox-pet-store")
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "navigator_approval" in err
+    assert "blocked" in err
+
+
+def test_build_plan_item_requires_ariad_adoption(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "custom-method-journey", JOURNEY_CONTENT)
+    set_delivery_cursor(
+        mem.store,
+        journey="custom-method-journey",
+        method="ariad",
+        active_item="CV2.DS1",
+        last_delivery_event="prepare",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_plan_item("ariad", journey="custom-method-journey")
+
+    assert exc.value.code == 1
+    assert "has not adopted Ariad" in capsys.readouterr().err
 
 
 def test_build_load_allows_non_mirror_project_without_clone_role_guard(mocker, tmp_path, capsys):
@@ -663,12 +828,53 @@ Candidate Delivery Stories:
 
     out = capsys.readouterr().out
     assert "ROADMAP SNAPSHOT" in out
-    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in out
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in out
     assert "🟪[CV2]  Checkout Flow" in out
     assert "view                         overview" in out
     assert "Ariad Pull Candidates" in out
     assert "CV2.DS1 — Checkout Flow / Checkout entry and address capture" in out
     assert "No item was pulled" in out
+
+
+def test_build_pull_delivery_story_prepares_and_expands(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(mem.store, journey="sandbox-pet-store", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_pull_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        item_code="CV2.DS1",
+        item_title="Checkout Flow / Checkout entry and address capture",
+        item_level="delivery_story",
+        why_now="next candidate capability",
+    )
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_item == "CV2.DS1"
+    assert cursor.last_delivery_event == "expand"
+    assert cursor.active_checkpoint == "next_story_confirmation"
+    assert cursor.pending_confirmation == "navigator_story_confirmation"
+    assert "<<<ARIAD:DELIVERY_STORY_IDENTIFIED>>>" in out
+    assert "<<<ARIAD:PREPARE_FIELD_READING>>>" in out
+    assert "<<<ARIAD:EXPAND_DECISION>>>" in out
+    assert "CV2.DS1.US1" in out
+    assert (
+        project_path
+        / "docs/project/roadmap/cv2-checkout-flow/cv2-ds1-checkout-entry-and-address-capture/index.md"
+    ).exists()
+    assert (
+        project_path
+        / "docs/project/roadmap/cv2-checkout-flow/cv2-ds1-checkout-entry-and-address-capture/cv2-ds1-us1-checkout-entry-and-address-capture/index.md"
+    ).exists()
 
 
 def test_build_pull_item_updates_cursor(mocker, tmp_path, capsys):
@@ -690,7 +896,7 @@ def test_build_pull_item_updates_cursor(mocker, tmp_path, capsys):
     )
 
     out = capsys.readouterr().out
-    assert "Ariad: ◉ Pull | ○ Prepare | ○ Plan" in out
+    assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in out
     assert "DELIVERY STORY IDENTIFIED" in out
     assert "roadmap candidate" in out
     assert "active item: CHECKOUT-FLOW" in out
@@ -698,7 +904,7 @@ def test_build_pull_item_updates_cursor(mocker, tmp_path, capsys):
     cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
     assert cursor is not None
     assert cursor.active_item == "CHECKOUT-FLOW"
-    assert cursor.last_delivery_event == "pull"
+    assert cursor.last_delivery_event == "prepare"
 
 
 def test_build_prepare_item_updates_cursor(mocker, tmp_path, capsys):
@@ -723,7 +929,7 @@ def test_build_prepare_item_updates_cursor(mocker, tmp_path, capsys):
     build.cmd_prepare_item("ariad", journey="sandbox-pet-store")
 
     out = capsys.readouterr().out
-    assert "Ariad: ✓ Pull | ◉ Prepare | ○ Plan" in out
+    assert "Ariad: ✓ Pull | ◉ Prepare | ○ Expand | ○ Plan" in out
     assert "PREPARE FIELD READING" in out
     assert "🟦[CHECKOUT-FLOW]" in out
     assert "✓ docs/process/development-guide.md: present" in out
