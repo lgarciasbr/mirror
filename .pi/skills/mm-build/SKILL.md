@@ -193,7 +193,26 @@ change story status, commit, push, or release. If Ariad has not been adopted yet
 ask the user to adopt Ariad first. If no project path is configured, ask the user
 to configure the journey project path first.
 
-## 7. Work In Builder Mode
+## 7. Sync Delivery Cursor
+
+When the user asks in natural language to sync the initial Builder delivery
+cursor for an Ariad-adopted journey, run:
+
+```bash
+uv run python -m memory build sync-cursor --method ariad
+```
+
+If the user names a specific journey, pass it explicitly:
+
+```bash
+uv run python -m memory build sync-cursor --journey <slug> --method ariad
+```
+
+Render the cursor sync report visibly. This operation persists runtime resume
+state only. It must not infer an active roadmap item, execute Pull/Prepare/Plan,
+change story status, commit, push, or release.
+
+## 8. Work In Builder Mode
 
 Once the user explicitly authorizes work:
 
@@ -201,7 +220,7 @@ Once the user explicitly authorizes work:
 - Keep project docs updated as the code evolves
 - Commit at the end of each session with a descriptive English commit message
 
-## 8. Project Docs Maintenance
+## 9. Project Docs Maintenance
 
 Follow the project's existing documentation structure. Do not create a generic docs scaffold unless the user explicitly asks for one.
 
@@ -215,7 +234,7 @@ Follow the project's existing documentation structure. Do not create a generic d
 - `docs/process/worklog.md`: a meaningful milestone is completed
 - `docs/product/principles.md`: product, code, testing, or process principles change
 
-## 9. Configure `project_path`
+## 10. Configure `project_path`
 
 If the journey does not yet have an associated project:
 
@@ -223,7 +242,7 @@ If the journey does not yet have an associated project:
 uv run python -m memory journey set-path <slug> /path/to/project
 ```
 
-## 10. Finalize Session
+## 11. Finalize Session
 
 When the user says "End the session":
 

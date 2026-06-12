@@ -7,6 +7,10 @@ import sys
 from pathlib import Path
 
 from memory.builder.ariad_method import get_ariad_method
+from memory.builder.delivery_cursor import (
+    render_delivery_cursor_sync_report,
+    set_delivery_cursor,
+)
 from memory.builder.method_adoption import get_adopted_method, set_adopted_method
 from memory.builder.method_inspection import (
     AVAILABLE_METHODS,
@@ -273,6 +277,18 @@ def cmd_adopt_method(
     )
 
 
+def _require_adopted_method(mem: MemoryClient, journey: str, method: str) -> None:
+    if get_adopted_method(mem.store, journey) == method:
+        return
+    print(
+        f"Error: journey '{journey}' has not adopted Ariad yet. "
+        "Run: uv run python -m memory build adopt --journey "
+        f"{journey} --method ariad",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
 def cmd_prepare_templates(
     method: str,
     *,
@@ -292,14 +308,7 @@ def cmd_prepare_templates(
     if not journey_content:
         print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
         sys.exit(1)
-    if get_adopted_method(mem.store, resolved_journey) != method:
-        print(
-            f"Error: journey '{resolved_journey}' has not adopted Ariad yet. "
-            "Run: uv run python -m memory build adopt --journey "
-            f"{resolved_journey} --method ariad",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
 
     project_path = mem.journeys.get_project_path(resolved_journey)
     if not project_path:
@@ -316,6 +325,36 @@ def cmd_prepare_templates(
         method=get_ariad_method(),
     )
     print(render_template_preparation_report(report))
+
+
+def cmd_sync_cursor(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="cursor sync",
+    )
+
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+
+    cursor = set_delivery_cursor(
+        mem.store,
+        journey=resolved_journey,
+        method=method,
+        last_delivery_event="template_preparation",
+    )
+    print(render_delivery_cursor_sync_report(cursor))
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -396,6 +435,26 @@ def main(argv: list[str] | None = None) -> None:
         help="Runtime session id for resolving the active Builder journey",
     )
 
+    p_cursor = sub.add_parser(
+        "sync-cursor",
+        help="Sync the initial delivery cursor for an adopted Builder journey",
+    )
+    p_cursor.add_argument(
+        "--method",
+        required=True,
+        help="Builder method id whose cursor should be synced, such as 'ariad'",
+    )
+    p_cursor.add_argument(
+        "--journey",
+        default=None,
+        help="Journey slug whose delivery cursor should be synced",
+    )
+    p_cursor.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "load":
@@ -410,3 +469,5 @@ def main(argv: list[str] | None = None) -> None:
         cmd_adopt_method(args.method, journey=args.journey, session_id=args.session_id)
     elif args.command == "prepare-templates":
         cmd_prepare_templates(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "sync-cursor":
+        cmd_sync_cursor(args.method, journey=args.journey, session_id=args.session_id)

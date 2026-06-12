@@ -19,8 +19,8 @@ The Navigator sees a concise briefing, roadmap position, active delivery item, a
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
 | CV20.DS3.US1 | Resume Ariad journey | User Story | Builder load renders current journey, roadmap, checkpoint, and next actions | 🟡 Planned |
-| CV20.DS3.TS1 | Delivery cursor persistence | Technical Story | Runtime stores and loads active item, checkpoint, pending transition, and evidence index | 🟡 Planned |
-| CV20.DS3.TS2 | Roadmap position resolver | Technical Story | Builder resolves active roadmap position according to Ariad taxonomy | 🟡 Planned |
+| CV20.DS3.TS1 | Builder Resume Cursor Reader | Technical Story | Builder load can read DS2 cursor state and expose it to the resume surface | 🟡 Planned |
+| CV20.DS3.TS2 | Roadmap Position Resolver | Technical Story | Builder resolves active roadmap position according to Ariad taxonomy | 🟡 Planned |
 
 ---
 

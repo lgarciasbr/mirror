@@ -419,6 +419,93 @@ def test_build_prepare_templates_rejects_unknown_method(mocker, tmp_path, capsys
     assert "Builder method 'unknown' not found" in err
 
 
+def test_build_sync_cursor_for_explicit_adopted_journey(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_sync_cursor("ariad", journey="sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    assert "Builder Delivery Cursor Synced" in out
+    assert "journey\nsandbox-pet-store" in out
+    assert "method\nariad" in out
+    assert "active item\nnone" in out
+    assert "last delivery event\ntemplate_preparation" in out
+    assert "No story lifecycle work was executed" in out
+
+
+def test_build_sync_cursor_uses_active_builder_journey(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    mem.store.upsert_runtime_session(
+        "session-1",
+        interface="pi",
+        active=True,
+        metadata=(
+            '{"operating_mode": {'
+            '"active_mode": "Builder Mode", '
+            '"active_journey": "sandbox-pet-store"}}'
+        ),
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_sync_cursor("ariad", session_id="session-1")
+
+    out = capsys.readouterr().out
+    assert "journey\nsandbox-pet-store" in out
+    assert "method\nariad" in out
+
+
+def test_build_sync_cursor_requires_ariad_adoption(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_sync_cursor("ariad", journey="sandbox-pet-store")
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "has not adopted Ariad yet" in err
+
+
+def test_build_sync_cursor_rejects_unknown_method(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_sync_cursor("unknown", journey="sandbox-pet-store")
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "Builder method 'unknown' not found" in err
+
+
+def test_build_sync_cursor_requires_journey_context(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_sync_cursor("ariad")
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "Builder method cursor sync requires a journey" in err
+
+
 def test_build_load_allows_production_clone_when_override_passed(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
