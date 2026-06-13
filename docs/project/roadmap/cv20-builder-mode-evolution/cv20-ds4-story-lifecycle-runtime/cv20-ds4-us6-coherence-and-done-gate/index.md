@@ -2,7 +2,7 @@
 
 # CV20.DS4.US6 — Coherence And Done Gate
 
-**Status:** 🟢 Active
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
@@ -54,3 +54,10 @@ And recommends next Pull, parent collapse, or release boundary
 ## Validation
 
 Focused tests plus end-to-end Pi/Mirror lifecycle validation on sandbox-pet-store after Plan and Validation stories are complete.
+
+Manual validation confirmed:
+
+```text
+COHERENCE_CHECKPOINT -> status coherent -> missing coherence ✓ none
+DONE_CHECKPOINT -> status done -> missing done ✓ none
+```
