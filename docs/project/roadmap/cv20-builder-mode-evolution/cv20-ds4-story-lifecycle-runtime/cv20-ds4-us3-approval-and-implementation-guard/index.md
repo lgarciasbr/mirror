@@ -2,7 +2,7 @@
 
 # CV20.DS4.US3 — Approval And Implementation Guard
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
@@ -68,3 +68,10 @@ Then the guard allows implementation to begin
 ## Validation
 
 Focused unit and CLI tests for approval transition, refusal without approval, allowance after approval, and no mutation during refusal.
+
+Validated with:
+
+```text
+uv run pytest tests/unit/memory/cli/test_build.py tests/unit/memory/builder/test_lifecycle.py -q
+50 passed
+```

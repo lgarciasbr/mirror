@@ -307,7 +307,8 @@ def test_build_approve_plan_allows_implementation_guard(mocker, tmp_path, capsys
     assert cursor.pending_confirmation is None
     assert cursor.last_delivery_event == "plan_approved"
     assert "PLAN APPROVED" in out
-    assert "Implementation allowed" in out
+    assert "<<<ARIAD:IMPLEMENTATION_GUARD>>>" in out
+    assert "status\nallowed" in out
 
 
 def test_build_check_implementation_refuses_pending_approval(mocker, tmp_path, capsys):
@@ -331,9 +332,10 @@ def test_build_check_implementation_refuses_pending_approval(mocker, tmp_path, c
         build.cmd_check_implementation("ariad", journey="sandbox-pet-store")
 
     assert exc.value.code == 1
-    err = capsys.readouterr().err
-    assert "navigator_approval" in err
-    assert "blocked" in err
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:IMPLEMENTATION_GUARD>>>" in out
+    assert "navigator_approval" in out
+    assert "blocked" in out
 
 
 def test_build_plan_item_requires_ariad_adoption(mocker, tmp_path, capsys):

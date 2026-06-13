@@ -397,7 +397,52 @@ def render_expand_report(report: BuilderExpandReport) -> str:
     return wrap_ariad_surface("expand_decision", body + "\n")
 
 
-def assert_implementation_allowed(store: Store, *, journey: str) -> None:
+def render_implementation_guard_allowed(cursor: BuilderDeliveryCursor) -> str:
+    body = "\n".join(
+        [
+            "Delivery",
+            render_lifecycle_ribbon("implement"),
+            "",
+            "■ IMPLEMENTATION GUARD",
+            "",
+            "status",
+            "allowed",
+            "",
+            "active item",
+            cursor.active_item or "none",
+            "",
+            "last delivery event",
+            cursor.last_delivery_event or "none",
+            "",
+            "boundary",
+            "Implementation may begin under the approved Plan contract.",
+        ]
+    )
+    return wrap_ariad_surface("implementation_guard", body + "\n")
+
+
+def render_implementation_guard_blocked(reason: str) -> str:
+    body = "\n".join(
+        [
+            "Delivery",
+            render_lifecycle_ribbon("implement"),
+            "",
+            "■ IMPLEMENTATION GUARD",
+            "",
+            "status",
+            "blocked",
+            "",
+            "missing checkpoint",
+            reason,
+            "",
+            "boundary",
+            "No implementation files may be mutated until the guard allows Implement.",
+        ]
+    )
+    return wrap_ariad_surface("implementation_guard", body + "\n")
+
+
+def assert_implementation_allowed(store: Store, *, journey: str) -> BuilderDeliveryCursor:
     """Raise when runtime cursor blocks implementation."""
     normalized_journey = _normalize_required(journey, "journey")
     cursor = get_delivery_cursor(store, normalized_journey)
@@ -411,6 +456,7 @@ def assert_implementation_allowed(store: Store, *, journey: str) -> None:
         raise PermissionError(
             "Implementation is blocked: approved Plan is required before Implement."
         )
+    return cursor
 
 
 def render_pull_report(report: BuilderPullReport) -> str:

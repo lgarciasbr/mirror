@@ -432,5 +432,6 @@ before doing any implementation work:
 uv run python -m memory build check-implementation --method ariad
 ```
 
-If the guard reports that Navigator approval is required, render the refusal and
-stop. Do not mutate files.
+Render the deterministic `IMPLEMENTATION_GUARD` surface. If the guard reports
+that Navigator approval is required, return the surface and stop. Do not mutate
+files.

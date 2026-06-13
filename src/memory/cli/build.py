@@ -22,6 +22,8 @@ from memory.builder.lifecycle import (
     prepare_lifecycle_item,
     pull_lifecycle_item,
     render_expand_report,
+    render_implementation_guard_allowed,
+    render_implementation_guard_blocked,
     render_plan_approval,
     render_plan_checkpoint,
     render_prepare_report,
@@ -766,11 +768,11 @@ def cmd_check_implementation(
         sys.exit(1)
     _require_adopted_method(mem, resolved_journey, method)
     try:
-        assert_implementation_allowed(mem.store, journey=resolved_journey)
+        cursor = assert_implementation_allowed(mem.store, journey=resolved_journey)
     except PermissionError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
+        print(render_implementation_guard_blocked(str(exc)))
         sys.exit(1)
-    print("Implementation allowed: no pending Builder approval gate.")
+    print(render_implementation_guard_allowed(cursor))
 
 
 def cmd_prepare_item(
