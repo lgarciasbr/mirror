@@ -380,6 +380,20 @@ uv run python -m memory build set-cadence --method ariad \
 
 Higher-autonomy cadence never grants permission to cross hard gates: Plan approval, Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, and Done/history boundaries remain explicit stops. In current Ariad, Pull is the Navigator signal to Prepare; pulling a Delivery Story also expands it into implementable User/Technical Stories and stops for confirmation of the recommended next story.
 
+When the user asks to continue under the active cadence, use:
+
+```bash
+uv run python -m memory build continue-lifecycle --method ariad \
+  --process "<process alignment evidence>" \
+  --project "<project/docs/artifacts alignment evidence>" \
+  --product "<product behavior alignment evidence>" \
+  --history-action "<required to cross Done/history boundary>" \
+  --roadmap-update "<required to cross Done/history boundary>" \
+  --next-recommendation "<required to cross Done/history boundary>"
+```
+
+`continue-lifecycle` may emit multiple Ariad surfaces; return every marked block verbatim in order. In `stepwise` cadence it must refuse automatic continuation. In higher-autonomy cadence it may continue only through bypassable soft stops and must still stop at hard gates when required evidence is missing.
+
 When the user asks to pull a roadmap item into active Ariad work, run the
 contained Pull command with explicit item metadata:
 

@@ -71,3 +71,4 @@ The first implementation is intentionally conservative:
 - `accelerated` is active and means continue through soft stops only until the next hard gate.
 - `autonomous` is active only with explicit Navigator limits recorded in runtime state.
 - Hard gates remain hard: Plan approval, Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, and Done/history boundaries.
+- `continue-lifecycle` performs the first safe continuation behavior: in higher-autonomy cadence, it can move from `review_complete` through Coherence and, when Done/history evidence is supplied explicitly, through Done.

@@ -792,6 +792,95 @@ def cmd_check_implementation(
     print(render_implementation_guard_allowed(cursor))
 
 
+def cmd_continue_lifecycle(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    process_alignment: str | None = None,
+    project_alignment: str | None = None,
+    product_alignment: str | None = None,
+    local_differences: tuple[str, ...] = (),
+    history_action: str | None = None,
+    roadmap_update: str | None = None,
+    next_recommendation: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="lifecycle continuation",
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+    _require_delivery_cursor(mem, resolved_journey)
+    cursor = get_delivery_cursor(mem.store, resolved_journey)
+    if cursor is None:
+        print("Error: delivery cursor is required before continuation", file=sys.stderr)
+        sys.exit(1)
+    profile = cursor.cadence_profile or "stepwise"
+    if profile == "stepwise":
+        print(
+            render_implementation_guard_blocked("Stepwise cadence does not continue automatically.")
+        )
+        sys.exit(1)
+    if profile == "autonomous" and not cursor.cadence_limits:
+        print(render_implementation_guard_blocked("Autonomous cadence requires explicit limits."))
+        sys.exit(1)
+    if cursor.pending_confirmation:
+        print(
+            render_implementation_guard_blocked(
+                f"Continuation is blocked: pending confirmation {cursor.pending_confirmation}."
+            )
+        )
+        sys.exit(1)
+    project_path = mem.journeys.get_project_path(resolved_journey)
+    plan_path = _plan_artifact_path(project_path, cursor)
+    if cursor.last_delivery_event == "review_complete":
+        coherence_report = coherence_lifecycle_item(
+            mem.store,
+            journey=resolved_journey,
+            method=get_ariad_method(),
+            process_alignment=process_alignment,
+            project_alignment=project_alignment,
+            product_alignment=product_alignment,
+            local_differences=local_differences,
+            coherence_artifact_path=(plan_path.parent / "coherence.md") if plan_path else None,
+        )
+        print(render_coherence_checkpoint(coherence_report))
+        if not (history_action and roadmap_update and next_recommendation):
+            return
+    elif cursor.last_delivery_event != "coherence_complete":
+        print(
+            render_implementation_guard_blocked(
+                f"No bypassable continuation is available after {cursor.last_delivery_event or 'none'}."
+            )
+        )
+        sys.exit(1)
+    if not (history_action and roadmap_update and next_recommendation):
+        print(
+            render_implementation_guard_blocked(
+                "Done requires history, roadmap, and next-step evidence."
+            )
+        )
+        sys.exit(1)
+    done_report = done_lifecycle_item(
+        mem.store,
+        journey=resolved_journey,
+        method=get_ariad_method(),
+        history_action=history_action,
+        roadmap_update=roadmap_update,
+        next_recommendation=next_recommendation,
+        done_artifact_path=(plan_path.parent / "done.md") if plan_path else None,
+    )
+    print(render_done_checkpoint(done_report))
+
+
 def cmd_coherence_item(
     method: str,
     *,
@@ -1206,6 +1295,33 @@ def main(argv: list[str] | None = None) -> None:
         help="Runtime session id for resolving the active Builder journey",
     )
 
+    p_continue = sub.add_parser(
+        "continue-lifecycle",
+        help="Continue Ariad lifecycle through bypassable soft stops for the active cadence",
+    )
+    p_continue.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_continue.add_argument("--journey", default=None, help="Journey slug for continuation")
+    p_continue.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+    p_continue.add_argument("--process", default=None, help="Process alignment evidence")
+    p_continue.add_argument("--project", default=None, help="Project alignment evidence")
+    p_continue.add_argument("--product", default=None, help="Product alignment evidence")
+    p_continue.add_argument(
+        "--local-difference",
+        dest="local_differences",
+        action="append",
+        default=[],
+        help="Local guide vs Ariad difference; may be repeated",
+    )
+    p_continue.add_argument(
+        "--history-action", default=None, help="History action taken or proposed"
+    )
+    p_continue.add_argument("--roadmap-update", default=None, help="Roadmap/story package update")
+    p_continue.add_argument("--next-recommendation", default=None, help="Next Ariad movement")
+
     p_coherence = sub.add_parser(
         "coherence-item",
         help="Render the Ariad Coherence checkpoint for the active item",
@@ -1378,6 +1494,19 @@ def main(argv: list[str] | None = None) -> None:
             item_title=args.item_title,
             item_level=args.item_level,
             why_now=args.why_now,
+        )
+    elif args.command == "continue-lifecycle":
+        cmd_continue_lifecycle(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            process_alignment=args.process,
+            project_alignment=args.project,
+            product_alignment=args.product,
+            local_differences=tuple(args.local_differences),
+            history_action=args.history_action,
+            roadmap_update=args.roadmap_update,
+            next_recommendation=args.next_recommendation,
         )
     elif args.command == "coherence-item":
         cmd_coherence_item(
