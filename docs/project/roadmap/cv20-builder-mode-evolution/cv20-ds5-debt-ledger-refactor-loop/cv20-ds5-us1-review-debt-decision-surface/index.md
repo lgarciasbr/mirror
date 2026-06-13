@@ -2,7 +2,7 @@
 
 # CV20.DS5.US1 — Review Debt Decision Surface
 
-**Status:** 🟢 Active
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
@@ -76,3 +76,16 @@ And names that pay-now debt must route through Refactor before Coherence
 ## Validation
 
 Focused unit/CLI tests plus Pi/Mirror dogfooding against `sandbox-pet-store`.
+
+Manual validation confirmed the no-action path:
+
+```text
+status
+reviewed
+
+debt decision
+no_action
+
+missing decision
+✓ none
+```
