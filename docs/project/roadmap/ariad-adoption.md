@@ -7,6 +7,8 @@ This project is prepared for Ariad-governed Builder Mode.
 - adopted method: ariad
 - adoption date: 2026-06-14
 - adoption mode: prospective
+- project-level journey: `mirror-mind`
+- first dogfooding workstream: `builder-mode-evolution`
 - adoption follows release `v0.27.0 — Ariad Builder Lifecycle Runtime`
 
 ## Scope
@@ -24,8 +26,8 @@ Prospective adoption means:
 
 ## Runtime State
 
-- adopted method: ariad
-- delivery cursor: synced
+- parent journey `mirror-mind`: adopted method `ariad`, delivery cursor synced
+- child journey `builder-mode-evolution`: adopted method `ariad`, delivery cursor synced for current dogfooding continuity
 - active item: none
 - last delivery event: template_preparation
 

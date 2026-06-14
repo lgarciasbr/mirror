@@ -11,16 +11,17 @@ resolved.
 
 ## Completed Decisions
 
-### Builder Mode Evolution adopts Ariad prospectively after v0.27.0
+### Mirror Mind adopts Ariad prospectively after v0.27.0
 
 **Date:** 2026-06-14
 **Reference:** [CV20 Builder Mode Evolution](roadmap/cv20-builder-mode-evolution/index.md), [Ariad adoption note](roadmap/ariad-adoption.md), [v0.27.0 release note](../releases/v0.27.0.md)
 
-After publishing `v0.27.0 — Ariad Builder Lifecycle Runtime`, the Builder Mode Evolution journey adopts Ariad for future work. The adoption is **prospective**: existing CV20 roadmap and story artifacts remain valid historical records unless touched by active work, and new Builder delivery work should use Ariad's runtime lifecycle gates and deterministic surfaces.
+After publishing `v0.27.0 — Ariad Builder Lifecycle Runtime`, Mirror Mind adopts Ariad as the project-level Builder method through the parent `mirror-mind` journey. The Builder Mode Evolution child journey remains adopted as the first dogfooding workstream until method inheritance between parent/child journeys is modeled explicitly. The adoption is **prospective**: existing CV20 roadmap and story artifacts remain valid historical records unless touched by active work, and new Builder delivery work should use Ariad's runtime lifecycle gates and deterministic surfaces.
 
 Consequences:
 
-- Future CV20 work should be pulled, planned, validated, reviewed, checked for coherence, and closed through Ariad Builder commands when possible.
+- Future Mirror Mind Builder work should be pulled, planned, validated, reviewed, checked for coherence, and closed through Ariad Builder commands when possible.
+- CV20 remains the first dogfooding area under the project-level adoption.
 - The adoption does not retroactively rewrite DS1–DS4 artifacts.
 - DS5 and DS8 are the next natural dogfooding candidates.
 - Navigator preference/config override work remains explicitly planned in CV20.DS8 rather than assumed by adoption.
