@@ -2,7 +2,7 @@
 
 # CV20.DS4 — Story Lifecycle Runtime
 
-**Status:** 🟢 Active
+**Status:** ✅ Done
 
 ---
 
@@ -47,3 +47,5 @@ Before DS4 continues into implementation/validation stages, Builder must reach a
 ## Done Condition
 
 DS4 is done when a non-trivial story can move through the Ariad lifecycle without the Driver silently skipping checkpoints, treating non-implementable work as implementable, or declaring progress without required artifacts and evidence.
+
+Status: satisfied through automated tests and end-to-end dogfooding on `/Users/alissonvale/Code/sandbox-pet-store`.

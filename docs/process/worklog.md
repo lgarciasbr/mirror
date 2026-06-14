@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-14 — v0.27.0 Ariad Builder Lifecycle Runtime prepared
+
+Closed CV20.DS4 Story Lifecycle Runtime as a release boundary. Builder now supports the complete Ariad happy path from Pull through Done with deterministic surfaces, method-level surface transport, story packages, hard Plan/Validation/Review/Coherence/Done gates, conservative higher-autonomy cadence, and repeatable sandbox dogfooding. Release notes for `v0.27.0 — Ariad Builder Lifecycle Runtime` were prepared.
+
+Validation: focused Builder method/lifecycle/cursor/CLI tests passed with `118 passed`; ruff, format, mypy, and diff checks passed before release-preparation commit.
+
 ### 2026-06-14 — v0.26.2 Web Conversation Bulk Actions prepared
 
 Prepared emergency patch `v0.26.2 — Web Conversation Bulk Actions`. The main web Conversations view now exposes selected bulk maintenance: each row can be selected, selected conversations can be assigned to an existing journey in one click, and selected conversations can be deleted after explicit confirmation. The implementation reuses the existing safe bulk assignment and deletion APIs and keeps the existing Unassigned conversations maintenance flow intact.
