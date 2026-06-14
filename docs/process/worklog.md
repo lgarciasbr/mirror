@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-14 — v0.26.2 Web Conversation Bulk Actions prepared
+
+Prepared emergency patch `v0.26.2 — Web Conversation Bulk Actions`. The main web Conversations view now exposes selected bulk maintenance: each row can be selected, selected conversations can be assigned to an existing journey in one click, and selected conversations can be deleted after explicit confirmation. The implementation reuses the existing safe bulk assignment and deletion APIs and keeps the existing Unassigned conversations maintenance flow intact.
+
+Validation: `uv run pytest tests/unit/memory/web/test_server.py -q`, `uv run ruff check src/memory/web tests/unit/memory/web`, `uv run ruff format --check src/memory/web tests/unit/memory/web`, and `git diff --check` passed before release-candidate commit.
+
 ### 2026-06-10 — v0.26.1 Soul Mode English Integration Copy packaged
 
 Packaged `v0.26.1 — Soul Mode English Integration Copy`. Replaced Portuguese hard-coded Soul Mode integration prompts with English baseline copy in the Pi skill contract and aligned CV19 documentation. Confirmed identity integration section headings now use English defaults in code and tests: Self `New Incorporated Principles`, Shadow `New Hidden Needs Recognized`, Ego `New Operational Patterns Identified`, and Persona `New Participation Patterns Revealed`. This keeps Soul Mode consistent with Mirror Mind's English internal language until explicit localization exists.
