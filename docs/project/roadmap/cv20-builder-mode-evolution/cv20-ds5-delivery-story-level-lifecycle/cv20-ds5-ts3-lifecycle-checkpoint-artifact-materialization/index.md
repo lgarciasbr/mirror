@@ -2,7 +2,7 @@
 
 # CV20.DS5.TS3 — Lifecycle Checkpoint Artifact Materialization
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
