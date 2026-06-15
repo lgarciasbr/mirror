@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked
+Passed
 
 ## Automated Checks
 
@@ -18,13 +18,13 @@ Checks status: passed
 
 Decision: not_required
 
-Evidence: none
+Evidence: Navigator validated the flow-unit command route against sandbox-pet-store.
 
 ## Navigator Validation
 
 Route: Inspect flow-unit default, set delivery_story, and reset story_by_story with memory build set-flow-unit.
 
-Navigator accepted: no
+Navigator accepted: yes
 
 Expected observation: Builder renders story_by_story and delivery_story choices, records the selected unit, preserves child story traceability wording, and executes no implementation/push/release work from the surface.
 
@@ -34,4 +34,4 @@ Fail condition: Builder silently switches defaults, hides child stories, or trea
 
 ## Missing Evidence
 
-- Navigator validation has not been accepted
+- none
