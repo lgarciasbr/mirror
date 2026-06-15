@@ -15,14 +15,36 @@ Materialize Validation, Debt Review, Coherence, and Done artifacts at canonical 
   - `review.md` during Debt Review;
   - `coherence.md` during Coherence;
   - `done.md` during Done.
+- Explicitly document that `implement.md` is not a canonical lifecycle artifact by default.
 - Apply canonical artifact paths to both:
   - existing child-story lifecycle commands;
   - aggregate Delivery Story closure commands.
 - Preserve existing artifact content and only change destination/path resolution where needed.
 - Prevent synthetic fallback packages such as `docs/project/roadmap/cv20-...` when a canonical package exists under the roadmap tree.
 
+## Implementation Artifact Rationale
+
+No `implement.md` artifact is created by default.
+
+Implementation evidence lives in the changed project files, automated tests,
+validation evidence, and local history. A canonical `implement.md` would usually
+duplicate the actual source-of-truth diff and commit history.
+
+When implementation notes are needed, record them in the checkpoint where they
+matter:
+
+- `validation.md`, when they affect validation evidence;
+- `review.md`, when they introduce or pay down debt;
+- `coherence.md`, when they affect process/project/product alignment;
+- `done.md`, when they affect history, release, or next-step boundaries.
+
+An optional future `implementation-notes.md` may be introduced if a concrete use
+case appears, but it is not part of the canonical Ariad artifact set in this
+story.
+
 ## Non-Goals
 
+- Do not create `implement.md` as a canonical artifact by default.
 - Do not change checkpoint semantics or approval/validation gates.
 - Do not implement DS-level Validation/Closure user behavior beyond artifact materialization; that remains `CV20.DS5.US3`.
 - Do not implement release intent, push, or release policy behavior from `CV20.DS6`.

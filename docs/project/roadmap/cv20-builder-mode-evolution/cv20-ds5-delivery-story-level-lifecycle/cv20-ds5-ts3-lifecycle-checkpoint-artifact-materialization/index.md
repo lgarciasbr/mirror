@@ -44,6 +44,7 @@ Then validation.md, review.md, coherence.md, and done.md are materialized in tha
 
 - Define canonical package path resolution for DS, US, and TS lifecycle units.
 - Materialize `validation.md`, `review.md`, `coherence.md`, and `done.md` at checkpoint time.
+- Document why `implement.md` is not created as a canonical artifact by default.
 - Reuse existing generated content where possible.
 - Prevent artifact creation in synthetic fallback paths when a canonical CV/DS package exists.
 - Add focused tests for DS-level and child-story artifact paths.
@@ -54,6 +55,7 @@ Then validation.md, review.md, coherence.md, and done.md are materialized in tha
 - Implementing release intent/push/release behavior from `CV20.DS6`.
 - Implementing DS8 preferences/config overrides.
 - Rewriting historical artifact packages unless touched by active work.
+- Creating `implement.md` as a canonical artifact by default; implementation evidence remains in diffs, changed files, tests, validation, and history.
 
 ## Validation
 
