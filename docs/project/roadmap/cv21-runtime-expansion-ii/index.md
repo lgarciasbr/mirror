@@ -90,12 +90,18 @@ hypotheses the spike epics must confirm hands-on.
 ### Antigravity (`agy` CLI v1.0.8)
 
 - Real CLI (headless `--print`, TUI, `--sandbox`), **not** IDE-only. Embeds a
-  Claude-shaped plugin model (`plugin.json` + `SKILL.md` + `/hooks` + `/rules` +
-  `/commands`), `agy plugin import [gemini|claude]`, `agy plugin validate`, a
-  marketplace, a **JSON hook system** (`JSONHookSpec`, stdin-JSON like CV8's
-  Gemini/Claude hooks), and first-class MCP.
-- **Hypothesis: L3–L4 achievable**, and `agy plugin import claude` may consume the
-  Mirror plugin directly.
+  Claude-shaped plugin model (`plugin.json` + `SKILL.md` + hooks + rules +
+  commands), `agy plugin import [gemini|claude]`, `agy plugin validate`, a
+  marketplace, and first-class MCP.
+- **Skills discovered from `.agents/skills/`** (E6) — the surface Mirror already
+  uses, as on Codex/Grok; static instructions via `AGENTS.md`.
+- **E6 confirmed: L3 (not L4).** The hook system is tool/invocation/stop-centric
+  (`PreToolHook`/`PostToolHook`/`PreInvocationHook`/`PostInvocationHook`/`StopHook`)
+  with **no `UserPromptSubmit` or `additionalContext`** — the clean per-turn
+  injection is absent. Mirror Mode via `AGENTS.md` + explicit invocation; logging
+  via wrapper/`StopHook`. An unverified `PreInvocation` + `HookSystemMessage`
+  injection path is flagged for E7 to probe. `agy plugin import claude` consumes
+  the Claude plugin from E1.
 
 ### Grok Build (`grok` CLI v0.2.39)
 
@@ -141,9 +147,9 @@ No fake parity: each runtime claims only what it honestly supports.
 | [CV21.E3](cv21-e3-codex-upgrade-spike/index.md) | Codex Upgrade Spike | Confirmed (read-only, no config mutated): full Claude-style hooks (`SessionStart`/`UserPromptSubmit`→`additionalContext`/`Stop`) → **L4 reachable**; `session_id` + `transcript_path` available; skills already discovered via `.agents/skills/` (no migration). Caveats: `async` hooks skipped, no `SessionEnd` | ✅ Done |
 | CV21.E4 | Codex Hook + Plugin Reimplementation | Hooks replace the CV8 wrapper and consume the shared plugin/MCP: `SessionStart`/`UserPromptSubmit`/`Stop` logging + Mirror Mode injection; target L4; keeps `interface='codex'`. Logging must be synchronous (`async` skipped); deferred extraction (no `SessionEnd`); isolated smoke test | 🟡 Planned |
 | CV21.E5 | Codex Skill & Extension Surface | `mm-*` skills already discovered via `.agents/skills/` (E3 finding — no migration); expose user-owned extensions into `.agents/skills/` and/or a Codex plugin; smoke test | 🟡 Planned |
-| CV21.E6 | Antigravity Runtime Spike | Map `agy` plugin/hook/MCP against the contract; test `agy plugin import claude` of the Mirror plugin; honest parity confirmed (hypothesis L3–L4) | 🟡 Planned |
-| CV21.E7 | Antigravity Runtime & Extension Surface | Antigravity runs Mirror via the imported plugin/adapter: logging (`interface='antigravity'`), Mirror Mode, skills, and user-owned extensions; isolated smoke test | 🟡 Planned |
-| CV21.E8 | Gemini CLI Sunset | The `.gemini/` shell-hook integration is honestly retired; Antigravity documented as its successor; all runtime-facing docs updated | 🟡 Planned |
+| [CV21.E6](cv21-e6-antigravity-runtime-spike/index.md) | Antigravity Runtime Spike | Confirmed (read-only, no config mutated): hooks are tool/invocation/stop-centric — **no `UserPromptSubmit`/`additionalContext`** → honest parity **L3** (not L4); skills via `.agents/skills/` (no migration); Mirror Mode via `AGENTS.md`; `agy plugin import claude` path confirmed. `PreInvocation`+`HookSystemMessage` injection flagged for E7 | ✅ Done |
+| CV21.E7 | Antigravity Runtime & Extension Surface | Antigravity runs Mirror at **L3** via `.agents/skills/` + `AGENTS.md` + explicit invocation; logging via wrapper/`StopHook` + deferred extraction (`interface='antigravity'`); external extensions ride `.agents/skills/`; probe `PreInvocation`+`HookSystemMessage` injection; isolated smoke test | 🟡 Planned |
+| CV21.E8 | Gemini CLI Sunset | The `.gemini/` shell-hook integration is honestly retired; Antigravity documented as its successor; all runtime-facing docs updated. Honest note (E6): Gemini CLI was L4; Antigravity is L3 — automatic per-turn injection is lost in the migration | 🟡 Planned |
 | CV21.E9 | Grok Build Runtime Spike | `grok` mapped against the contract (skill discovery root, invocation syntax, logging via export/backfill, plugin-import support, Mirror Mode model); honest parity confirmed (hypothesis L1/L3) | 🟡 Planned |
 | CV21.E10 | Grok Build Runtime & Extension Surface | Grok Build runs Mirror via adapter/import: logging (`interface='grok_build'`), skills, and user-owned extensions; isolated smoke test | 🟡 Planned |
 | CV21.E11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture; the plugin/MCP convergence documented | 🟡 Planned |
