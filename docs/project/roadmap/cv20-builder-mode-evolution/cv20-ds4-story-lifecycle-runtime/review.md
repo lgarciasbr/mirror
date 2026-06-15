@@ -57,9 +57,9 @@ The lifecycle was dogfooded against `/Users/alissonvale/Code/sandbox-pet-store` 
 
 ## Debt And Exclusions
 
-- Durable versioned debt ledger remains in DS5.
-- Pay-now Refactor loop remains in DS5.
-- Method preferences and `.ariad/config.yml` overrides remain in DS7.
+- Durable versioned debt ledger remains in DS7.
+- Pay-now Refactor loop remains in DS7.
+- Method preferences and `.ariad/config.yml` overrides remain in DS8.
 - Parent Delivery Story collapse and release automation remain future work.
 
 ## Decision

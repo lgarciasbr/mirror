@@ -58,7 +58,7 @@ And still requires separate authorization for commit, push, and release actions
 - Resolving generic commit/push/release policies; this belongs to CV20.DS6.TS1.
 - Implementing push checkpoint/autopush behavior; this belongs to CV20.DS6.US4.
 - Implementing release publication, tags, stable promotion, or release automation.
-- Implementing DS7 method preference overrides or `.ariad/config.yml`.
+- Implementing DS8 method preference overrides or `.ariad/config.yml`.
 
 ## Validation
 
