@@ -71,6 +71,9 @@ def test_render_navigator_flow_unit_report_declares_choices_and_boundary(tmp_pat
     rendered = render_navigator_flow_unit_report(report)
 
     assert "<<<ARIAD:NAVIGATOR_FLOW_UNIT>>>" in rendered
-    assert "effective flow unit\nstory_by_story" in rendered
+    assert "╭────────────────────────────────────────────────────────╮" in rendered
+    assert "│        🧭■  NAVIGATOR FLOW UNIT                        │" in rendered
+    assert "│ effective flow unit                                    │" in rendered
+    assert "│ story_by_story                                         │" in rendered
     assert "delivery_story: parent Delivery Story becomes" in rendered
-    assert "No Plan, implementation, validation, push, or release work was executed" in rendered
+    assert "No Plan, implementation, validation, push, or release" in rendered

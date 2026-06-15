@@ -330,7 +330,9 @@ def test_build_set_flow_unit_records_delivery_story_choice(mocker, tmp_path, cap
     assert cursor.navigator_flow_unit == "delivery_story"
     out = capsys.readouterr().out
     assert "<<<ARIAD:NAVIGATOR_FLOW_UNIT>>>" in out
-    assert "effective flow unit\ndelivery_story" in out
+    assert "│        🧭■  NAVIGATOR FLOW UNIT                        │" in out
+    assert "│ effective flow unit                                    │" in out
+    assert "│ delivery_story                                         │" in out
 
 
 def test_build_set_flow_unit_inspects_default(mocker, tmp_path, capsys):
@@ -345,8 +347,10 @@ def test_build_set_flow_unit_inspects_default(mocker, tmp_path, capsys):
     build.cmd_set_flow_unit("ariad", journey="sandbox-pet-store")
 
     out = capsys.readouterr().out
-    assert "effective flow unit\nstory_by_story" in out
-    assert "source\ndefault" in out
+    assert "│ effective flow unit                                    │" in out
+    assert "│ story_by_story                                         │" in out
+    assert "│ source                                                 │" in out
+    assert "│ default                                                │" in out
 
 
 def test_build_set_cadence_accepts_accelerated(mocker, tmp_path, capsys):
