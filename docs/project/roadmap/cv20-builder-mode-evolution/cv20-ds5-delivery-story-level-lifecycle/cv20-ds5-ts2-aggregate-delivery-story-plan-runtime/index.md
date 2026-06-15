@@ -2,7 +2,7 @@
 
 # CV20.DS5.TS2 — Aggregate Delivery Story Plan Runtime
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
