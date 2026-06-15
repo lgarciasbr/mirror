@@ -38,5 +38,7 @@ story status, commit, push, or release.
 
 ## Next Ariad Movement
 
-Use Ariad prospectively for the next active Builder work, likely CV20.DS7 Method
-Preferences And Overrides or CV20.DS5 debt ledger/refactor follow-up.
+Use Ariad prospectively for the current Builder priority order: CV20.DS6
+Release And Push Policies, then CV20.DS5 debt ledger/refactor follow-up,
+then CV20.DS7 Method Preferences And Overrides, then CV20.DS8 Builder
+Documentation And Migration.

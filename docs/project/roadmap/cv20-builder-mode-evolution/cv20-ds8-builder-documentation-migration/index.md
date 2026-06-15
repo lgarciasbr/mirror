@@ -26,4 +26,4 @@ Existing Builder Mode guidance is updated without pretending that Ariad is the o
 
 ## Done Condition
 
-DS7 is done when the implemented Builder Mode, user docs, process docs, and roadmap language describe the same operating model.
+DS8 is done when the implemented Builder Mode, user docs, process docs, and roadmap language describe the same operating model.

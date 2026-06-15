@@ -23,7 +23,7 @@ Consequences:
 - Future Mirror Mind Builder work should be pulled, planned, validated, reviewed, checked for coherence, and closed through Ariad Builder commands when possible.
 - CV20 remains the first dogfooding area under the project-level adoption.
 - The adoption does not retroactively rewrite DS1–DS4 artifacts.
-- DS5 and DS8 are the next natural dogfooding candidates.
+- The current post-adoption priority order is DS6, then DS5, then DS7, then DS8.
 - Navigator preference/config override work remains explicitly planned in CV20.DS7 rather than assumed by adoption.
 
 ### CV21 converges on a canonical plugin plus MCP server, bridged by import

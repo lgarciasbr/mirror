@@ -22,7 +22,7 @@ Introduce Delivery Story release intent as explicit planning state. The Navigato
 - Do not implement a generic commit/push/release policy resolver; that is CV20.DS6.TS1.
 - Do not implement push checkpoint/autopush behavior; that is CV20.DS6.US4.
 - Do not implement release authorization, tag creation, stable promotion, publication, or release automation.
-- Do not implement DS8 preferences/config overrides.
+- Do not implement DS7 preferences/config overrides.
 - Do not push or release as part of this story without separate explicit Navigator authorization.
 
 ## Acceptance Behavior
@@ -79,7 +79,7 @@ E2E decision: browser/UI E2E is not required; Builder CLI/Pi-visible behavior is
 
 ## Stop Conditions
 
-- The change starts implementing progress bars, collapse decisions, policy resolver, autopush, or DS8 preferences.
+- The change starts implementing progress bars, collapse decisions, policy resolver, autopush, or DS7 preferences.
 - The release intent storage location would require a broader architecture decision.
 - The policy boundary between intent and authorization becomes ambiguous.
 - Navigator decision is needed for commit, push, or release authority.

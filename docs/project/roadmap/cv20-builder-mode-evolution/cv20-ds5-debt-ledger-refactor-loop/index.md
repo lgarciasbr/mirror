@@ -2,7 +2,7 @@
 
 # CV20.DS5 — Debt Ledger And Refactor Loop
 
-**Status:** 🟢 Active
+**Status:** 🟡 Planned
 
 ---
 

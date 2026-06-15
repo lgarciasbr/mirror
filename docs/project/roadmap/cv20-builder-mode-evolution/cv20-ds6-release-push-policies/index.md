@@ -2,7 +2,7 @@
 
 # CV20.DS6 — Release And Push Policies
 
-**Status:** 🟡 Planned
+**Status:** 🟢 Active
 
 ---
 
@@ -33,7 +33,7 @@ Release intent belongs primarily to a Delivery Story or parent delivery boundary
 - Commit approval is not push approval.
 - Push approval is not release approval.
 - Release preparation is not release publication.
-- DS8 may later make these policies configurable through method preferences and overrides.
+- DS7 may later make these policies configurable through method preferences and overrides.
 
 ---
 
