@@ -24,7 +24,7 @@ Consequences:
 - CV20 remains the first dogfooding area under the project-level adoption.
 - The adoption does not retroactively rewrite DS1–DS4 artifacts.
 - DS5 and DS8 are the next natural dogfooding candidates.
-- Navigator preference/config override work remains explicitly planned in CV20.DS8 rather than assumed by adoption.
+- Navigator preference/config override work remains explicitly planned in CV20.DS7 rather than assumed by adoption.
 
 ### CV21 converges on a canonical plugin plus MCP server, bridged by import
 

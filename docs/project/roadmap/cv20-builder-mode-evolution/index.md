@@ -36,8 +36,8 @@ Ariad governs the first implementation. The architecture must remain open enough
 | [CV20.DS4](cv20-ds4-story-lifecycle-runtime/index.md) | Story Lifecycle Runtime | Builder can execute the Pull, Prepare, Plan, Implement, Validation, Review, Coherence, and Done lifecycle with deterministic checkpoint gates | ✅ Done |
 | [CV20.DS5](cv20-ds5-debt-ledger-refactor-loop/index.md) | Debt Ledger And Refactor Loop | Review records technical debt in a versioned ledger, requires defer rationale and revisit trigger, and routes pay-now decisions through Refactor back to Validation | 🟢 Active |
 | CV20.DS6 | Release And Push Policies | Builder distinguishes commit, push, and release, supporting planned and emergent release intent plus configurable push policies | 🟡 Planned |
-| CV20.DS7 | Builder Documentation And Migration | User-facing docs, process docs, and journey guidance explain Ariad Builder adoption, DSL overrides, lifecycle, and operational boundaries | 🟡 Planned |
-| [CV20.DS8](cv20-ds8-method-preferences-and-overrides/index.md) | Method Preferences And Overrides | Builder resolves Ariad defaults, project-local config, and Navigator overrides into inspectable effective preferences | 🟡 Planned |
+| [CV20.DS7](cv20-ds7-method-preferences-and-overrides/index.md) | Method Preferences And Overrides | Builder resolves Ariad defaults, project-local config, and Navigator overrides into inspectable effective preferences | 🟡 Planned |
+| [CV20.DS8](cv20-ds8-builder-documentation-migration/index.md) | Builder Documentation And Migration | User-facing docs, process docs, and journey guidance explain Ariad Builder adoption, DSL overrides, lifecycle, and operational boundaries | 🟡 Planned |
 
 ---
 

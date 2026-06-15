@@ -1,6 +1,6 @@
 [< CV20](../index.md)
 
-# CV20.DS7 — Builder Documentation And Migration
+# CV20.DS8 — Builder Documentation And Migration
 
 **Status:** 🟡 Planned
 
@@ -18,9 +18,9 @@ Existing Builder Mode guidance is updated without pretending that Ariad is the o
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV20.DS7.US1 | Builder user documentation | User Story | Navigator can understand how to adopt and use Ariad Builder Mode | 🟡 Planned |
-| CV20.DS7.US2 | Process documentation alignment | User Story | Development guide and roadmap process reflect the new lifecycle where appropriate | 🟡 Planned |
-| CV20.DS7.TS1 | Migration notes | Technical Story | Existing journeys and Builder sessions have documented migration or non-adoption behavior | 🟡 Planned |
+| CV20.DS8.US1 | Builder user documentation | User Story | Navigator can understand how to adopt and use Ariad Builder Mode | 🟡 Planned |
+| CV20.DS8.US2 | Process documentation alignment | User Story | Development guide and roadmap process reflect the new lifecycle where appropriate | 🟡 Planned |
+| CV20.DS8.TS1 | Migration notes | Technical Story | Existing journeys and Builder sessions have documented migration or non-adoption behavior | 🟡 Planned |
 
 ---
 
