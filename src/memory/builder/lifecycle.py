@@ -186,6 +186,8 @@ def pull_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     return BuilderPullReport(
         journey=normalized_journey,
@@ -224,6 +226,8 @@ def prepare_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     return BuilderPrepareReport(
         journey=normalized_journey,
@@ -294,6 +298,8 @@ def plan_lifecycle_item(
         cadence_limits=existing.cadence_limits,
         granularity_decision=None,
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderPlanReport(
         journey=normalized_journey,
@@ -359,6 +365,8 @@ def approve_plan_checkpoint(store: Store, *, journey: str, method: str) -> Build
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
 
 
@@ -436,6 +444,8 @@ def expand_delivery_story(
         cadence_limits=existing.cadence_limits,
         granularity_decision="expanded_to_implementable_stories",
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     return BuilderExpandReport(
         journey=normalized_journey,
@@ -532,6 +542,8 @@ def coherence_lifecycle_item(
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderCoherenceReport(
         journey=normalized_journey,
@@ -649,6 +661,8 @@ def done_lifecycle_item(
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderDoneReport(
         journey=normalized_journey,
@@ -771,6 +785,8 @@ def review_lifecycle_item(
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderReviewReport(
         journey=normalized_journey,
@@ -923,6 +939,8 @@ def validate_lifecycle_item(
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
         navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderValidationReport(
         journey=normalized_journey,

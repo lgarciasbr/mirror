@@ -24,6 +24,8 @@ class BuilderDeliveryCursor:
     cadence_limits: tuple[str, ...] = ()
     granularity_decision: str | None = None
     navigator_flow_unit: str | None = None
+    child_work_items: tuple[str, ...] = ()
+    aggregate_checkpoint_status: tuple[str, ...] = ()
 
 
 def get_delivery_cursor(store: Store, journey: str) -> BuilderDeliveryCursor | None:
@@ -54,6 +56,8 @@ def get_delivery_cursor(store: Store, journey: str) -> BuilderDeliveryCursor | N
         cadence_limits=_optional_string_tuple(data.get("cadence_limits")),
         granularity_decision=_optional_string(data.get("granularity_decision")),
         navigator_flow_unit=_optional_string(data.get("navigator_flow_unit")),
+        child_work_items=_optional_string_tuple(data.get("child_work_items")),
+        aggregate_checkpoint_status=_optional_string_tuple(data.get("aggregate_checkpoint_status")),
     )
 
 
@@ -72,6 +76,8 @@ def set_delivery_cursor(
     cadence_limits: tuple[str, ...] = (),
     granularity_decision: str | None = None,
     navigator_flow_unit: str | None = None,
+    child_work_items: tuple[str, ...] = (),
+    aggregate_checkpoint_status: tuple[str, ...] = (),
 ) -> BuilderDeliveryCursor:
     """Persist the Builder delivery cursor for a journey."""
     normalized_journey = _normalize_required(journey, "journey")
@@ -89,6 +95,8 @@ def set_delivery_cursor(
         cadence_limits=_normalize_optional_tuple(cadence_limits),
         granularity_decision=_normalize_optional(granularity_decision),
         navigator_flow_unit=_normalize_optional(navigator_flow_unit),
+        child_work_items=_normalize_optional_tuple(child_work_items),
+        aggregate_checkpoint_status=_normalize_optional_tuple(aggregate_checkpoint_status),
     )
     store.upsert_runtime_session(
         _session_id(normalized_journey),
@@ -108,6 +116,8 @@ def set_delivery_cursor(
                 "cadence_limits": cursor.cadence_limits,
                 "granularity_decision": cursor.granularity_decision,
                 "navigator_flow_unit": cursor.navigator_flow_unit,
+                "child_work_items": cursor.child_work_items,
+                "aggregate_checkpoint_status": cursor.aggregate_checkpoint_status,
             },
             ensure_ascii=False,
         ),
@@ -157,6 +167,16 @@ def render_delivery_cursor_sync_report(cursor: BuilderDeliveryCursor) -> str:
                 "",
                 "navigator flow unit",
                 cursor.navigator_flow_unit or "story_by_story",
+                "",
+                "child work items",
+                ", ".join(cursor.child_work_items) if cursor.child_work_items else "none",
+                "",
+                "aggregate checkpoint status",
+                (
+                    ", ".join(cursor.aggregate_checkpoint_status)
+                    if cursor.aggregate_checkpoint_status
+                    else "none"
+                ),
                 "",
                 "active checkpoint",
                 cursor.active_checkpoint or "none",

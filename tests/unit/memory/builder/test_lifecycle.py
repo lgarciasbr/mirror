@@ -57,6 +57,35 @@ def test_pull_lifecycle_item_updates_cursor_and_renders_report(tmp_path):
     assert "Plan and later lifecycle work were not executed" in rendered
 
 
+def test_lifecycle_updates_preserve_delivery_story_state(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        child_work_items=("CV20.DS5.US1",),
+        aggregate_checkpoint_status=("plan:pending",),
+    )
+
+    pull_lifecycle_item(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        item=BuilderLifecycleItem(
+            code="CV20.DS5.US1",
+            title="Choose Navigator Flow Unit",
+            level="user_story",
+            why_now="next slice",
+        ),
+    )
+    prepare_lifecycle_item(store, journey="sandbox-pet-store", method="ariad")
+
+    cursor = get_delivery_cursor(store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.child_work_items == ("CV20.DS5.US1",)
+    assert cursor.aggregate_checkpoint_status == ("plan:pending",)
+
+
 def test_pull_lifecycle_item_requires_existing_cursor(tmp_path):
     _client, store = _store(tmp_path)
 

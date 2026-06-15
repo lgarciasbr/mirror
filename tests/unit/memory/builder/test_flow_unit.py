@@ -43,6 +43,8 @@ def test_set_navigator_flow_unit_persists_delivery_story_choice(tmp_path):
         active_item="CV20.DS5",
         active_item_title="Delivery Story Level Lifecycle",
         active_item_level="delivery_story",
+        child_work_items=("CV20.DS5.US1",),
+        aggregate_checkpoint_status=("plan:pending",),
     )
 
     report = set_navigator_flow_unit(
@@ -57,6 +59,8 @@ def test_set_navigator_flow_unit_persists_delivery_story_choice(tmp_path):
     assert inspected.flow_unit == FLOW_UNIT_DELIVERY_STORY
     assert inspected.source == "cursor"
     assert inspected.cursor.last_delivery_event == "navigator_flow_unit_selected"
+    assert inspected.cursor.child_work_items == ("CV20.DS5.US1",)
+    assert inspected.cursor.aggregate_checkpoint_status == ("plan:pending",)
 
 
 def test_render_navigator_flow_unit_report_declares_choices_and_boundary(tmp_path):

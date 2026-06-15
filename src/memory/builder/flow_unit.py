@@ -64,6 +64,8 @@ def set_navigator_flow_unit(
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
         navigator_flow_unit=flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     return NavigatorFlowUnitReport(
         journey=journey,

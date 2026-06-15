@@ -651,6 +651,8 @@ def cmd_set_cadence(
         cadence_limits=limits,
         granularity_decision=cursor.granularity_decision,
         navigator_flow_unit=cursor.navigator_flow_unit,
+        child_work_items=cursor.child_work_items,
+        aggregate_checkpoint_status=cursor.aggregate_checkpoint_status,
     )
     print(render_delivery_cursor_sync_report(updated))
 
