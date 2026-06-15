@@ -2,7 +2,7 @@
 
 # CV20.DS5.US2 — Delivery Story Plan Checkpoint
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
