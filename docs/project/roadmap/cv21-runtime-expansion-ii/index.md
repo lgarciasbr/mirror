@@ -103,14 +103,18 @@ hypotheses the spike epics must confirm hands-on.
   injection path is flagged for E7 to probe. `agy plugin import claude` consumes
   the Claude plugin from E1.
 
-### Grok Build (`grok` CLI v0.2.39)
+### Grok Build (`grok` CLI v0.2.51)
 
-- `grok inspect` already discovers our 21 `mm-*` skills and loads `Agents.md` as
-  project instructions out of the box. Exposes `sessions`, `export`, `mcp`,
-  `memory`, subagents, `--system-prompt`; no `hooks` subcommand visible.
-- **Hypothesis: Codex-like.** Logging via wrapper + `grok export`/backfill (L1
-  deferred); Mirror Mode via static instructions + explicit invocation (L3).
-  Skill-discovery root, invocation syntax, and plugin-import support to be confirmed.
+- The **most Claude-compatible** new runtime: reads `.claude/settings.json`
+  hooks, `.claude/skills/`, `.claude/plugins/`, `.agents/skills/`, and `AGENTS.md`
+  natively (compat on by default).
+- **E9 confirmed: L3 (strong L1).** Full Claude-style hook lifecycle
+  (`SessionStart`/`UserPromptSubmit`/`Stop`/`SessionEnd`) read from
+  `.claude/settings.json` — so logging is via **native hooks, not export/backfill**.
+  But `UserPromptSubmit` is passive (stdout ignored) — **no `additionalContext`
+  injection**, so Mirror Mode stays `AGENTS.md` + explicit slash invocation. Skills
+  via `.agents/skills/` (no migration); MCP in `~/.grok/config.toml`; Claude-shaped
+  plugins consume the canonical package via `.claude/plugins/` compat.
 
 ---
 
@@ -150,8 +154,8 @@ No fake parity: each runtime claims only what it honestly supports.
 | [CV21.E6](cv21-e6-antigravity-runtime-spike/index.md) | Antigravity Runtime Spike | Confirmed (read-only, no config mutated): hooks are tool/invocation/stop-centric — **no `UserPromptSubmit`/`additionalContext`** → honest parity **L3** (not L4); skills via `.agents/skills/` (no migration); Mirror Mode via `AGENTS.md`; `agy plugin import claude` path confirmed. `PreInvocation`+`HookSystemMessage` injection flagged for E7 | ✅ Done |
 | CV21.E7 | Antigravity Runtime & Extension Surface | Antigravity runs Mirror at **L3** via `.agents/skills/` + `AGENTS.md` + explicit invocation; logging via wrapper/`StopHook` + deferred extraction (`interface='antigravity'`); external extensions ride `.agents/skills/`; probe `PreInvocation`+`HookSystemMessage` injection; isolated smoke test | 🟡 Planned |
 | CV21.E8 | Gemini CLI Sunset | The `.gemini/` shell-hook integration is honestly retired; Antigravity documented as its successor; all runtime-facing docs updated. Honest note (E6): Gemini CLI was L4; Antigravity is L3 — automatic per-turn injection is lost in the migration | 🟡 Planned |
-| CV21.E9 | Grok Build Runtime Spike | `grok` mapped against the contract (skill discovery root, invocation syntax, logging via export/backfill, plugin-import support, Mirror Mode model); honest parity confirmed (hypothesis L1/L3) | 🟡 Planned |
-| CV21.E10 | Grok Build Runtime & Extension Surface | Grok Build runs Mirror via adapter/import: logging (`interface='grok_build'`), skills, and user-owned extensions; isolated smoke test | 🟡 Planned |
+| [CV21.E9](cv21-e9-grok-build-runtime-spike/index.md) | Grok Build Runtime Spike | Confirmed (read-only, no config mutated): full Claude-style hook lifecycle read from `.claude/settings.json` (native logging, **not** export/backfill); `UserPromptSubmit` passive → no injection → honest parity **L3** (strong L1); skills via `.agents/skills/` (no migration); plugins via `.claude/plugins/` compat; MCP in `config.toml` | ✅ Done |
+| CV21.E10 | Grok Build Runtime & Extension Surface | Grok runs Mirror at **L3** via native `.claude/settings.json` hook lifecycle (`interface='grok_build'`, deferred extraction, project-trust aware); skills via `.agents/skills/`; Mirror Mode via `AGENTS.md` + explicit slash invocation; external extensions ride `.agents/skills/`; MCP via `~/.grok/config.toml`; isolated smoke test | 🟡 Planned |
 | CV21.E11 | Contract & Docs Refresh | All runtimes folded into the runtime interface contract, decisions, and the parity matrix across README, Getting Started, REFERENCE, and architecture; the plugin/MCP convergence documented | 🟡 Planned |
 
 ---
