@@ -22,6 +22,7 @@ JOURNEY = "sandbox-pet-store"
 PROJECT_PATH = Path("/Users/alissonvale/Code/sandbox-pet-store")
 ROADMAP_INDEX = PROJECT_PATH / "docs/project/roadmap/index.md"
 WORKLOG_PATH = PROJECT_PATH / "docs/process/worklog.md"
+REFERENCE_PATH = PROJECT_PATH / "REFERENCE.md"
 GENERATED_FILES = (
     PROJECT_PATH / "docs/project/roadmap/ariad-adoption.md",
     PROJECT_PATH / "docs/project/roadmap/technical-debt-ledger.md",
@@ -117,6 +118,34 @@ Potential future work:
 - order confirmation polish.
 """
 
+REFERENCE_BASELINE = """# Sandbox Pet Store Reference
+
+Operational reference for the resettable Builder Mode dogfood fixture.
+
+## Builder Fixture Contract
+
+- This project is intentionally small and local-first.
+- `CV1 Cart Flow` is complete at reset.
+- `CV2 Checkout Flow` is a candidate capability, not automatic active work.
+- Builder sessions should orient the Navigator before starting lifecycle work.
+- Ariad reset state is managed by `/Users/alissonvale/Code/mirror-dev/scripts/reset_sandbox_pet_store.py`.
+
+## Common Commands
+
+```bash
+npm test
+npm run build
+```
+
+## Reset
+
+From `/Users/alissonvale/Code/mirror-dev`:
+
+```bash
+~/reset-sandbox-pet-store.sh --state ariad-ready --full
+```
+"""
+
 WORKLOG_BASELINE = """# Worklog
 
 Operational progress for Sandbox Pet Store.
@@ -187,6 +216,7 @@ def main() -> None:
     mem.journeys.set_project_path(JOURNEY, str(PROJECT_PATH))
     _restore_roadmap_baseline()
     _restore_worklog_baseline()
+    _restore_reference_baseline()
     _remove_generated_ariad_files()
     if args.restore_code or args.full:
         _restore_code_baseline()
@@ -228,6 +258,10 @@ def _restore_roadmap_baseline() -> None:
 def _restore_worklog_baseline() -> None:
     WORKLOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     WORKLOG_PATH.write_text(WORKLOG_BASELINE, encoding="utf-8")
+
+
+def _restore_reference_baseline() -> None:
+    REFERENCE_PATH.write_text(REFERENCE_BASELINE, encoding="utf-8")
 
 
 def _remove_generated_ariad_files() -> None:
