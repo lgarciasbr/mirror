@@ -126,11 +126,13 @@ def test_render_delivery_story_closure_report_lists_checkpoint_artifacts(tmp_pat
 
     rendered = render_delivery_story_closure_report(report)
 
-    assert "validation artifact\n" in rendered
-    assert str(artifact) in rendered
-    assert "checkpoint artifacts\n" in rendered
-    assert f"- validation: {artifact} (created)" in rendered
-    assert f"- review: {artifact.parent / 'review.md'} (pending)" in rendered
+    assert "│ validation artifact                                    │" in rendered
+    assert "validation.md" in rendered
+    assert "│ checkpoint artifacts                                   │" in rendered
+    assert "│ - validation:" in rendered
+    assert "│   (created)" in rendered
+    assert "│ - review:" in rendered
+    assert "│   (pending)" in rendered
 
 
 def test_render_delivery_story_closure_report_lists_child_work_items(tmp_path):
@@ -147,6 +149,10 @@ def test_render_delivery_story_closure_report_lists_child_work_items(tmp_path):
     rendered = render_delivery_story_closure_report(report)
 
     assert "<<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>" in rendered
-    assert "delivery story\nCV2.DS1" in rendered
-    assert "- CV2.DS1.US1" in rendered
-    assert "status\npassed" in rendered
+    assert "╭────────────────────────────────────────────────────────╮" in rendered
+    assert "DELIVERY STORY VALIDATION" in rendered
+    assert "│ delivery story                                         │" in rendered
+    assert "│ CV2.DS1                                                │" in rendered
+    assert "│ - CV2.DS1.US1" in rendered
+    assert "│ status                                                 │" in rendered
+    assert "│ passed                                                 │" in rendered

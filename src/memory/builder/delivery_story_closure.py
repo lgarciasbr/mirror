@@ -158,43 +158,96 @@ def render_delivery_story_closure_report(report: DeliveryStoryClosureReport) -> 
             "Delivery",
             _ribbon(report.checkpoint),
             "",
-            f"■ Delivery Story {report.checkpoint.replace('_', ' ').title()}",
-            "",
-            "journey",
-            report.journey,
-            "",
-            "delivery story",
-            report.delivery_story,
-            "",
-            "delivery story title",
-            report.delivery_story_title or "none",
-            "",
-            "navigator flow unit",
-            FLOW_UNIT_DELIVERY_STORY,
-            "",
-            "child work packages",
-            *[f"- {item}" for item in report.child_work_items],
-            "",
-            "checkpoint",
-            report.checkpoint,
-            "",
-            "status",
-            report.status,
-            "",
-            "summary",
-            report.summary,
-            "",
-            _current_artifact_heading(report.checkpoint),
-            str(report.artifact_path) if report.artifact_path else "not materialized",
-            "",
-            "checkpoint artifacts",
-            *_checkpoint_artifact_lines(report.artifact_path),
-            "",
-            "boundary",
-            _boundary(report),
+            "╭────────────────────────────────────────────────────────╮",
+            _card_text(f"       🧪■ DELIVERY STORY {_checkpoint_title(report.checkpoint)}"),
+            "│                                                        │",
+            _card_text("journey"),
+            _card_text(report.journey),
+            "│                                                        │",
+            _card_text("delivery story"),
+            _card_text(report.delivery_story),
+            "│                                                        │",
+            _card_text("delivery story title"),
+            *_card_wrapped(report.delivery_story_title or "none"),
+            "│                                                        │",
+            _card_text("navigator flow unit"),
+            _card_text(FLOW_UNIT_DELIVERY_STORY),
+            "│                                                        │",
+            _card_text("child work packages"),
+            *_card_prefixed(report.child_work_items, "-"),
+            "│                                                        │",
+            _card_text("checkpoint"),
+            _card_text(report.checkpoint),
+            "│                                                        │",
+            _card_text("status"),
+            _card_text(report.status),
+            "│                                                        │",
+            _card_text("summary"),
+            *_card_wrapped(report.summary),
+            "│                                                        │",
+            _card_text(_current_artifact_heading(report.checkpoint)),
+            *_card_wrapped(
+                str(report.artifact_path) if report.artifact_path else "not materialized"
+            ),
+            "│                                                        │",
+            _card_text("checkpoint artifacts"),
+            *_card_prefixed(tuple(_checkpoint_artifact_lines(report.artifact_path)), "-"),
+            "│                                                        │",
+            _card_text("boundary"),
+            *_card_wrapped(_boundary(report)),
+            "╰────────────────────────────────────────────────────────╯",
         ]
     )
     return wrap_ariad_surface("delivery_story_closure_checkpoint", body + "\n")
+
+
+def _checkpoint_title(checkpoint: str) -> str:
+    return checkpoint.replace("_", " ").upper()
+
+
+def _card_text(text: str) -> str:
+    width = 54
+    return f"│ {text[:width]:<{width}} │"
+
+
+def _card_prefixed(items: tuple[str, ...], prefix: str) -> list[str]:
+    if not items:
+        return [_card_text("none")]
+    lines: list[str] = []
+    for item in items:
+        normalized = item[2:] if item.startswith("- ") else item
+        wrapped = _wrap_plain_text(normalized, width=52)
+        for index, line in enumerate(wrapped):
+            marker = prefix if index == 0 else " "
+            lines.append(_card_text(f"{marker} {line}"))
+    return lines
+
+
+def _card_wrapped(text: str) -> list[str]:
+    return [_card_text(line) for line in _wrap_plain_text(text, width=54)]
+
+
+def _wrap_plain_text(text: str, *, width: int) -> list[str]:
+    words = text.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        if len(word) > width:
+            if current:
+                lines.append(current)
+                current = ""
+            for start in range(0, len(word), width):
+                lines.append(word[start : start + width])
+            continue
+        candidate = f"{current} {word}".strip()
+        if len(candidate) > width and current:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines or ["none"]
 
 
 def _current_artifact_heading(checkpoint: str) -> str:
