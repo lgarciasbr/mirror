@@ -2,7 +2,7 @@
 
 # CV20.DS5 — Delivery Story Level Lifecycle
 
-**Status:** 🟢 Active
+**Status:** ✅ Done
 
 ---
 

@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-16 — v0.28.0 Ariad Delivery Story Lifecycle prepared
+
+Closed CV20.DS5 Delivery Story Level Lifecycle as a release boundary. Builder now supports `delivery_story` as a Navigator-facing Ariad flow unit with aggregate DS Plan, Validation, Debt Review, Coherence, and Done checkpoints while preserving child User/Technical Stories as traceable work packages. DS-level lifecycle artifacts now materialize at canonical roadmap package paths, and Navigator-facing Ariad surfaces for resume, pull candidates, flow-unit selection, DS Plan, and DS closure render with the visual card grammar.
+
+Validation: focused Builder unit/CLI tests passed; ruff, format, mypy, and diff checks passed. Sandbox/Pi validation confirmed that Delivery Story flow creates `plan.md`, `validation.md`, `review.md`, `coherence.md`, and `done.md` in the canonical DS package and no longer requires child-story Navigator closure for aggregate DS Done.
+
 ### 2026-06-14 — v0.27.0 Ariad Builder Lifecycle Runtime prepared
 
 Closed CV20.DS4 Story Lifecycle Runtime as a release boundary. Builder now supports the complete Ariad happy path from Pull through Done with deterministic surfaces, method-level surface transport, story packages, hard Plan/Validation/Review/Coherence/Done gates, conservative higher-autonomy cadence, and repeatable sandbox dogfooding. Release notes for `v0.27.0 — Ariad Builder Lifecycle Runtime` were prepared.
