@@ -113,7 +113,9 @@ def render_builder_handoff_proposed(story: ExplorerStory) -> str:
         if handoff.handoff_info_path:
             rows.append(("handoff info", _handoff_path_label(handoff.handoff_info_path)))
         if handoff.product_design_proposal_path:
-            rows.append(("product design", _handoff_path_label(handoff.product_design_proposal_path)))
+            rows.append(
+                ("product design", _handoff_path_label(handoff.product_design_proposal_path))
+            )
         if handoff.full_conversation_path:
             rows.append(("full conversation", _handoff_path_label(handoff.full_conversation_path)))
     else:

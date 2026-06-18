@@ -101,7 +101,9 @@ def write_builder_handoff_artifacts(
         exploratory_story_path=exploratory_story_path.as_posix(),
         handoff_info_path=handoff_info_path.as_posix(),
         product_design_proposal_path=product_design_path.as_posix(),
-        full_conversation_path=full_conversation_path.as_posix() if full_conversation_written else None,
+        full_conversation_path=full_conversation_path.as_posix()
+        if full_conversation_written
+        else None,
     )
 
 

@@ -46,7 +46,9 @@ def test_write_builder_handoff_artifacts_creates_transfer_document_set(tmp_path)
     assert "What Builder Should Not Assume" not in handoff_info.read_text(encoding="utf-8")
     assert "Non-Assumptions" in handoff_info.read_text(encoding="utf-8")
     assert "Product Design Proposal" in product_design.read_text(encoding="utf-8")
-    assert "does not define implementation architecture" in product_design.read_text(encoding="utf-8")
+    assert "does not define implementation architecture" in product_design.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_write_builder_handoff_artifacts_includes_source_evidence_and_full_conversation(tmp_path):
