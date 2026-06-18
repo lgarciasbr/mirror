@@ -121,8 +121,8 @@ Candidate Delivery Stories:
     assert "ROADMAP SNAPSHOT" in out
     assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in out
     assert "🟪[CV2]  Checkout Flow" in out
-    assert "Ariad Pull Candidates" in out
-    assert "CV2.DS1 — Checkout Flow / Checkout entry and address capture" in out
+    assert "PULL CANDIDATES" in out
+    assert "CV2.DS1 — Checkout Flow / Checkout entry" in out
     assert "BUILDER RESUME" not in out
     assert "No item was pulled" in out
 
@@ -161,8 +161,9 @@ def test_build_load_renders_resume_surface_when_adopted_journey_has_active_item(
 
     out = capsys.readouterr().out
     assert "BUILDER RESUME" in out
-    assert "active item\nCV2.DS1" in out
-    assert "- prepare_active_item" in out
+    assert "│ active item                                            │" in out
+    assert "CV2.DS1" in out
+    assert "prepare_active_item" in out
     assert "ROADMAP SNAPSHOT" not in out
 
 
@@ -254,6 +255,117 @@ Candidate Delivery Stories:
     assert "E2E decision: required" in plan_text
 
 
+def test_build_plan_delivery_story_records_aggregate_checkpoint(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project = tmp_path / "project"
+    package = (
+        project
+        / "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds5-delivery-story-level-lifecycle"
+    )
+    package.mkdir(parents=True)
+    (package / "index.md").write_text("# CV20.DS5", encoding="utf-8")
+    mem.journeys.set_project_path("sandbox-pet-store", str(project))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_plan_delivery_story(
+        "ariad",
+        journey="sandbox-pet-store",
+        objective="Approve aggregate DS plan.",
+        child_work_items=("CV20.DS5.US1",),
+    )
+
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_checkpoint == "after_delivery_story_plan"
+    assert cursor.aggregate_checkpoint_status == ("plan:pending",)
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>" in out
+    assert "│ - CV20.DS5.US1                                         │" in out
+    assert package.joinpath("plan.md").exists()
+    assert "plan.md" in out
+
+
+def test_build_approve_delivery_story_plan_records_approval(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV20.DS5.US1",),
+        active_checkpoint="after_delivery_story_plan",
+        pending_confirmation="navigator_delivery_story_plan_approval",
+        aggregate_checkpoint_status=("plan:pending",),
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_approve_delivery_story_plan("ariad", journey="sandbox-pet-store")
+
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.aggregate_checkpoint_status == ("plan:approved",)
+    out = capsys.readouterr().out
+    assert "│ status                                                 │" in out
+    assert "│ approved                                               │" in out
+
+
+def test_build_set_flow_unit_records_delivery_story_choice(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(mem.store, journey="sandbox-pet-store", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_set_flow_unit("ariad", journey="sandbox-pet-store", unit="delivery_story")
+
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.navigator_flow_unit == "delivery_story"
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:NAVIGATOR_FLOW_UNIT>>>" in out
+    assert "│        🧭■  NAVIGATOR FLOW UNIT                        │" in out
+    assert "│ effective flow unit                                    │" in out
+    assert "│ delivery_story                                         │" in out
+
+
+def test_build_set_flow_unit_inspects_default(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(mem.store, journey="sandbox-pet-store", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_set_flow_unit("ariad", journey="sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    assert "│ effective flow unit                                    │" in out
+    assert "│ story_by_story                                         │" in out
+    assert "│ source                                                 │" in out
+    assert "│ default                                                │" in out
+
+
 def test_build_set_cadence_accepts_accelerated(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
@@ -310,6 +422,34 @@ def test_build_set_cadence_records_autonomous_limits(mocker, tmp_path, capsys):
     out = capsys.readouterr().out
     assert "cadence profile\nautonomous" in out
     assert "cadence limits\nstop before push, stop on scope change" in out
+
+
+def test_plan_artifact_path_prefers_existing_canonical_package(tmp_path):
+    project = tmp_path / "project"
+    canonical = (
+        project
+        / "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds5-delivery-story-level-lifecycle/cv20-ds5-ts3-lifecycle-checkpoint-artifact-materialization"
+    )
+    canonical.mkdir(parents=True)
+    (canonical / "index.md").write_text("# CV20.DS5.TS3", encoding="utf-8")
+    cursor = type("Cursor", (), {"active_item": "CV20.DS5.TS3"})()
+
+    assert build._plan_artifact_path(str(project), cursor) == canonical / "plan.md"
+
+
+def test_checkpoint_artifact_path_prefers_existing_delivery_story_package(tmp_path):
+    project = tmp_path / "project"
+    canonical = (
+        project
+        / "docs/project/roadmap/cv2-checkout-flow/cv2-ds1-checkout-entry-and-address-capture"
+    )
+    canonical.mkdir(parents=True)
+    (canonical / "index.md").write_text("# CV2.DS1", encoding="utf-8")
+    cursor = type("Cursor", (), {"active_item": "CV2.DS1"})()
+
+    assert build._checkpoint_artifact_path(str(project), cursor, "validation.md") == (
+        canonical / "validation.md"
+    )
 
 
 def test_build_plan_item_refuses_delivery_story(mocker, tmp_path, capsys):
@@ -1290,8 +1430,8 @@ Candidate Delivery Stories:
     assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in out
     assert "🟪[CV2]  Checkout Flow" in out
     assert "view                         overview" in out
-    assert "Ariad Pull Candidates" in out
-    assert "CV2.DS1 — Checkout Flow / Checkout entry and address capture" in out
+    assert "PULL CANDIDATES" in out
+    assert "CV2.DS1 — Checkout Flow / Checkout entry" in out
     assert "No item was pulled" in out
 
 
@@ -1356,7 +1496,7 @@ def test_build_pull_item_updates_cursor(mocker, tmp_path, capsys):
 
     out = capsys.readouterr().out
     assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in out
-    assert "DELIVERY STORY IDENTIFIED" in out
+    assert "DELIVERY STORY ACTIVATED" in out
     assert "roadmap candidate" in out
     assert "active item: CHECKOUT-FLOW" in out
     assert "Prepare" in out

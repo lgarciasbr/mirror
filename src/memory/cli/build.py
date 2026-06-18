@@ -13,6 +13,24 @@ from memory.builder.delivery_cursor import (
     render_delivery_cursor_sync_report,
     set_delivery_cursor,
 )
+from memory.builder.delivery_story_closure import (
+    coherence_delivery_story,
+    done_delivery_story,
+    render_delivery_story_closure_report,
+    review_delivery_story,
+    validate_delivery_story,
+)
+from memory.builder.delivery_story_plan import (
+    approve_delivery_story_plan,
+    plan_delivery_story_checkpoint,
+    render_delivery_story_plan_report,
+)
+from memory.builder.flow_unit import (
+    ALLOWED_FLOW_UNITS,
+    inspect_navigator_flow_unit,
+    render_navigator_flow_unit_report,
+    set_navigator_flow_unit,
+)
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
     approve_plan_checkpoint,
@@ -562,6 +580,250 @@ _MIRROR_LOCAL_IMPLEMENTATION_RULES = (
 )
 
 
+def cmd_validate_delivery_story(
+    method: str,
+    *,
+    summary: str,
+    navigator_accepted: bool,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="Delivery Story validation",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "validation.md"
+        )
+        report = validate_delivery_story(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            summary=summary,
+            navigator_accepted=navigator_accepted,
+            artifact_path=artifact_path,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_delivery_story_closure_report(report))
+
+
+def cmd_review_delivery_story(
+    method: str,
+    *,
+    decision: str,
+    summary: str,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="Delivery Story debt review",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "review.md"
+        )
+        report = review_delivery_story(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            decision=decision,
+            summary=summary,
+            artifact_path=artifact_path,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_delivery_story_closure_report(report))
+
+
+def cmd_coherence_delivery_story(
+    method: str,
+    *,
+    summary: str,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="Delivery Story coherence",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "coherence.md"
+        )
+        report = coherence_delivery_story(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            summary=summary,
+            artifact_path=artifact_path,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_delivery_story_closure_report(report))
+
+
+def cmd_done_delivery_story(
+    method: str,
+    *,
+    summary: str,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="Delivery Story Done",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "done.md"
+        )
+        report = done_delivery_story(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            summary=summary,
+            artifact_path=artifact_path,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_delivery_story_closure_report(report))
+
+
+def cmd_plan_delivery_story(
+    method: str,
+    *,
+    objective: str,
+    child_work_items: tuple[str, ...] = (),
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="Delivery Story Plan",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        plan_artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "plan.md"
+        )
+        report = plan_delivery_story_checkpoint(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            objective=objective,
+            child_work_items=child_work_items,
+            plan_artifact_path=plan_artifact_path,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_delivery_story_plan_report(report))
+
+
+def cmd_approve_delivery_story_plan(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="Delivery Story Plan approval",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        plan_artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "plan.md"
+        )
+        report = approve_delivery_story_plan(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+            plan_artifact_path=plan_artifact_path,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_delivery_story_plan_report(report))
+
+
+def cmd_set_flow_unit(
+    method: str,
+    *,
+    unit: str | None = None,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="navigator flow unit",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        if unit is None:
+            report = inspect_navigator_flow_unit(
+                mem.store,
+                journey=resolved_journey,
+                method=method,
+            )
+        else:
+            report = set_navigator_flow_unit(
+                mem.store,
+                journey=resolved_journey,
+                method=method,
+                flow_unit=unit,
+            )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_navigator_flow_unit_report(report))
+
+
 def cmd_set_cadence(
     method: str,
     *,
@@ -608,6 +870,9 @@ def cmd_set_cadence(
         cadence_profile=profile,
         cadence_limits=limits,
         granularity_decision=cursor.granularity_decision,
+        navigator_flow_unit=cursor.navigator_flow_unit,
+        child_work_items=cursor.child_work_items,
+        aggregate_checkpoint_status=cursor.aggregate_checkpoint_status,
     )
     print(render_delivery_cursor_sync_report(updated))
 
@@ -705,11 +970,32 @@ def _plan_artifact_path(
     project_path: str | None,
     cursor: object,
 ) -> Path | None:
+    package_path = _canonical_package_path(project_path, cursor)
+    if package_path is None:
+        return None
+    return package_path / "plan.md"
+
+
+def _checkpoint_artifact_path(
+    project_path: str | None,
+    cursor: object,
+    filename: str,
+) -> Path | None:
+    package_path = _canonical_package_path(project_path, cursor)
+    if package_path is None:
+        return None
+    return package_path / filename
+
+
+def _canonical_package_path(project_path: str | None, cursor: object) -> Path | None:
     active_item = getattr(cursor, "active_item", None)
     if not project_path or not active_item:
         return None
     project_root = Path(project_path)
     active_code = str(active_item)
+    existing = _find_existing_package_path(project_root, active_code)
+    if existing is not None:
+        return existing
     title_parts = _roadmap_title_parts(project_root, active_code)
     code_parts = active_code.lower().replace("_", "-").split(".")
     if not code_parts:
@@ -722,7 +1008,22 @@ def _plan_artifact_path(
         title_slug = _slugify(title_parts[index]) if index < len(title_parts) else ""
         folder = f"{code_prefix}-{title_slug}" if title_slug else code_prefix
         roadmap_path = roadmap_path / folder
-    return roadmap_path / "plan.md"
+    return roadmap_path
+
+
+def _find_existing_package_path(project_root: Path, active_code: str) -> Path | None:
+    roadmap_root = project_root / "docs" / "project" / "roadmap"
+    if not roadmap_root.is_dir():
+        return None
+    prefix = active_code.lower().replace("_", "-").replace(".", "-")
+    matches = sorted(
+        path
+        for path in roadmap_root.rglob("index.md")
+        if path.parent.name == prefix or path.parent.name.startswith(f"{prefix}-")
+    )
+    if not matches:
+        return None
+    return min((path.parent for path in matches), key=lambda path: len(path.parts))
 
 
 def _roadmap_title_parts(project_root: Path, active_code: str) -> tuple[str, ...]:
@@ -1231,6 +1532,72 @@ def main(argv: list[str] | None = None) -> None:
     )
     p_pull.add_argument("--why-now", required=True, help="Why this item/level is pulled now")
 
+    p_ds_validate = sub.add_parser(
+        "validate-delivery-story", help="Validate aggregate Delivery Story result"
+    )
+    p_ds_validate.add_argument("--method", required=True)
+    p_ds_validate.add_argument("--journey", default=None)
+    p_ds_validate.add_argument("--session-id", default=None)
+    p_ds_validate.add_argument("--summary", required=True)
+    p_ds_validate.add_argument("--navigator-accepted", action="store_true")
+
+    p_ds_review = sub.add_parser(
+        "review-delivery-story", help="Review aggregate Delivery Story debt"
+    )
+    p_ds_review.add_argument("--method", required=True)
+    p_ds_review.add_argument("--journey", default=None)
+    p_ds_review.add_argument("--session-id", default=None)
+    p_ds_review.add_argument("--decision", required=True, choices=("no_action", "defer", "pay_now"))
+    p_ds_review.add_argument("--summary", required=True)
+
+    p_ds_coherence = sub.add_parser(
+        "coherence-delivery-story", help="Check aggregate Delivery Story coherence"
+    )
+    p_ds_coherence.add_argument("--method", required=True)
+    p_ds_coherence.add_argument("--journey", default=None)
+    p_ds_coherence.add_argument("--session-id", default=None)
+    p_ds_coherence.add_argument("--summary", required=True)
+
+    p_ds_done = sub.add_parser("done-delivery-story", help="Close aggregate Delivery Story")
+    p_ds_done.add_argument("--method", required=True)
+    p_ds_done.add_argument("--journey", default=None)
+    p_ds_done.add_argument("--session-id", default=None)
+    p_ds_done.add_argument("--summary", required=True)
+
+    p_ds_plan = sub.add_parser(
+        "plan-delivery-story",
+        help="Create an aggregate Ariad Delivery Story Plan checkpoint",
+    )
+    p_ds_plan.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_ds_plan.add_argument("--journey", default=None, help="Journey slug for DS Plan")
+    p_ds_plan.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+    p_ds_plan.add_argument(
+        "--objective", required=True, help="Aggregate Delivery Story Plan objective"
+    )
+    p_ds_plan.add_argument(
+        "--child",
+        dest="children",
+        action="append",
+        default=[],
+        help="Child work package id; may be repeated",
+    )
+
+    p_ds_approve = sub.add_parser(
+        "approve-delivery-story-plan",
+        help="Approve the active aggregate Ariad Delivery Story Plan checkpoint",
+    )
+    p_ds_approve.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_ds_approve.add_argument("--journey", default=None, help="Journey slug for DS Plan approval")
+    p_ds_approve.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
     p_plan = sub.add_parser(
         "plan-item",
         help="Create the Ariad Plan checkpoint for the prepared lifecycle item",
@@ -1254,6 +1621,24 @@ def main(argv: list[str] | None = None) -> None:
     p_approve.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
     p_approve.add_argument("--journey", default=None, help="Journey slug for Plan approval")
     p_approve.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
+    p_flow = sub.add_parser(
+        "set-flow-unit",
+        help="Inspect or set the Ariad Navigator flow unit",
+    )
+    p_flow.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_flow.add_argument(
+        "--unit",
+        choices=ALLOWED_FLOW_UNITS,
+        default=None,
+        help="Navigator flow unit: story_by_story or delivery_story. Omit to inspect.",
+    )
+    p_flow.add_argument("--journey", default=None, help="Journey slug for flow-unit update")
+    p_flow.add_argument(
         "--session-id",
         default=None,
         help="Runtime session id for resolving the active Builder journey",
@@ -1466,6 +1851,50 @@ def main(argv: list[str] | None = None) -> None:
         cmd_sync_cursor(args.method, journey=args.journey, session_id=args.session_id)
     elif args.command == "pull-candidates":
         cmd_pull_candidates(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "validate-delivery-story":
+        cmd_validate_delivery_story(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            summary=args.summary,
+            navigator_accepted=args.navigator_accepted,
+        )
+    elif args.command == "review-delivery-story":
+        cmd_review_delivery_story(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            decision=args.decision,
+            summary=args.summary,
+        )
+    elif args.command == "coherence-delivery-story":
+        cmd_coherence_delivery_story(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            summary=args.summary,
+        )
+    elif args.command == "done-delivery-story":
+        cmd_done_delivery_story(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            summary=args.summary,
+        )
+    elif args.command == "plan-delivery-story":
+        cmd_plan_delivery_story(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            objective=args.objective,
+            child_work_items=tuple(args.children),
+        )
+    elif args.command == "approve-delivery-story-plan":
+        cmd_approve_delivery_story_plan(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+        )
     elif args.command == "plan-item":
         cmd_plan_item(
             args.method,
@@ -1475,6 +1904,13 @@ def main(argv: list[str] | None = None) -> None:
         )
     elif args.command == "approve-plan":
         cmd_approve_plan(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "set-flow-unit":
+        cmd_set_flow_unit(
+            args.method,
+            unit=args.unit,
+            journey=args.journey,
+            session_id=args.session_id,
+        )
     elif args.command == "set-cadence":
         cmd_set_cadence(
             args.method,

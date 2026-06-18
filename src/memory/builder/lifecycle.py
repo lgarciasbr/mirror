@@ -185,6 +185,9 @@ def pull_lifecycle_item(
         last_delivery_event="pull",
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     return BuilderPullReport(
         journey=normalized_journey,
@@ -222,6 +225,9 @@ def prepare_lifecycle_item(
         last_delivery_event="prepare",
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     return BuilderPrepareReport(
         journey=normalized_journey,
@@ -291,6 +297,9 @@ def plan_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         granularity_decision=None,
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderPlanReport(
         journey=normalized_journey,
@@ -355,6 +364,9 @@ def approve_plan_checkpoint(store: Store, *, journey: str, method: str) -> Build
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
 
 
@@ -431,6 +443,9 @@ def expand_delivery_story(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         granularity_decision="expanded_to_implementable_stories",
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     return BuilderExpandReport(
         journey=normalized_journey,
@@ -464,8 +479,13 @@ def render_expand_report(report: BuilderExpandReport) -> str:
             _card_text(f"🟩[{report.recommended_story}]"),
             *_card_wrapped(report.recommended_story_title),
             "│                                                        │",
+            _card_text("navigator flow unit"),
+            _card_text("story_by_story: child stories keep Navigator checkpoints"),
+            _card_text("delivery_story: DS becomes the Navigator-facing lifecycle"),
+            _card_text("default: story_by_story"),
+            "│                                                        │",
             _card_text("next action"),
-            _card_text("Navigator confirms the recommended story or chooses another child story."),
+            _card_text("Navigator chooses flow unit or confirms a child story."),
             "│                                                        │",
             _card_text("boundary"),
             _card_text("No Plan or implementation was executed."),
@@ -521,6 +541,9 @@ def coherence_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderCoherenceReport(
         journey=normalized_journey,
@@ -637,6 +660,9 @@ def done_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderDoneReport(
         journey=normalized_journey,
@@ -758,6 +784,9 @@ def review_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderReviewReport(
         journey=normalized_journey,
@@ -866,9 +895,10 @@ def validate_lifecycle_item(
         )
     if existing.pending_confirmation == "navigator_validation" and not navigator_accepted:
         raise ValueError("Validation is blocked: pending Navigator validation acceptance.")
-    if existing.last_delivery_event not in {"plan_approved", "implementation_complete", "validate"}:
+    plan_events = {"plan_approved", "delivery_story_plan_approved"}
+    if existing.last_delivery_event not in (*plan_events, "implementation_complete", "validate"):
         raise ValueError("Validation requires an approved Plan and completed implementation")
-    if existing.last_delivery_event == "plan_approved" and not implementation_complete:
+    if existing.last_delivery_event in plan_events and not implementation_complete:
         raise ValueError("Validation requires implementation completion evidence")
     normalized_checks = tuple(check.strip() for check in automated_checks if check.strip())
     normalized_checks_status = _normalize_validation_choice(
@@ -909,6 +939,9 @@ def validate_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         granularity_decision=existing.granularity_decision,
+        navigator_flow_unit=existing.navigator_flow_unit,
+        child_work_items=existing.child_work_items,
+        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     report = BuilderValidationReport(
         journey=normalized_journey,
@@ -1066,15 +1099,24 @@ def assert_implementation_allowed(store: Store, *, journey: str) -> BuilderDeliv
         raise PermissionError(
             f"Implementation is blocked: pending confirmation {cursor.pending_confirmation}."
         )
-    if cursor.last_delivery_event != "plan_approved":
-        raise PermissionError(
-            "Implementation is blocked: approved Plan is required before Implement."
-        )
-    return cursor
+    if cursor.last_delivery_event == "plan_approved":
+        return cursor
+    if _has_approved_delivery_story_plan(cursor):
+        return cursor
+    raise PermissionError("Implementation is blocked: approved Plan is required before Implement.")
+
+
+def _has_approved_delivery_story_plan(cursor: BuilderDeliveryCursor) -> bool:
+    return (
+        cursor.last_delivery_event == "delivery_story_plan_approved"
+        and cursor.active_item_level == "delivery_story"
+        and cursor.navigator_flow_unit == "delivery_story"
+        and "plan:approved" in cursor.aggregate_checkpoint_status
+    )
 
 
 def render_pull_report(report: BuilderPullReport) -> str:
-    """Render an Ariad Pull report using Delivery Story Identified grammar."""
+    """Render an Ariad Pull report using Delivery Story activation grammar."""
     code_parts = report.item.code.split(".")
     cv_code = code_parts[0] if code_parts else report.item.code
     ds_code = code_parts[-1] if len(code_parts) > 1 else report.item.code
@@ -1086,7 +1128,7 @@ def render_pull_report(report: BuilderPullReport) -> str:
                 render_lifecycle_ribbon("pull"),
                 "",
                 "╭────────────────────────────────────────────────────────╮",
-                "│        🟪■  DELIVERY STORY IDENTIFIED                  │",
+                "│        🟪■  DELIVERY STORY ACTIVATED                   │",
                 "│                                                        │",
                 _card_text(title),
                 "│                                                        │",

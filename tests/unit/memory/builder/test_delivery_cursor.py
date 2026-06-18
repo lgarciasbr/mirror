@@ -45,6 +45,22 @@ def test_set_and_get_delivery_cursor(tmp_path):
     assert get_delivery_cursor(store, "sandbox-pet-store") == cursor
 
 
+def test_set_and_get_delivery_story_lifecycle_state(tmp_path):
+    _client, store = _store(tmp_path)
+
+    cursor = set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        child_work_items=("CV20.DS5.US1", "CV20.DS5.TS1"),
+        aggregate_checkpoint_status=("plan:pending", "validation:not_started"),
+    )
+
+    assert cursor.child_work_items == ("CV20.DS5.US1", "CV20.DS5.TS1")
+    assert cursor.aggregate_checkpoint_status == ("plan:pending", "validation:not_started")
+    assert get_delivery_cursor(store, "sandbox-pet-store") == cursor
+
+
 def test_set_delivery_cursor_is_idempotent(tmp_path):
     _client, store = _store(tmp_path)
 
@@ -104,4 +120,6 @@ def test_render_delivery_cursor_sync_report():
     assert "method\nariad" in rendered
     assert "active item\nnone" in rendered
     assert "last delivery event\ntemplate_preparation" in rendered
+    assert "child work items\nnone" in rendered
+    assert "aggregate checkpoint status\nnone" in rendered
     assert "No story lifecycle work was executed" in rendered

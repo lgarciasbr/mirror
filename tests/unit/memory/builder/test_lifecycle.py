@@ -12,6 +12,7 @@ from memory.builder.lifecycle import (
     render_plan_checkpoint,
     render_prepare_report,
     render_pull_report,
+    validate_lifecycle_item,
 )
 from memory.config import default_db_path_for_home
 
@@ -47,7 +48,7 @@ def test_pull_lifecycle_item_updates_cursor_and_renders_report(tmp_path):
     assert "<<<ARIAD:DELIVERY_STORY_IDENTIFIED>>>" in rendered
     assert "<<<END:DELIVERY_STORY_IDENTIFIED>>>" in rendered
     assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in rendered
-    assert "DELIVERY STORY IDENTIFIED" in rendered
+    assert "DELIVERY STORY ACTIVATED" in rendered
     assert "roadmap candidate" in rendered
     assert "roadmap placement" in rendered
     assert "🟪[CHECKOUT-FLOW] Checkout Flow" in rendered
@@ -55,6 +56,35 @@ def test_pull_lifecycle_item_updates_cursor_and_renders_report(tmp_path):
     assert "active item: CHECKOUT-FLOW" in rendered
     assert "Prepare" in rendered
     assert "Plan and later lifecycle work were not executed" in rendered
+
+
+def test_lifecycle_updates_preserve_delivery_story_state(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        child_work_items=("CV20.DS5.US1",),
+        aggregate_checkpoint_status=("plan:pending",),
+    )
+
+    pull_lifecycle_item(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        item=BuilderLifecycleItem(
+            code="CV20.DS5.US1",
+            title="Choose Navigator Flow Unit",
+            level="user_story",
+            why_now="next slice",
+        ),
+    )
+    prepare_lifecycle_item(store, journey="sandbox-pet-store", method="ariad")
+
+    cursor = get_delivery_cursor(store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.child_work_items == ("CV20.DS5.US1",)
+    assert cursor.aggregate_checkpoint_status == ("plan:pending",)
 
 
 def test_pull_lifecycle_item_requires_existing_cursor(tmp_path):
@@ -218,6 +248,54 @@ def test_plan_lifecycle_item_requires_active_item(tmp_path):
 
     with pytest.raises(ValueError, match="active item"):
         plan_lifecycle_item(store, journey="sandbox-pet-store", method=get_ariad_method())
+
+
+def test_validation_accepts_approved_delivery_story_plan_with_implementation_evidence(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_item_level="delivery_story",
+        last_delivery_event="delivery_story_plan_approved",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV2.DS1.US1",),
+        aggregate_checkpoint_status=("plan:approved",),
+    )
+
+    report = validate_lifecycle_item(
+        store,
+        journey="sandbox-pet-store",
+        method=get_ariad_method(),
+        automated_checks=("npm test",),
+        checks_status="passed",
+        navigator_validation_route="Validate checkout DS.",
+        navigator_accepted=True,
+        implementation_complete=True,
+    )
+
+    assert report.missing_evidence == ()
+    assert report.cursor.last_delivery_event == "validation_passed"
+
+
+def test_implementation_guard_allows_approved_delivery_story_plan(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_item_level="delivery_story",
+        last_delivery_event="delivery_story_plan_approved",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV2.DS1.US1",),
+        aggregate_checkpoint_status=("plan:approved",),
+    )
+
+    cursor = assert_implementation_allowed(store, journey="sandbox-pet-store")
+
+    assert cursor.active_item == "CV2.DS1"
 
 
 def test_implementation_guard_blocks_pending_confirmation(tmp_path):

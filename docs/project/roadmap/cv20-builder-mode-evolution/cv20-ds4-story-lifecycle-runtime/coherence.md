@@ -45,7 +45,7 @@ Manual validation:
 
 ## Release Coherence
 
-DS4 closes a coherent release boundary. DS5 and DS8 remain planned as deeper governance layers, but they are not prerequisites for shipping the end-to-end Ariad Builder lifecycle.
+DS4 closes a coherent release boundary. DS7 and DS8 remain planned as deeper governance layers, but they are not prerequisites for shipping the end-to-end Ariad Builder lifecycle.
 
 ## Result
 
