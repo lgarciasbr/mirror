@@ -1,0 +1,8 @@
+{
+  "name": "mirror-mind",
+  "version": "0.29.0",
+  "description": "Mirror Mind — local-first memory and identity for agentic runtimes.",
+  "author": {
+    "name": "Mirror Mind"
+  }
+}

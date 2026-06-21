@@ -2,7 +2,7 @@
 
 # CV21.E2.S1 — Claude plugin conversion
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Implementation
 **User-visible outcome:** Mirror Mind's standalone `.claude/` integration (skills + lifecycle hooks) is repackaged as a canonical Claude-format plugin that `claude plugin validate` accepts and Claude loads, while the existing standalone `.claude/` path keeps working unchanged.
 
@@ -13,9 +13,9 @@
 - Create the canonical plugin directory with a `.claude-plugin/plugin.json`
   manifest that validates on `claude` 2.1.114 (no unsupported keys such as
   `$schema`).
-- Bundle the full canonical `mm-*` skill set into the plugin's `skills/`,
-  reconciling the current `.claude/skills/` drift (`discard`, `explore`, `soul`,
-  `update` are missing today).
+- Bundle the existing 21 Claude-tuned skills into the plugin's `skills/`,
+  generated from `.claude/skills/` (the four Pi-only skills are authored as
+  Claude skills in a sibling parity story — Option A).
 - Bundle the four lifecycle hooks into the plugin and make their paths
   plugin-relative (`${CLAUDE_PLUGIN_ROOT}`), preserving today's behavior:
   `SessionStart` logging, `UserPromptSubmit` Mirror inject + user-prompt log,
@@ -38,12 +38,13 @@
 
 ## Acceptance Criteria
 
-- `claude plugin validate <plugin-path>` passes.
-- The plugin manifest version matches `pyproject.toml`.
-- The plugin's `skills/` contains the full canonical `mm-*` set (25 skills), with
-  no drift against `.pi/skills/`.
-- The plugin's hooks reproduce the four standalone behaviors and resolve paths
-  relative to the plugin root, not the repo cwd.
+- `claude plugin validate plugins/mirror-mind` passes.
+- The plugin manifest version matches `pyproject.toml` (no `$schema` key).
+- The plugin's `skills/` contains the 21 Claude skills generated from
+  `.claude/skills/`, each as `SKILL.md`, with the drift guard green
+  (committed == generated).
+- The plugin's hooks reproduce the four standalone behaviors, use
+  `${CLAUDE_PLUGIN_ROOT}` paths, and assume an installed `python -m memory`.
 - An isolated smoke test loads the plugin against a temporary database, observes
   a skill as discoverable and a hook firing, and leaves the production DB
   checksum unchanged.
@@ -55,3 +56,4 @@
 
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
+- [Refactoring](refactoring.md)

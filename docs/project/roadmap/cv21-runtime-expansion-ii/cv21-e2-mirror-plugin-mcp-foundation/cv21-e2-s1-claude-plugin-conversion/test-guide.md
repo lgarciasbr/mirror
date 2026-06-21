@@ -15,9 +15,19 @@ uv run mypy src/memory
 git diff --check
 ```
 
-Expected result: all commands pass, including the new test asserting the plugin
-manifest is valid, the manifest version equals `pyproject.toml`, the full
-canonical `mm-*` skill set is present, and the four lifecycle hooks exist.
+Expected result: all commands pass, including the new generator tests asserting
+the plugin manifest is valid (no `$schema`, version equals `pyproject.toml`), the
+21 Claude skills are materialized as `SKILL.md`, the drift guard is green
+(committed == generated from `.claude/skills/`), and the four plugin-relative
+hooks exist.
+
+The drift guard also runs as part of CI (it is a pure-Python test), so a future
+edit to a `.claude/skills/` body that is not regenerated into the plugin fails
+the suite. Regenerate with:
+
+```bash
+uv run python scripts/build_claude_plugin.py
+```
 
 ## Plugin manifest validation
 
@@ -30,15 +40,16 @@ claude plugin validate <plugin-root>
 Expected result: validation passes with no errors. (E1 finding: the `$schema`
 key must be absent — `claude` 2.1.114 rejects unknown manifest keys.)
 
-Confirm the skill set has no drift against the canonical source:
+Confirm the plugin skill set matches the Claude-tuned source:
 
 ```bash
 diff \
-  <(ls .pi/skills | sed 's/^mm-//' | sort) \
-  <(ls <plugin-root>/skills | sed 's/^mm-//' | sort)
+  <(ls .claude/skills | sed 's/^mm://' | sort) \
+  <(ls plugins/mirror-mind/skills | sed 's/^mm://' | sort)
 ```
 
-Expected result: no differences — the plugin carries all 25 canonical skills.
+Expected result: no differences — the plugin carries all 21 Claude skills. (The
+four Pi-only skills reach Claude parity in the sibling story S1b.)
 
 ## Isolated smoke test
 
@@ -50,20 +61,30 @@ after) from the runtime interface contract and `scripts/smoke_codex.sh`.
 bash scripts/smoke_claude_plugin.sh
 ```
 
-The script must:
+Note: the plugin hooks assume `python -m memory` resolves in the environment
+(D5). In the dev repo `memory` is not pip-installed, so the smoke harness makes
+it importable (`PYTHONPATH=src`) to stand in for the installed-package condition.
 
-1. Record the production DB checksum.
-2. Point `DB_PATH` at an isolated temporary database (`MEMORY_ENV=production`).
-3. Load the plugin in an isolated Claude invocation (temporary `HOME`/config so
-   `~/.claude` installed-plugins state is not mutated) and assert:
-   - the plugin loads without error;
-   - a representative `mm-*` skill is discoverable;
-   - the `SessionStart` hook fires and writes to the isolated DB.
-4. Inspect the isolated DB and assert the expected rows exist.
-5. Re-check the production DB checksum and assert it is unchanged.
+The script:
 
-Expected result: the script exits `0`, prints the isolated-DB assertions as
-passed, and reports the production checksum unchanged.
+1. Snapshots every `~/.mirror-minds/*/memory.db` checksum before running.
+2. Fully sandboxes the runtime (`DB_PATH`, `MEMORY_DIR`, `DB_BACKUP_PATH` under a
+   temp dir) and puts the project venv interpreter first on PATH so the plugin's
+   bare `python3 -m memory` resolves (installed-package stand-in).
+3. Runs `claude plugin validate` when `claude` is present.
+4. Fires the three lifecycle hooks (`session-start`, `log-user-prompt`,
+   `log-session-end`) with representative payloads.
+5. Asserts the user message was logged to the isolated DB with
+   `interface='claude_code'`.
+6. Re-checks the production DB checksum(s) and asserts they are unchanged.
+
+Expected result: the script exits `0` and prints `✅ Smoke test PASSED`, with the
+production database(s) reported unchanged.
+
+Scope note: the automated smoke proves manifest validity, hook firing, and DB
+isolation — the deterministic, CI-appropriate guarantees. **Live skill discovery
+inside a running Claude session needs an authenticated session and is the manual
+route below**, not part of the automated script.
 
 ## Backward-compatibility check
 

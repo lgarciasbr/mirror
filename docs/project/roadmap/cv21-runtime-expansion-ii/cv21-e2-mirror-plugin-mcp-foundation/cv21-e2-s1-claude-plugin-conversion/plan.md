@@ -62,64 +62,84 @@ the agent's cwd is the Mirror repo. As a plugin, the hook scripts live under
 
 ### Skill bundling and the single-source-of-truth question
 
-Today three skill surfaces exist: `.pi/skills/mm-*` (canonical source, 25),
-`.claude/skills/mm:*` (hand-maintained copies, 21, drifted), and the shared
-`.agents/skills/` symlink surface. A plugin must ship **real files** (symlinks do
-not survive `import`/`install`), so the plugin needs its own materialized
-`skills/`. Committing a fourth hand-maintained copy violates DRY and guarantees
-future drift (the missing `discard`/`explore`/`soul`/`update` skills are proof
-the copy model already failed once).
+Three skill surfaces exist: `.pi/skills/mm-*` (Pi-tuned, 25), `.claude/skills/mm:*`
+(Claude-tuned, 21, missing `discard`/`explore`/`soul`/`update`), and the shared
+`.agents/skills/` symlink surface. A diff proved `.pi` and `.claude` skill bodies
+are **independently runtime-tuned, not token-variants** — the Claude bodies
+reference `mirror-inject.sh`, the Claude `session_id`/transcript model, and `mm:`
+tokens; the Pi bodies reference the Pi extension model. Generating the *Claude*
+plugin from `.pi/skills/` would inject Pi-runtime instructions into a Claude
+runtime, which is wrong.
 
-Recommendation: treat the plugin `skills/` as a **build artifact generated from
-the canonical `.pi/skills/` source**, not a hand-maintained copy. The generator
-also rewrites the skill `name`/invocation token to the plugin convention. This
-keeps one source of truth and makes drift impossible by construction.
+Decision: the canonical source for the *Claude plugin* skills is
+**`.claude/skills/`** (the Claude-tuned content). A plugin must ship **real
+files** (symlinks do not survive `import`/`install`), so the plugin gets its own
+materialized `skills/`, **generated from `.claude/skills/`** with a drift-guard
+test. The generator normalizes the markdown filename to `SKILL.md` (two source
+skills track a lowercase `skill.md`, a latent case-sensitivity bug the plugin
+fixes without touching standalone). Skill *content* is copied byte-faithfully —
+no token rewriting in S1.
+
+The four Pi-only skills (`discard`, `explore`, `soul`, `update`) have no
+Claude-tuned form and are **out of scope here** — authoring them as Claude skills
+is the sibling parity story (Option A). The plugin ships at 21, honestly matching
+current Claude reality.
 
 ## Implementation steps
 
-1. Add tests first (TDD): a manifest/structure test asserting the plugin has a
-   valid `.claude-plugin/plugin.json`, the full `mm-*` skill set, and the four
-   hooks, with the manifest version equal to `pyproject.toml`.
-2. Decide and implement the skill-bundling strategy (generate from `.pi/skills/`
-   — recommended — vs commit copies).
-3. Create the plugin directory, manifest, and `hooks/hooks.json`.
-4. Move/copy the four hook scripts to the plugin and make paths plugin-relative;
-   resolve the `memory` package independent of the user's cwd.
-5. Reconcile the skill drift so the plugin carries all 25 canonical skills.
-6. Run `claude plugin validate <plugin-root>`; fix manifest until it passes.
-7. Write the isolated smoke test (see test-guide) and confirm production DB
-   checksum is unchanged.
+1. Add tests first (TDD): a generator/structure test asserting the plugin has a
+   valid `.claude-plugin/plugin.json` (no `$schema`, version == `pyproject.toml`),
+   the 21 Claude skills each materialized as `SKILL.md`, the drift guard
+   (committed == generated from `.claude/skills/`), and the four plugin-relative
+   hooks.
+2. Implement the generator in `src/memory/plugins/claude.py` (importable, typed),
+   reusing `_version_from_pyproject`; expose a thin `scripts/build_claude_plugin.py`
+   entry. Source = `.claude/skills/`; normalize markdown filename to `SKILL.md`.
+3. Generate the plugin tree: `.claude-plugin/plugin.json` + `skills/`.
+4. Hand-author the four plugin hooks + `hooks/hooks.json` (plugin-relative,
+   `memory`-installed assumption, stdout clean).
+5. Run `claude plugin validate plugins/mirror-mind`; fix the manifest until it
+   passes.
+6. Write and run the isolated smoke test (see test-guide); confirm skill
+   discovery + a hook firing against a temp DB, production DB checksum unchanged.
 
-## Design decisions to confirm at the plan checkpoint
+## Design decisions (confirmed)
 
-These are structural choices I do not want to make unilaterally:
-
-1. **Plugin location in the repo.** Options: a dedicated `packaging/`-style
-   directory (clean separation, clearly a distributable artifact — recommended),
-   versus reusing the `.claude/` location. Recommendation: a dedicated directory
-   so the canonical package is obviously self-contained and not confused with the
-   standalone integration.
-2. **Skill bundling: generate vs commit.** Recommendation: generate the plugin
-   `skills/` from canonical `.pi/skills/` to avoid a fourth drifting copy.
-3. **Skill parity reconciliation scope.** The plugin should carry the full
-   canonical set. Confirm we bring `discard`/`explore`/`soul`/`update` into the
-   canonical package now rather than shipping a known gap.
-4. **Standalone `.claude/` retention.** Keep it untouched this epic (CV21
-   non-goal: no forced migration). Confirm.
+1. **Plugin location:** dedicated directory `plugins/mirror-mind/`, self-contained
+   and distinct from the standalone `.claude/` integration.
+2. **Skill source:** generate the plugin `skills/` from **`.claude/skills/`**
+   (Claude-tuned), committed as a build artifact, guarded by a drift test.
+   (Corrected from an earlier wrong premise that `.pi/skills/` was the source —
+   the bodies are runtime-tuned, not token-variants.)
+3. **Parity scope (Option A):** ship the existing 21 Claude skills now; the four
+   Pi-only skills are authored as Claude skills in a sibling parity story.
+4. **Standalone `.claude/` retention:** untouched this epic; both paths coexist.
+5. **Hook resolution:** plugin hooks assume `python -m memory` resolves in the
+   environment (Mirror installed as a package) and use `${CLAUDE_PLUGIN_ROOT}`
+   relative paths — no repo-cwd assumption. Documented as a plugin prerequisite.
 
 ## Risks
 
-- **Hook path portability (load-bearing).** The current hooks assume the Mirror
-  repo is the cwd and `python3 -m memory` resolves there. Installed as a plugin
-  over an arbitrary user project, that assumption breaks. The conversion must
-  resolve the `memory` package deterministically (installed entry point, or an
-  explicit interpreter/path) without depending on the user's project cwd. If this
-  is not solved, the plugin validates but does nothing at runtime.
+- **Hook path portability (load-bearing).** The current standalone hooks assume
+  the Mirror repo is the cwd and find `memory` via `$CLAUDE_PROJECT_DIR/src`.
+  Installed as a plugin over an arbitrary project, that breaks. The plugin hooks
+  resolve `memory` via an installed `python -m memory` (D5). If `memory` is not
+  importable in the environment, the plugin validates but does nothing at
+  runtime — hence the documented prerequisite and the smoke test that exercises a
+  hook firing.
+- **Plugin skill namespacing (open, resolved by smoke test).** Whether Claude
+  loads plugin skill directories named `mm:<name>` (colon) and how it namespaces
+  the invocation token (`/mm:mirror` vs `/mirror-mind:...`) is not validated by
+  `claude plugin validate` (manifest-only). The smoke test loads the plugin in an
+  isolated Claude session to confirm discovery; any token/naming normalization is
+  a deliberate follow-up, not silent rewriting in S1. (Colon paths are also not
+  Windows-portable — noted, not in scope.)
 - **Validator strictness.** E1 already hit the `$schema` rejection on 2.1.114.
   Keep the manifest minimal and validate empirically, not from docs.
-- **Drift reintroduction.** Hand-copying skills recreates exactly the gap this
-  story exists to close. Generation is the structural defense.
-- **Scope creep into S2/S3.** No MCP, no statusLine here. Hold the boundary.
+- **Drift reintroduction.** A committed copy can drift from `.claude/skills/`.
+  The generator + drift-guard test is the structural defense.
+- **Scope creep into S1b/S2/S3.** No new skill authoring, no MCP, no statusLine
+  here. Hold the boundary.
 
 ## Verification
 

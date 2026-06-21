@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-21 — CV21.E2.S1 Claude plugin conversion completed
+
+Converted Mirror's standalone Claude integration into the canonical Claude-format plugin at `plugins/mirror-mind/` — the package CV21 propagates to the other runtimes. A new generator (`src/memory/plugins/claude.py`, driven by `scripts/build_claude_plugin.py`) materializes the manifest and the 21 Claude-tuned skills from `.claude/skills/` (the runtime-correct source — a diff proved the `.pi` and `.claude` skill bodies are independently tuned, not token-variants), normalizing two skills' lowercase `skill.md` to `SKILL.md`. Four plugin-relative hooks (`${CLAUDE_PLUGIN_ROOT}`, installed-`memory` contract) reproduce the SessionStart/UserPromptSubmit/SessionEnd lifecycle. A drift-guard test fails CI if the committed plugin diverges from `.claude/skills/`.
+
+Decisions (D1–D5): dedicated `plugins/mirror-mind/`; skills generated from `.claude/skills/` with drift guard; ship the 21 existing Claude skills now (the 4 Pi-only skills become sibling story S1b); standalone `.claude/` untouched; hooks assume an installed `python -m memory`.
+
+Validation: 11 focused plugin tests, ruff, format, mypy, and diff checks passed; `claude plugin validate` passed; the isolated smoke test fired all three hooks, logged a user message with `interface='claude_code'` to a sandboxed DB, and left the production DB checksum unchanged; Navigator validated `claude plugin validate` in an isolated `CLAUDE_CONFIG_DIR`. Two latent standalone bugs were documented (lowercase `skill.md` ×2; dangling `mm:save` reference); the plugin auto-fixes the casing. MCP (S2) and `statusLine` (S3) remain.
+
 ### 2026-06-17 — v0.29.0 Ariad Refinement Workbench prepared
 
 Prepared the DS6 release boundary as `v0.29.0 — Ariad Refinement Workbench`. The release bumps package metadata, adds the narrative release note, updates the release index and project briefing, and names DS7 Release And Push Policies as the next Builder governance horizon. Push, tag, stable promotion, and publication remain separate hard gates.
