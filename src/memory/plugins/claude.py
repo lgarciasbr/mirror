@@ -56,12 +56,19 @@ def read_version(repo_root: Path) -> str:
 
 
 def build_manifest(version: str) -> dict[str, object]:
-    """Build the Claude plugin manifest dict (minimal; no unsupported keys)."""
+    """Build the Claude plugin manifest dict (minimal; no unsupported keys).
+
+    Declares the Mirror MCP server so the canonical package carries it. The
+    command follows the installed-``memory`` contract (D5), like the hooks.
+    """
     return {
         "name": PLUGIN_NAME,
         "version": version,
         "description": PLUGIN_DESCRIPTION,
         "author": {"name": PLUGIN_AUTHOR},
+        "mcpServers": {
+            PLUGIN_NAME: {"command": "python3", "args": ["-m", "memory", "mcp"]},
+        },
     }
 
 

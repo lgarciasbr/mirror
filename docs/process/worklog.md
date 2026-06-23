@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-21 — CV21.E2.S2 Mirror MCP server completed
+
+Built the Mirror MCP server (`python -m memory mcp`) as a zero-dependency, hand-rolled stdio JSON-RPC 2.0 surface (decision D1 Option B), keeping the lean local-first core intact rather than pulling the official SDK's 18-package tree. The server implements the tools-only subset (`initialize`, `notifications/initialized`, `tools/list`, `tools/call`, `ping`) with a pure `handle_message` dispatch wrapped by a thin stdio loop; diagnostics go to stderr so stdout stays a clean protocol channel. Seven read + on-demand-context tools call the `MemoryClient` façade in-process (layer model `mcp → services`): `mirror_context` (side-effect-free identity, deliberately not `skills.mirror.load`), `list_journeys`, `journey_status`, `search_memories`, `list_conversations`, `recall_conversation`, `detect_persona`. Writes are out of scope by design. The plugin generator now declares the server as an `mcpServers` entry in the manifest, so the canonical package carries it.
+
+Validation: 18 new MCP tests (protocol dispatch + tool handlers, incl. a `mirror_context` no-mutation assertion), drift guard green, `claude plugin validate` passes, mypy clean on the new module. A real stdio round-trip (initialize → tools/list → tools/call) verified end-to-end, and the isolated `scripts/smoke_mirror_mcp.sh` passes leak-free across runs. The contract/REFERENCE docs are intentionally deferred to E2 close (after S3 statusLine and S4 reference smoke).
+
 ### 2026-06-21 — CV21.E2.S1b Claude skill parity completed
 
 Authored Claude-tuned versions of the four formerly Pi-only skills (`discard`, `explore`, `soul`, `update`) into `.claude/skills/`, bringing the canonical plugin to full 25-skill parity with the Pi runtime. Applied the established `.pi`→`.claude` tuning derived from existing skill pairs: `mm:` invocation tokens, Claude-only usage blocks, English-only copy (translating Pi's Portuguese triggers), and Claude runtime semantics — `mm:discard` uses `--interface claude_code` (the dispatch is interface-parameterized), and `mm:soul` notes that session ids are hook-owned rather than passing a Pi `--session-id`. Mode-skill contract surfaces (required-surface rendering, Explorer/Soul → Builder boundaries) carried over unchanged. Regenerating the plugin picked the four up automatically (no hardcoded count).

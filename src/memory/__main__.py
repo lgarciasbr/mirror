@@ -79,6 +79,8 @@ Commands:
                        Usage: python -m memory shadow <scan|apply|reject|list|show> [args]
   web                  Run the local Mirror Web Console
                        Usage: python -m memory web [--host 127.0.0.1] [--port 8765]
+  mcp                  Run the Mirror MCP server over stdio (read + on-demand context tools)
+                       Usage: python -m memory mcp
   runtime              Inspect Mirror runtime status, drift, backups, version, plan and execute updates
                        Usage: python -m memory runtime status [--mirror-home PATH] [--channel stable|main]
                               python -m memory runtime version [--start PATH] [--channel stable|main]
@@ -267,6 +269,11 @@ def main() -> None:
         from memory.web.server import main as _web_main
 
         _web_main(sys.argv[2:])
+
+    elif command == "mcp":
+        from memory.mcp.server import main as _mcp_main
+
+        sys.exit(_mcp_main(sys.argv[2:]))
 
     elif command == "runtime":
         from memory.cli.runtime import cmd_runtime

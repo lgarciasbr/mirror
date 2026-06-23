@@ -58,7 +58,7 @@ not a forced migration (CV21 non-goal).
 |------|-------|------|---------|--------|
 | [CV21.E2.S1](cv21-e2-s1-claude-plugin-conversion/index.md) | Claude plugin conversion | Implementation | The 21 Claude-tuned skills + lifecycle hooks become a canonical Claude plugin (generated from `.claude/skills/`, drift-guarded) that passes `claude plugin validate`; isolated load smoke test | ✅ Done |
 | [CV21.E2.S1b](cv21-e2-s1b-claude-skill-parity/index.md) | Claude skill parity | Implementation | The four Pi-only skills (`discard`, `explore`, `soul`, `update`) are authored as Claude-tuned skills so the plugin reaches full 25-skill parity | ✅ Done |
-| CV21.E2.S2 | Mirror MCP server | Implementation | `python -m memory mcp` serves the command surface + on-demand identity context; validates as an `mcpServers` entry; isolated smoke test | 🟡 Planned |
+| [CV21.E2.S2](cv21-e2-s2-mirror-mcp-server/index.md) | Mirror MCP server | Implementation | `python -m memory mcp` serves the command surface + on-demand identity context over a zero-dependency stdio JSON-RPC server; declared as an `mcpServers` entry in the manifest; isolated stdio smoke | ✅ Done |
 | CV21.E2.S3 | Plugin status line | Implementation | The plugin `statusLine` renders Mirror's compact status line on Claude | 🟡 Planned · may fold into S1 if trivial |
 | CV21.E2.S4 | Reference-runtime smoke test | Integration | End-to-end isolated smoke test proving the full package (plugin + hooks + MCP) loads and runs equivalently to standalone `.claude/` | 🟡 Planned |
 
