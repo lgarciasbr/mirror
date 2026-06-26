@@ -24,10 +24,10 @@ fix — and also closes the standalone's own gap.
 ## Scope
 
 - Author four Claude-tuned skills from their Pi sources:
-  - `.claude/skills/mm:discard/SKILL.md`
-  - `.claude/skills/mm:explore/SKILL.md`
-  - `.claude/skills/mm:soul/SKILL.md`
-  - `.claude/skills/mm:update/SKILL.md`
+  - `.claude/skills/mm-discard/SKILL.md`
+  - `.claude/skills/mm-explore/SKILL.md`
+  - `.claude/skills/mm-soul/SKILL.md`
+  - `.claude/skills/mm-update/SKILL.md`
 - Apply the established `.pi` → `.claude` tuning: `mm:` tokens, Claude-only
   usage, English-only copy, and Claude runtime semantics (e.g.
   `discard-current --interface claude_code`; session ids are hook-owned).

@@ -408,6 +408,38 @@ def test_install_extension_copies_source_tree_and_syncs_runtime_targets(tmp_path
     assert result["extension_id"] == "review-copy"
 
 
+def test_install_extension_removes_owned_legacy_claude_skill_dir(tmp_path):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    legacy_dir = mirror_home / "runtime" / "skills" / "claude" / "ext:review-copy"
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "SKILL.md").write_text('---\nname: "ext-review-copy"\n---\n', encoding="utf-8")
+
+    install_extension(
+        "review-copy",
+        source_root=PROJECT_ROOT / "examples" / "extensions",
+        mirror_home=mirror_home,
+    )
+
+    assert not legacy_dir.exists()
+    assert (mirror_home / "runtime" / "skills" / "claude" / "ext-review-copy" / "SKILL.md").exists()
+
+
+def test_install_extension_preserves_unowned_legacy_claude_skill_dir(tmp_path):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    legacy_dir = mirror_home / "runtime" / "skills" / "claude" / "ext:review-copy"
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "SKILL.md").write_text('---\nname: "someone-else"\n---\n', encoding="utf-8")
+
+    install_extension(
+        "review-copy",
+        source_root=PROJECT_ROOT / "examples" / "extensions",
+        mirror_home=mirror_home,
+    )
+
+    assert legacy_dir.exists()
+    assert (mirror_home / "runtime" / "skills" / "claude" / "ext-review-copy" / "SKILL.md").exists()
+
+
 def test_cmd_extensions_install_requires_mirror_home_and_source_root():
     with pytest.raises(SystemExit):
         cmd_extensions(["install", "review-copy"])
@@ -458,6 +490,9 @@ def test_uninstall_extension_removes_source_tree_and_runtime_surfaces(tmp_path):
         source_root=PROJECT_ROOT / "examples" / "extensions",
         mirror_home=mirror_home,
     )
+    legacy_dir = mirror_home / "runtime" / "skills" / "claude" / "ext:review-copy"
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "SKILL.md").write_text('---\nname: "ext-review-copy"\n---\n', encoding="utf-8")
 
     result = uninstall_extension("review-copy", mirror_home=mirror_home)
 
@@ -465,6 +500,7 @@ def test_uninstall_extension_removes_source_tree_and_runtime_surfaces(tmp_path):
     assert not (mirror_home / "extensions" / "review-copy").exists()
     assert not (mirror_home / "runtime" / "skills" / "pi" / "ext-review-copy").exists()
     assert not (mirror_home / "runtime" / "skills" / "claude" / "ext-review-copy").exists()
+    assert not legacy_dir.exists()
 
 
 def test_uninstall_extension_can_limit_runtime_removal(tmp_path):
@@ -532,6 +568,9 @@ def test_expose_claude_runtime_skills_prunes_previous_overlay_entries(tmp_path):
         source_root=PROJECT_ROOT / "examples" / "extensions",
         mirror_home=mirror_home,
     )
+    legacy_dir = project_root / ".claude" / "skills" / "ext:review-copy"
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "SKILL.md").write_text('---\nname: "ext-review-copy"\n---\n', encoding="utf-8")
     stale_dir = project_root / ".claude" / "skills" / "ext-stale-skill"
     stale_dir.mkdir(parents=True)
     stale_skill = stale_dir / "SKILL.md"
@@ -546,7 +585,9 @@ def test_expose_claude_runtime_skills_prunes_previous_overlay_entries(tmp_path):
 
     assert not stale_skill.exists()
     assert not stale_dir.exists()
+    assert not legacy_dir.exists()
     assert str(stale_skill) in result["removed"]
+    assert str(legacy_dir) in result["removed"]
     assert (project_root / ".claude" / "skills" / "ext-review-copy" / "SKILL.md").exists()
 
 

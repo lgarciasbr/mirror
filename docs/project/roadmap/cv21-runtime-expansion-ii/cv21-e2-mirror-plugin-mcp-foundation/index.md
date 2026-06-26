@@ -95,14 +95,11 @@ CV21.E2 is done when:
 
 ## Discovered Issues
 
-Surfaced while planning S1 (not fixed here — standalone `.claude/` is untouched
-this epic):
+Surfaced while planning S1:
 
-- `.claude/skills/mm:build` and `.claude/skills/mm:identity` track a lowercase
-  `skill.md` instead of `SKILL.md`; case-sensitive runtimes may not discover
-  them. The plugin generator normalizes to `SKILL.md`, so the plugin is correct
-  even though standalone retains the bug.
-- `.claude/skills/mm:help` references a `mm:save` command that has no skill
+- Standalone and plugin Claude skill directories now use Windows-safe `mm-*`
+  filesystem names while preserving `name: "mm:*"` in each `SKILL.md`.
+- `.claude/skills/mm-help` references a `mm:save` command that has no skill
   directory — a dangling reference in the standalone help skill.
 
 ## References

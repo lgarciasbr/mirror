@@ -98,9 +98,9 @@ Closed CV20.DS5 Delivery Story Level Lifecycle as a release boundary. Builder no
 
 Validation: focused Builder unit/CLI tests passed; ruff, format, mypy, and diff checks passed. Sandbox/Pi validation confirmed that Delivery Story flow creates `plan.md`, `validation.md`, `review.md`, `coherence.md`, and `done.md` in the canonical DS package and no longer requires child-story Navigator closure for aggregate DS Done.
 
-### 2026-06-16 — v0.27.1 Windows UTF-8 Repair Command prepared
+### 2026-06-16 — Windows UTF-8 repair command integrated
 
-Diagnosed a local Windows encoding issue where several Mirror journey descriptions and context snippets appeared as mojibake (`Ã©`, `Ã§`, `Ã£`) after runtime compatibility updates. Confirmed the current CLI already prefers UTF-8 stdio; the remaining issue was historical text persisted incorrectly in SQLite. Backed up the production memory database, repaired the local reversible rows, then added `python -m memory repair-encoding` as an explicit dry-run/apply command with backup before mutation. Documented the policy as user-data repair rather than automatic migration and prepared `v0.27.1 — Windows UTF-8 Repair Command`.
+Diagnosed a local Windows encoding issue where several Mirror journey descriptions and context snippets appeared as mojibake (`Ã©`, `Ã§`, `Ã£`) after runtime compatibility updates. Confirmed the current CLI already prefers UTF-8 stdio; the remaining issue was historical text persisted incorrectly in SQLite. Backed up the production memory database, repaired the local reversible rows, then added `python -m memory repair-encoding` as an explicit dry-run/apply command with backup before mutation. Documented the policy as user-data repair rather than automatic migration. This is runtime hardening, not a retroactive release boundary.
 
 Validation: local production DB scan ended with `pending reversible mojibake: 0`; command/unit tests cover Latin-1 and Windows-1252 repairs, safe handling of `Âncora`, DB scan/apply, and top-level CLI dispatch.
 

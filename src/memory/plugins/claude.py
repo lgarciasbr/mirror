@@ -6,9 +6,10 @@ build tool that materializes the plugin's generated parts:
 
 - ``.claude-plugin/plugin.json`` — the manifest, version kept in sync with
   ``pyproject.toml`` (no ``$schema`` key; the 2.1.114 validator rejects it).
-- ``skills/<name>/SKILL.md`` — the Claude-tuned skills, copied byte-faithfully
-  from ``.claude/skills/`` (the runtime-correct source for a *Claude* plugin) and
-  normalized to the ``SKILL.md`` filename.
+- ``skills/<filesystem-safe-name>/SKILL.md`` — the Claude-tuned skills, copied
+  byte-faithfully from ``.claude/skills/`` (the runtime-correct source for a
+  *Claude* plugin) and normalized to the ``SKILL.md`` filename. Directory names
+  are Windows-safe; the skill command name remains in the markdown frontmatter.
 
 The plugin's hooks are hand-authored plugin source, not generated here, because
 they differ structurally from the standalone hooks (plugin-relative paths, no
@@ -80,9 +81,9 @@ def manifest_json(version: str) -> str:
 def _find_skill_markdown(skill_dir: Path) -> Path | None:
     """Return the skill markdown file, matching ``skill.md`` case-insensitively.
 
-    Two standalone skills track a lowercase ``skill.md``; the rest use
-    ``SKILL.md``. Matching case-insensitively makes the generator robust on both
-    case-sensitive and case-insensitive filesystems.
+    Matching case-insensitively makes the generator robust on both
+    case-sensitive and case-insensitive filesystems, including older checkouts
+    that may still contain lowercase ``skill.md`` files.
     """
     for entry in sorted(skill_dir.iterdir()):
         if entry.is_file() and entry.name.lower() == SKILL_FILENAME.lower():
