@@ -99,6 +99,23 @@ Candidate Delivery Stories:
 """,
         encoding="utf-8",
     )
+    ds6_plan = (
+        project_path
+        / "docs/project/roadmap/cv20-builder-mode-evolution/"
+        / "cv20-ds6-refinement-workbench-flow/plan.md"
+    )
+    ds6_plan.parent.mkdir(parents=True)
+    ds6_plan.write_text(
+        """# Plan
+
+## Seed Change Requests
+
+### CR: Roadmap Snapshot focuses CV10 instead of active Builder work
+
+### CR: Ariad marked surfaces can be summarized instead of rendered
+""",
+        encoding="utf-8",
+    )
     mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
     set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
     set_delivery_cursor(
@@ -118,6 +135,19 @@ Candidate Delivery Stories:
     build.cmd_load("sandbox-pet-store")
 
     out = capsys.readouterr().out
+    assert "BUILDER HOME" in out
+    assert "🟪 Delivery field" in out
+    assert "🧰 Refinement field" in out
+    assert "workbench storage: implemented" in out
+    assert "stored RSs: 0" in out
+    assert "stored CRs: 0" in out
+    assert "unassigned CRs: 0" in out
+    assert "seed CRs: 2" in out
+    assert "next refinement move: compose or capture Refinement" in out
+    assert "Work when requested" in out
+    assert "pull recommended Delivery item" in out
+    assert "compose or capture Refinement Work when requested" in out
+    assert "implement Workbench Storage Model before durable" not in out
     assert "ROADMAP SNAPSHOT" in out
     assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in out
     assert "🟪[CV2]  Checkout Flow" in out
@@ -161,6 +191,7 @@ def test_build_load_renders_resume_surface_when_adopted_journey_has_active_item(
 
     out = capsys.readouterr().out
     assert "BUILDER RESUME" in out
+    assert "BUILDER HOME" not in out
     assert "│ active item                                            │" in out
     assert "CV2.DS1" in out
     assert "prepare_active_item" in out
@@ -191,6 +222,27 @@ def test_build_load_preserves_base_behavior_for_non_ariad_journey(mocker, tmp_pa
     assert "ROADMAP SNAPSHOT" not in out
     assert "Ariad Pull Candidates" not in out
     assert "BUILDER RESUME" not in out
+
+
+def test_mm_build_skill_requires_marked_ariad_surfaces_to_render_verbatim():
+    skill = Path(".pi/skills/mm-build/SKILL.md").read_text(encoding="utf-8")
+
+    assert "every marked block" in skill
+    assert "verbatim before" in skill
+    assert "<<<ARIAD:BUILDER_HOME>>>" in skill
+    assert "stdout order" in skill
+    assert "CHANGE_REQUEST_CAPTURED" in skill
+    assert "REFINEMENT_STORY_PULLED" in skill
+    assert "REFINEMENT_FLOW_EVENT" in skill
+    assert "refinement-story create" in skill
+    assert "refinement-story pull" in skill
+    assert "change-request select" in skill
+    assert "refinement-story close" in skill
+    assert "Do not skip" in skill
+    assert "implement this CR" in skill
+    assert "Do not close an RS while any attached CR remains unfinished" in skill
+    assert "capture this as a CR" in skill
+    assert "pull that refinement story" in skill
 
 
 def test_build_plan_item_renders_checkpoint_and_updates_cursor(mocker, tmp_path, capsys):
@@ -1597,3 +1649,327 @@ def test_build_load_allows_production_clone_when_override_passed(mocker, tmp_pat
 
     err = capsys.readouterr().err
     assert "Production clone override" in err
+
+
+def test_refinement_story_create_command_renders_overview_without_setting_cursor(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_refinement_story_create(
+        journey="sandbox-pet-store",
+        title="RS-001 — Sandbox checkout refinements",
+        source="dogfood",
+    )
+
+    out = capsys.readouterr().out
+    stories = mem.store.list_refinement_stories("sandbox-pet-store")
+    assert len(stories) == 1
+    assert stories[0].title == "RS-001 — Sandbox checkout refinements"
+    assert "<<<ARIAD:REFINEMENT_STORY_OVERVIEW>>>" in out
+    assert "refinement_story_id=" in out
+    assert mem.store.get_refinement_cursor("sandbox-pet-store") is None
+
+
+def test_change_request_capture_command_renders_surface_and_preserves_delivery_cursor(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(
+        journey="sandbox-pet-store",
+        title="RS-001 — Sandbox checkout refinements",
+    )
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        last_delivery_event="prepare",
+    )
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_change_request_capture(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        title="Clarify checkout state",
+        body="Docs disagree about whether CV2.DS1 is in progress.",
+        source="dogfood",
+    )
+
+    out = capsys.readouterr().out
+    change_requests = mem.store.list_change_requests(
+        "sandbox-pet-store", refinement_story_id=story.id
+    )
+    assert len(change_requests) == 1
+    assert change_requests[0].title == "Clarify checkout state"
+    assert "<<<ARIAD:CHANGE_REQUEST_CAPTURED>>>" in out
+    assert story.id in out
+    assert "change_request_id=" in out
+    assert mem.store.get_refinement_cursor("sandbox-pet-store") is None
+    delivery_cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert delivery_cursor is not None
+    assert delivery_cursor.active_item == "CV2.DS1"
+
+
+def test_change_request_attach_and_overview_commands_render_ordered_overview(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(
+        journey="sandbox-pet-store",
+        title="RS-001 — Sandbox checkout refinements",
+    )
+    change_request = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        title="Clarify checkout state",
+        body="Docs disagree about CV2.DS1.",
+    )
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_change_request_attach(
+        journey="sandbox-pet-store",
+        change_request_id=change_request.id,
+        refinement_story_id=story.id,
+    )
+    build.cmd_refinement_story_overview(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+    )
+
+    out = capsys.readouterr().out
+    attached = mem.store.get_change_request(change_request.id)
+    assert attached is not None
+    assert attached.refinement_story_id == story.id
+    assert out.count("<<<ARIAD:REFINEMENT_STORY_OVERVIEW>>>") == 2
+    assert "Clarify checkout state" in out
+    assert "pull RS later (not implemented in this story)" in out
+
+
+def test_refinement_story_pull_command_sets_cursor_and_preserves_delivery_cursor(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(
+        journey="sandbox-pet-store",
+        title="RS-002 — Sandbox refinement pull validation",
+    )
+    mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        title="Validate RS pull",
+        body="The RS should become active without starting a CR cycle.",
+    )
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        last_delivery_event="prepare",
+    )
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_refinement_story_pull(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+    )
+
+    out = capsys.readouterr().out
+    cursor = mem.store.get_refinement_cursor("sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_refinement_story_id == story.id
+    assert cursor.active_change_request_id is None
+    assert cursor.last_refinement_event == "refinement_story_pulled"
+    delivery_cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert delivery_cursor is not None
+    assert delivery_cursor.active_item == "CV2.DS1"
+    assert "<<<ARIAD:REFINEMENT_STORY_PULLED>>>" in out
+    assert "active CR: none" in out
+    assert "Validate RS pull" in out
+
+
+def test_builder_home_shows_active_refinement_story_after_pull(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/index.md"
+    roadmap.parent.mkdir(parents=True)
+    roadmap.write_text(
+        """# Roadmap
+
+| Code | Delivery Story | Outcome | Status |
+|------|----------------|---------|--------|
+| [CV2](cv2/index.md) | Checkout Flow | Checkout Flow | 🟡 Planned |
+| [CV2.DS1](cv2/ds1/index.md) | Checkout entry | Checkout entry | 🟡 Planned |
+""",
+        encoding="utf-8",
+    )
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        last_delivery_event="template_preparation",
+    )
+    story = mem.store.create_refinement_story(
+        journey="sandbox-pet-store",
+        title="RS-002 — Sandbox refinement pull validation",
+    )
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_pulled",
+    )
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+    mocker.patch("memory.cli.build.switch_conversation")
+    mocker.patch("memory.cli.build._persist_global_sticky_defaults")
+    mocker.patch("memory.cli.build._is_mirror_mind_checkout", return_value=False)
+    mocker.patch.object(mem, "load_mirror_context", return_value="context")
+    mocker.patch.object(mem, "search", return_value=[])
+
+    build.cmd_load("sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    assert "BUILDER HOME" in out
+    assert f"active RS: {story.id} — RS-002" in out
+    assert "next refinement move: continue active Refinement" in out
+    assert "continue active Refinement Story" in out
+    assert "No item was pulled" in out
+
+
+def test_change_request_flow_commands_update_state_and_render_surfaces(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        title="Validate CR flow",
+        body="State only.",
+    )
+    mem.store.update_refinement_story_status(story.id, "active")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_pulled",
+    )
+    set_delivery_cursor(
+        mem.store, journey="sandbox-pet-store", method="ariad", active_item="CV2.DS1"
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_change_request_flow("select", journey="sandbox-pet-store", change_request_id=cr.id)
+    build.cmd_change_request_flow("confirm", journey="sandbox-pet-store", change_request_id=cr.id)
+    build.cmd_change_request_flow(
+        "plan", journey="sandbox-pet-store", change_request_id=cr.id, summary="Plan state"
+    )
+    build.cmd_change_request_flow(
+        "mark-implemented",
+        journey="sandbox-pet-store",
+        change_request_id=cr.id,
+        evidence="Implemented state",
+    )
+    build.cmd_change_request_flow(
+        "validate", journey="sandbox-pet-store", change_request_id=cr.id, evidence="Valid"
+    )
+    build.cmd_change_request_flow(
+        "done", journey="sandbox-pet-store", change_request_id=cr.id, notes="Done state"
+    )
+
+    out = capsys.readouterr().out
+    assert out.count("<<<ARIAD:REFINEMENT_FLOW_EVENT>>>") == 6
+    assert mem.store.get_change_request(cr.id).status == "done"
+    assert mem.store.get_refinement_cursor("sandbox-pet-store").active_change_request_id is None
+    assert get_delivery_cursor(mem.store, "sandbox-pet-store").active_item == "CV2.DS1"
+
+
+def test_refinement_story_flow_commands_review_coherence_close(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    mem.store.update_refinement_story_status(story.id, "active")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="change_request_done",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_refinement_story_flow(
+        "review", journey="sandbox-pet-store", refinement_story_id=story.id, summary="Review only"
+    )
+    build.cmd_refinement_story_flow(
+        "coherence", journey="sandbox-pet-store", refinement_story_id=story.id, summary="Coherent"
+    )
+    build.cmd_refinement_story_flow(
+        "close", journey="sandbox-pet-store", refinement_story_id=story.id, summary="Closed"
+    )
+
+    out = capsys.readouterr().out
+    assert out.count("<<<ARIAD:REFINEMENT_FLOW_EVENT>>>") == 3
+    assert "current RS phase" in out
+    assert "does not mutate files" in out
+    assert "notes remain stored" in out
+    assert mem.store.get_refinement_story(story.id).status == "closed"
+    assert mem.store.get_refinement_cursor("sandbox-pet-store").active_refinement_story_id is None
+
+
+def test_refinement_story_close_rejects_unfinished_cr(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        title="Unfinished CR",
+        body="Still captured",
+        refinement_story_id=story.id,
+    )
+    mem.store.update_refinement_story_status(story.id, "active")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_coherent",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    import pytest
+
+    with pytest.raises(SystemExit):
+        build.cmd_refinement_story_flow(
+            "close", journey="sandbox-pet-store", refinement_story_id=story.id, summary="Closed"
+        )
+
+    err = capsys.readouterr().err
+    assert "unfinished Change Requests" in err
+    assert cr.id in err
+    assert mem.store.get_refinement_story(story.id).status == "active"

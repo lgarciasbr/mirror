@@ -258,10 +258,13 @@ Ariad runtime commands emit deterministic surfaces wrapped as:
 
 For any command output that contains one or more Ariad surface blocks, the final
 assistant response must return **every marked block** from stdout verbatim before
-any commentary. Do not summarize, translate, reorder, trim, rewrap, re-indent,
+any commentary. This is a hard rendering requirement, not optional tool-output
+evidence. Do not summarize, translate, reorder, trim, rewrap, re-indent,
 reformat, or mix prose inside a wrapped surface. Do not replace a surface with a
 conversational summary, even when the user phrase is short (for example,
-`validated`, `approved`, `ok`, or `continue`).
+`validated`, `approved`, `ok`, or `continue`). If you catch yourself summarizing
+a marked Ariad surface, stop and re-render the complete marked block before any
+interpretation.
 
 If multiple Ariad surface blocks are emitted, return all of them in the same
 order. After the complete surface block(s), add a conversational interpretation
@@ -288,6 +291,7 @@ Next step:
 
 For Ariad-adopted journeys with no active item, `build load` can emit:
 
+- `■ Builder Home`
 - `ROADMAP SNAPSHOT`
 - `■ Ariad Pull Candidates`
 
@@ -298,14 +302,89 @@ For Ariad-adopted journeys with an active item or pending confirmation,
 
 These surfaces are mandatory activation output. The final response to the user
 must include the wrapped Ariad surface blocks verbatim from the command output.
-If the command output contains `<<<ARIAD:ROADMAP_SNAPSHOT>>>`,
-the response is invalid unless the visible reply also contains the complete
-matching begin/end block and the complete `PULL_CANDIDATES` block.
+If the command output contains `<<<ARIAD:BUILDER_HOME>>>`,
+`<<<ARIAD:ROADMAP_SNAPSHOT>>>`, or `<<<ARIAD:PULL_CANDIDATES>>>`, the response
+is invalid unless the visible reply also contains every complete matching
+begin/end block in stdout order.
 
 After rendering these surfaces, do not ask a generic question such as "inspeção
-runtime, planejamento de Delivery, ou exploração?". For an Ariad journey with no
-active item, ask whether the Navigator wants to pull the recommended candidate or
-inspect the roadmap further only after the verbatim blocks.
+runtime, planejamento de Delivery, ou exploração?" and do not add a third
+runtime-inspection option unless the surface itself recommends it. For an Ariad
+journey with no active item, ask only whether the Navigator wants to pull the
+recommended candidate or inspect the roadmap further after the verbatim blocks.
+
+## Compose Refinement Work
+
+When the Navigator uses natural language such as "capture this as a CR", "create
+a CR", "register this refinement", "add this to the Workbench", or "this should
+be a refinement", treat it as Refinement Work capture rather than roadmap
+Delivery Work. Ask only for missing essentials: CR title/body and whether to
+attach it to an existing Refinement Story or keep it unassigned. Do not invent
+missing title/body/RS target.
+
+When the Navigator asks to "create an RS", "compose a refinement story", "group
+these CRs", or "show me that refinement story", route to the Builder Workbench
+commands:
+
+```bash
+uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
+uv run python -m memory build change-request capture --journey <slug> --title "<title>" --body "<body>" [--refinement-story-id <rs-id>]
+uv run python -m memory build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
+uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
+```
+
+When the Navigator asks to "pull that refinement story", "start working on
+RS-001", "enter refinement work for ...", or "pull the RS we just created", route
+to:
+
+```bash
+uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
+```
+
+Use the recent RS context only when it is unambiguous. If "pull" could mean a
+Delivery candidate or a Workbench Refinement Story, ask which field/item to pull.
+
+Render `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, and
+`REFINEMENT_STORY_PULLED` Ariad surfaces verbatim before commentary.
+Composition captures or organizes work only. Pulling an RS selects active
+Refinement Work only: it must not start a CR lifecycle, mutate Delivery cursor
+state, change roadmap status, implement files, commit, push, or release.
+
+If the Navigator's language implies immediate fixing, distinguish capture/pull
+from execution: capture or pull only when requested, and explain that executing a
+CR is a later lifecycle step.
+
+When the Navigator asks to select, confirm, plan, mark implemented, validate, or
+mark done a Change Request in active Refinement Work, route to:
+
+```bash
+uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
+uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
+```
+
+When the Navigator asks to review, check coherence, or close an active RS, route
+to:
+
+```bash
+uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
+uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
+uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
+```
+
+Render `REFINEMENT_FLOW_EVENT` surfaces verbatim before commentary. Do not skip
+CR phases: if a CR has not been selected, confirmed, and planned, do not jump to
+implementation. The implementation step requires explicit Navigator language
+such as "implement this CR" and should be represented by the runtime transition
+only after the actual implementation/evidence exists. Review and Coherence must
+not mutate files directly; required changes discovered there must become CRs or
+future work. Do not close an RS while any attached CR remains unfinished; finish,
+park, reject, or promote each CR first, then run RS review, coherence, and close
+in order. Closing an RS clears active Refinement Work only and must not pull or
+execute Delivery Work.
 
 ## Prepare Ariad Templates
 

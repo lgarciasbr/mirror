@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from memory.builder.ariad_method import get_ariad_method
@@ -31,6 +32,7 @@ from memory.builder.flow_unit import (
     render_navigator_flow_unit_report,
     set_navigator_flow_unit,
 )
+from memory.builder.home_surface import inspect_refinement_field, render_builder_home_surface
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
     approve_plan_checkpoint,
@@ -75,6 +77,29 @@ from memory.builder.roadmap_position import resolve_roadmap_position
 from memory.builder.template_generation import (
     prepare_method_templates,
     render_template_preparation_report,
+)
+from memory.builder.workbench import (
+    RefinementFlowEvent,
+    attach_change_request_to_story,
+    capture_change_request,
+    close_refinement_story,
+    coherence_refinement_story,
+    complete_change_request,
+    confirm_change_request,
+    create_refinement_story,
+    get_refinement_story_overview,
+    mark_change_request_implemented,
+    plan_change_request,
+    pull_refinement_story,
+    review_refinement_story,
+    select_change_request,
+    validate_change_request,
+)
+from memory.builder.workbench_surfaces import (
+    render_change_request_captured_surface,
+    render_refinement_flow_event_surface,
+    render_refinement_story_overview_surface,
+    render_refinement_story_pulled_surface,
 )
 from memory.cli.conversation_logger import switch_conversation
 from memory.cli.runtime import inspect_clone_role
@@ -250,6 +275,14 @@ def _print_builder_entry_surface(
             project_root,
             journey=slug,
             method=adopted_method,
+        )
+        print(
+            render_builder_home_surface(
+                journey=slug,
+                method=adopted_method,
+                candidates_report=candidates_report,
+                refinement=inspect_refinement_field(project_root, store=mem.store, journey=slug),
+            )
         )
         print(
             render_roadmap_snapshot_report(
@@ -1368,6 +1401,289 @@ def cmd_validate_item(
     print(render_validation_checkpoint(report))
 
 
+def _resolve_workbench_journey(
+    mem: MemoryClient,
+    *,
+    journey: str | None,
+    session_id: str | None,
+    action: str,
+) -> str:
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action=action,
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    return resolved_journey
+
+
+def cmd_refinement_story_create(
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    title: str,
+    description: str | None = None,
+    source: str = "manual",
+    provenance: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action="create refinement story"
+    )
+    story = create_refinement_story(
+        mem.store,
+        journey=resolved_journey,
+        title=title,
+        description=description,
+        source=source,
+        provenance=provenance,
+    )
+    overview = get_refinement_story_overview(
+        mem.store,
+        journey=resolved_journey,
+        refinement_story_id=story.id,
+    )
+    print(render_refinement_story_overview_surface(journey=resolved_journey, overview=overview))
+    print(f"refinement_story_id={story.id}")
+
+
+def cmd_change_request_capture(
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    title: str,
+    body: str,
+    refinement_story_id: str | None = None,
+    source: str = "manual",
+    provenance: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action="capture change request"
+    )
+    try:
+        change_request = capture_change_request(
+            mem.store,
+            journey=resolved_journey,
+            title=title,
+            body=body,
+            refinement_story_id=refinement_story_id,
+            source=source,
+            provenance=provenance,
+        )
+        story = (
+            mem.store.get_refinement_story(change_request.refinement_story_id)
+            if change_request.refinement_story_id
+            else None
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(
+        render_change_request_captured_surface(
+            journey=resolved_journey,
+            change_request=change_request,
+            refinement_story=story,
+        )
+    )
+    print(f"change_request_id={change_request.id}")
+
+
+def _print_refinement_event(action: Callable[[], RefinementFlowEvent]) -> None:
+    try:
+        event = action()
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_refinement_flow_event_surface(event))
+
+
+def cmd_change_request_flow(
+    action: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    change_request_id: str,
+    summary: str | None = None,
+    evidence: str | None = None,
+    notes: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action=f"{action} change request"
+    )
+    if action == "select":
+        _print_refinement_event(
+            lambda: select_change_request(
+                mem.store, journey=resolved_journey, change_request_id=change_request_id
+            )
+        )
+    elif action == "confirm":
+        _print_refinement_event(
+            lambda: confirm_change_request(
+                mem.store, journey=resolved_journey, change_request_id=change_request_id
+            )
+        )
+    elif action == "plan":
+        _print_refinement_event(
+            lambda: plan_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                summary=summary or "",
+            )
+        )
+    elif action == "mark-implemented":
+        _print_refinement_event(
+            lambda: mark_change_request_implemented(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                evidence=evidence or "",
+            )
+        )
+    elif action == "validate":
+        _print_refinement_event(
+            lambda: validate_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                evidence=evidence or "",
+            )
+        )
+    elif action == "done":
+        _print_refinement_event(
+            lambda: complete_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                notes=notes or "",
+            )
+        )
+
+
+def cmd_refinement_story_flow(
+    action: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    refinement_story_id: str,
+    summary: str,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action=f"{action} refinement story"
+    )
+    if action == "review":
+        _print_refinement_event(
+            lambda: review_refinement_story(
+                mem.store,
+                journey=resolved_journey,
+                refinement_story_id=refinement_story_id,
+                summary=summary,
+            )
+        )
+    elif action == "coherence":
+        _print_refinement_event(
+            lambda: coherence_refinement_story(
+                mem.store,
+                journey=resolved_journey,
+                refinement_story_id=refinement_story_id,
+                summary=summary,
+            )
+        )
+    elif action == "close":
+        _print_refinement_event(
+            lambda: close_refinement_story(
+                mem.store,
+                journey=resolved_journey,
+                refinement_story_id=refinement_story_id,
+                summary=summary,
+            )
+        )
+
+
+def cmd_change_request_attach(
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    change_request_id: str,
+    refinement_story_id: str,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action="attach change request"
+    )
+    try:
+        existing = mem.store.get_change_request(change_request_id)
+        if existing is None:
+            raise ValueError("change_request_id does not exist")
+        if existing.journey != resolved_journey:
+            raise ValueError("change_request_id belongs to a different journey")
+        attach_change_request_to_story(
+            mem.store,
+            change_request_id=change_request_id,
+            refinement_story_id=refinement_story_id,
+        )
+        overview = get_refinement_story_overview(
+            mem.store,
+            journey=resolved_journey,
+            refinement_story_id=refinement_story_id,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_refinement_story_overview_surface(journey=resolved_journey, overview=overview))
+
+
+def cmd_refinement_story_pull(
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    refinement_story_id: str,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action="pull refinement story"
+    )
+    try:
+        overview = pull_refinement_story(
+            mem.store,
+            journey=resolved_journey,
+            refinement_story_id=refinement_story_id,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_refinement_story_pulled_surface(journey=resolved_journey, overview=overview))
+
+
+def cmd_refinement_story_overview(
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    refinement_story_id: str,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action="show refinement story overview"
+    )
+    try:
+        overview = get_refinement_story_overview(
+            mem.store,
+            journey=resolved_journey,
+            refinement_story_id=refinement_story_id,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_refinement_story_overview_surface(journey=resolved_journey, overview=overview))
+
+
 def cmd_prepare_item(
     method: str,
     *,
@@ -1821,6 +2137,96 @@ def main(argv: list[str] | None = None) -> None:
         help="Record that implementation work has completed before validation",
     )
 
+    p_refinement_story = sub.add_parser(
+        "refinement-story",
+        help="Create or inspect Builder Workbench Refinement Stories",
+    )
+    refinement_story_sub = p_refinement_story.add_subparsers(
+        dest="refinement_story_action", required=True
+    )
+    p_rs_create = refinement_story_sub.add_parser("create", help="Create a Refinement Story")
+    p_rs_create.add_argument("--journey", default=None, help="Journey slug")
+    p_rs_create.add_argument("--session-id", default=None, help="Runtime session id")
+    p_rs_create.add_argument("--title", required=True, help="Refinement Story title")
+    p_rs_create.add_argument("--description", default=None, help="Refinement Story description")
+    p_rs_create.add_argument("--source", default="manual", help="Source label")
+    p_rs_create.add_argument("--provenance", default=None, help="Provenance note")
+    p_rs_overview = refinement_story_sub.add_parser(
+        "overview", help="Render a Refinement Story overview"
+    )
+    p_rs_overview.add_argument("--journey", default=None, help="Journey slug")
+    p_rs_overview.add_argument("--session-id", default=None, help="Runtime session id")
+    p_rs_overview.add_argument("--refinement-story-id", required=True, help="Refinement Story id")
+    p_rs_pull = refinement_story_sub.add_parser(
+        "pull", help="Pull a Refinement Story into active Refinement Work"
+    )
+    p_rs_pull.add_argument("--journey", default=None, help="Journey slug")
+    p_rs_pull.add_argument("--session-id", default=None, help="Runtime session id")
+    p_rs_pull.add_argument("--refinement-story-id", required=True, help="Refinement Story id")
+
+    p_change_request = sub.add_parser(
+        "change-request",
+        help="Capture or attach Builder Workbench Change Requests",
+    )
+    change_request_sub = p_change_request.add_subparsers(
+        dest="change_request_action", required=True
+    )
+    p_cr_capture = change_request_sub.add_parser("capture", help="Capture a Change Request")
+    p_cr_capture.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_capture.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_capture.add_argument("--title", required=True, help="Change Request title")
+    p_cr_capture.add_argument("--body", required=True, help="Change Request body")
+    p_cr_capture.add_argument(
+        "--refinement-story-id", default=None, help="Optional Refinement Story id"
+    )
+    p_cr_capture.add_argument("--source", default="manual", help="Source label")
+    p_cr_capture.add_argument("--provenance", default=None, help="Provenance note")
+    p_cr_attach = change_request_sub.add_parser(
+        "attach", help="Attach a Change Request to a Refinement Story"
+    )
+    p_cr_attach.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_attach.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_attach.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_attach.add_argument("--refinement-story-id", required=True, help="Refinement Story id")
+    for action_name in ("select", "confirm"):
+        p_cr_flow = change_request_sub.add_parser(
+            action_name, help=f"{action_name} a Change Request"
+        )
+        p_cr_flow.add_argument("--journey", default=None, help="Journey slug")
+        p_cr_flow.add_argument("--session-id", default=None, help="Runtime session id")
+        p_cr_flow.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_plan = change_request_sub.add_parser("plan", help="Plan a Change Request")
+    p_cr_plan.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_plan.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_plan.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_plan.add_argument("--summary", required=True, help="Plan summary")
+    p_cr_impl = change_request_sub.add_parser(
+        "mark-implemented", help="Mark a Change Request implemented"
+    )
+    p_cr_impl.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_impl.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_impl.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_impl.add_argument("--evidence", required=True, help="Implementation evidence")
+    p_cr_validate = change_request_sub.add_parser("validate", help="Validate a Change Request")
+    p_cr_validate.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_validate.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_validate.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_validate.add_argument("--evidence", required=True, help="Validation evidence")
+    p_cr_done = change_request_sub.add_parser("done", help="Record Change Request done note")
+    p_cr_done.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_done.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_done.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_done.add_argument("--notes", required=True, help="Done notes")
+
+    for action_name in ("review", "coherence", "close"):
+        p_rs_flow = refinement_story_sub.add_parser(
+            action_name, help=f"{action_name} a Refinement Story"
+        )
+        p_rs_flow.add_argument("--journey", default=None, help="Journey slug")
+        p_rs_flow.add_argument("--session-id", default=None, help="Runtime session id")
+        p_rs_flow.add_argument("--refinement-story-id", required=True, help="Refinement Story id")
+        p_rs_flow.add_argument("--summary", required=True, help="Summary")
+
     p_prepare = sub.add_parser(
         "prepare-item",
         help="Prepare the pulled Ariad lifecycle item",
@@ -1989,5 +2395,70 @@ def main(argv: list[str] | None = None) -> None:
             fail_condition=args.fail_condition,
             implementation_complete=args.implementation_complete,
         )
+    elif args.command == "refinement-story":
+        if args.refinement_story_action == "create":
+            cmd_refinement_story_create(
+                journey=args.journey,
+                session_id=args.session_id,
+                title=args.title,
+                description=args.description,
+                source=args.source,
+                provenance=args.provenance,
+            )
+        elif args.refinement_story_action == "overview":
+            cmd_refinement_story_overview(
+                journey=args.journey,
+                session_id=args.session_id,
+                refinement_story_id=args.refinement_story_id,
+            )
+        elif args.refinement_story_action == "pull":
+            cmd_refinement_story_pull(
+                journey=args.journey,
+                session_id=args.session_id,
+                refinement_story_id=args.refinement_story_id,
+            )
+        elif args.refinement_story_action in {"review", "coherence", "close"}:
+            cmd_refinement_story_flow(
+                args.refinement_story_action,
+                journey=args.journey,
+                session_id=args.session_id,
+                refinement_story_id=args.refinement_story_id,
+                summary=args.summary,
+            )
+    elif args.command == "change-request":
+        if args.change_request_action == "capture":
+            cmd_change_request_capture(
+                journey=args.journey,
+                session_id=args.session_id,
+                title=args.title,
+                body=args.body,
+                refinement_story_id=args.refinement_story_id,
+                source=args.source,
+                provenance=args.provenance,
+            )
+        elif args.change_request_action == "attach":
+            cmd_change_request_attach(
+                journey=args.journey,
+                session_id=args.session_id,
+                change_request_id=args.change_request_id,
+                refinement_story_id=args.refinement_story_id,
+            )
+        elif args.change_request_action in {
+            "select",
+            "confirm",
+            "plan",
+            "mark-implemented",
+            "validate",
+            "done",
+        }:
+            cmd_change_request_flow(
+                args.change_request_action,
+                journey=args.journey,
+                session_id=args.session_id,
+                change_request_id=args.change_request_id,
+                summary=getattr(args, "summary", None),
+                evidence=getattr(args, "evidence", None),
+                notes=getattr(args, "notes", None),
+            )
     elif args.command == "prepare-item":
         cmd_prepare_item(args.method, journey=args.journey, session_id=args.session_id)
