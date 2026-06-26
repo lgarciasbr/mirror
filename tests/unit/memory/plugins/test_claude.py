@@ -54,28 +54,28 @@ def test_discovers_each_skill_directory(tmp_path: Path) -> None:
     repo = _make_repo(
         tmp_path,
         {
-            "mm:mirror": ("SKILL.md", "mirror body"),
-            "mm:build": ("SKILL.md", "build body"),
+            "mm-mirror": ("SKILL.md", "mirror body"),
+            "mm-build": ("SKILL.md", "build body"),
         },
     )
     discovered = {name for name, _ in claude.discover_skill_sources(repo)}
-    assert discovered == {"mm:mirror", "mm:build"}
+    assert discovered == {"mm-mirror", "mm-build"}
 
 
 def test_normalizes_lowercase_skill_md_to_uppercase(tmp_path: Path) -> None:
-    # mm:identity tracks a lowercase skill.md in the real repo; the plugin must
-    # still materialize an uppercase SKILL.md with the same content.
-    repo = _make_repo(tmp_path, {"mm:identity": ("skill.md", "identity body")})
+    # A source skill may track a lowercase skill.md; the plugin must still
+    # materialize an uppercase SKILL.md with the same content.
+    repo = _make_repo(tmp_path, {"mm-identity": ("skill.md", "identity body")})
     files = claude.plan_generated_files(repo)
     skill_files = [f for f in files if f.relative_path.name == claude.SKILL_FILENAME]
     assert len(skill_files) == 1
-    assert skill_files[0].relative_path == Path("plugins/mirror-mind/skills/mm:identity/SKILL.md")
+    assert skill_files[0].relative_path == Path("plugins/mirror-mind/skills/mm-identity/SKILL.md")
     assert skill_files[0].content == "identity body"
 
 
 def test_skill_content_is_copied_byte_faithfully(tmp_path: Path) -> None:
     body = "---\nname: mm:mirror\n---\n# Mirror\nUse `/mm:mirror`.\n"
-    repo = _make_repo(tmp_path, {"mm:mirror": ("SKILL.md", body)})
+    repo = _make_repo(tmp_path, {"mm-mirror": ("SKILL.md", body)})
     files = claude.plan_generated_files(repo)
     skill = next(f for f in files if f.relative_path.name == claude.SKILL_FILENAME)
     assert skill.content == body
@@ -85,28 +85,28 @@ def test_skill_content_is_copied_byte_faithfully(tmp_path: Path) -> None:
 
 
 def test_materialize_writes_then_check_is_clean(tmp_path: Path) -> None:
-    repo = _make_repo(tmp_path, {"mm:mirror": ("SKILL.md", "mirror body")})
+    repo = _make_repo(tmp_path, {"mm-mirror": ("SKILL.md", "mirror body")})
     assert claude.materialize(repo, write=True) == []
     assert claude.materialize(repo, write=False) == []
 
 
 def test_check_reports_out_of_date_skill(tmp_path: Path) -> None:
-    repo = _make_repo(tmp_path, {"mm:mirror": ("SKILL.md", "v1")})
+    repo = _make_repo(tmp_path, {"mm-mirror": ("SKILL.md", "v1")})
     claude.materialize(repo, write=True)
-    (repo / claude.SKILLS_SOURCE_DIR / "mm:mirror" / "SKILL.md").write_text("v2", encoding="utf-8")
+    (repo / claude.SKILLS_SOURCE_DIR / "mm-mirror" / "SKILL.md").write_text("v2", encoding="utf-8")
     problems = claude.materialize(repo, write=False)
     assert any("out of date" in p for p in problems)
 
 
 def test_write_removes_stale_generated_skill(tmp_path: Path) -> None:
-    repo = _make_repo(tmp_path, {"mm:mirror": ("SKILL.md", "a"), "mm:old": ("SKILL.md", "b")})
+    repo = _make_repo(tmp_path, {"mm-mirror": ("SKILL.md", "a"), "mm-old": ("SKILL.md", "b")})
     claude.materialize(repo, write=True)
     # Source skill removed -> regenerate -> stale plugin skill must be pruned.
     import shutil
 
-    shutil.rmtree(repo / claude.SKILLS_SOURCE_DIR / "mm:old")
+    shutil.rmtree(repo / claude.SKILLS_SOURCE_DIR / "mm-old")
     claude.materialize(repo, write=True)
-    assert not (repo / claude.PLUGIN_DIR / "skills" / "mm:old").exists()
+    assert not (repo / claude.PLUGIN_DIR / "skills" / "mm-old").exists()
     assert claude.materialize(repo, write=False) == []
 
 
@@ -120,6 +120,8 @@ def test_plugin_skill_set_matches_claude_skills() -> None:
         for p in (PROJECT_ROOT / claude.PLUGIN_DIR / "skills").glob(f"*/{claude.SKILL_FILENAME}")
     }
     assert plugin_skills == source
+    assert all(":" not in name for name in source)
+    assert all(":" not in name for name in plugin_skills)
 
 
 def test_committed_plugin_is_in_sync_with_source() -> None:

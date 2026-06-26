@@ -20,7 +20,7 @@ equals the `.claude/skills/` set at 25, and the drift guard is green.
 ```bash
 diff \
   <(ls .pi/skills | sed 's/^mm-//' | sort) \
-  <(ls plugins/mirror-mind/skills | sed 's/^mm://' | sort)
+  <(ls plugins/mirror-mind/skills | sed 's/^mm-//' | sort)
 ```
 
 Expected result: no differences — the plugin now carries all 25 skills, matching
@@ -39,12 +39,12 @@ Expected result: validation passes.
 ```bash
 # English-only + mm: tokens, no Pi-specific instructions in the new skills
 grep -l "interface pi\|--session-id when a Pi\|/mm-" \
-  .claude/skills/mm:discard/SKILL.md \
-  .claude/skills/mm:explore/SKILL.md \
-  .claude/skills/mm:soul/SKILL.md \
-  .claude/skills/mm:update/SKILL.md || echo "clean: no Pi-specific leftovers"
+  .claude/skills/mm-discard/SKILL.md \
+  .claude/skills/mm-explore/SKILL.md \
+  .claude/skills/mm-soul/SKILL.md \
+  .claude/skills/mm-update/SKILL.md || echo "clean: no Pi-specific leftovers"
 
-grep -h "interface" .claude/skills/mm:discard/SKILL.md   # expect claude_code
+grep -h "interface" .claude/skills/mm-discard/SKILL.md   # expect claude_code
 ```
 
 Expected result: `clean: no Pi-specific leftovers`; `mm:discard` uses

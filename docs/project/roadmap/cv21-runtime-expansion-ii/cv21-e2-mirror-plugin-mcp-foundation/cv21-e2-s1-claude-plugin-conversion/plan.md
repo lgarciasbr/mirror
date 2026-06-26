@@ -62,9 +62,8 @@ the agent's cwd is the Mirror repo. As a plugin, the hook scripts live under
 
 ### Skill bundling and the single-source-of-truth question
 
-Three skill surfaces exist: `.pi/skills/mm-*` (Pi-tuned, 25), `.claude/skills/mm:*`
-(Claude-tuned, 21, missing `discard`/`explore`/`soul`/`update`), and the shared
-`.agents/skills/` symlink surface. A diff proved `.pi` and `.claude` skill bodies
+Three skill surfaces exist: `.pi/skills/mm-*` (Pi-tuned, 25), `.claude/skills/mm-*`
+(Claude-tuned, 25), and the shared `.agents/skills/` symlink surface. A diff proved `.pi` and `.claude` skill bodies
 are **independently runtime-tuned, not token-variants** — the Claude bodies
 reference `mirror-inject.sh`, the Claude `session_id`/transcript model, and `mm:`
 tokens; the Pi bodies reference the Pi extension model. Generating the *Claude*
@@ -75,21 +74,19 @@ Decision: the canonical source for the *Claude plugin* skills is
 **`.claude/skills/`** (the Claude-tuned content). A plugin must ship **real
 files** (symlinks do not survive `import`/`install`), so the plugin gets its own
 materialized `skills/`, **generated from `.claude/skills/`** with a drift-guard
-test. The generator normalizes the markdown filename to `SKILL.md` (two source
-skills track a lowercase `skill.md`, a latent case-sensitivity bug the plugin
-fixes without touching standalone). Skill *content* is copied byte-faithfully —
-no token rewriting in S1.
+test. The generator normalizes the markdown filename to `SKILL.md` and preserves
+Windows-safe `mm-*` directory names while skill frontmatter keeps the Claude
+`mm:*` command surface. Skill *content* is copied byte-faithfully — no token
+rewriting in S1.
 
-The four Pi-only skills (`discard`, `explore`, `soul`, `update`) have no
-Claude-tuned form and are **out of scope here** — authoring them as Claude skills
-is the sibling parity story (Option A). The plugin ships at 21, honestly matching
-current Claude reality.
+The former Pi-only skills (`discard`, `explore`, `soul`, `update`) now have
+Claude-tuned forms, so the plugin ships the full 25-skill surface.
 
 ## Implementation steps
 
 1. Add tests first (TDD): a generator/structure test asserting the plugin has a
    valid `.claude-plugin/plugin.json` (no `$schema`, version == `pyproject.toml`),
-   the 21 Claude skills each materialized as `SKILL.md`, the drift guard
+   the 25 Claude skills each materialized as `SKILL.md`, the drift guard
    (committed == generated from `.claude/skills/`), and the four plugin-relative
    hooks.
 2. Implement the generator in `src/memory/plugins/claude.py` (importable, typed),
@@ -111,9 +108,10 @@ current Claude reality.
    (Claude-tuned), committed as a build artifact, guarded by a drift test.
    (Corrected from an earlier wrong premise that `.pi/skills/` was the source —
    the bodies are runtime-tuned, not token-variants.)
-3. **Parity scope (Option A):** ship the existing 21 Claude skills now; the four
-   Pi-only skills are authored as Claude skills in a sibling parity story.
-4. **Standalone `.claude/` retention:** untouched this epic; both paths coexist.
+3. **Parity scope:** ship the full 25 Claude skills, including `discard`,
+   `explore`, `soul`, and `update`.
+4. **Standalone `.claude/` retention:** both standalone and plugin paths coexist,
+   using Windows-safe skill directory names.
 5. **Hook resolution:** plugin hooks assume `python -m memory` resolves in the
    environment (Mirror installed as a package) and use `${CLAUDE_PLUGIN_ROOT}`
    relative paths — no repo-cwd assumption. Documented as a plugin prerequisite.
@@ -128,12 +126,12 @@ current Claude reality.
   runtime — hence the documented prerequisite and the smoke test that exercises a
   hook firing.
 - **Plugin skill namespacing (open, resolved by smoke test).** Whether Claude
-  loads plugin skill directories named `mm:<name>` (colon) and how it namespaces
+  loads plugin skill directories named `mm-<name>` (Windows-safe) and how it namespaces
   the invocation token (`/mm:mirror` vs `/mirror-mind:...`) is not validated by
   `claude plugin validate` (manifest-only). The smoke test loads the plugin in an
   isolated Claude session to confirm discovery; any token/naming normalization is
-  a deliberate follow-up, not silent rewriting in S1. (Colon paths are also not
-  Windows-portable — noted, not in scope.)
+  a deliberate follow-up, not silent rewriting in S1. Directory names are already
+  Windows-safe; command tokens remain `mm:*` in skill frontmatter and body copy.
 - **Validator strictness.** E1 already hit the `$schema` rejection on 2.1.114.
   Keep the manifest minimal and validate empirically, not from docs.
 - **Drift reintroduction.** A committed copy can drift from `.claude/skills/`.

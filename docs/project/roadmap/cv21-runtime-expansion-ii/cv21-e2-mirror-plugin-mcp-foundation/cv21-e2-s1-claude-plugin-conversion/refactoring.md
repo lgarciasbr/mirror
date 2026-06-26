@@ -17,17 +17,15 @@ revisit trigger.
   introduced — extract one helper then.
 
 - **Plugin skill invocation token.** The plugin bundles skills byte-faithfully
-  with `mm:`-prefixed directory names. How Claude namespaces plugin skills
-  (`/mm:mirror` vs a `mirror-mind:`-prefixed token) and whether the colon dir
-  name is portable (not Windows-safe) is not yet normalized. Skill *bodies*
-  still self-reference `/mm:*`.
-  *Revisit when* live skill discovery (manual route / a later live-session test)
-  shows the effective token, or when Windows portability is in scope. Any rename
-  is a deliberate, drift-guarded regeneration, not a hand edit.
+  with `mm-`-prefixed Windows-safe directory names. Skill bodies preserve
+  `/mm:*` self-references and frontmatter preserves `name: "mm:*"`. How Claude
+  namespaces plugin skills in live discovery remains a manual validation point.
+  *Revisit when* live skill discovery shows the effective token. Any rename is a
+  deliberate, drift-guarded regeneration, not a hand edit.
 
-## Standalone hygiene (tracked in the epic, not fixed here — `.claude/` untouched)
+## Standalone hygiene
 
-- `.claude/skills/mm:build` and `mm:identity` use lowercase `skill.md`
-  (case-sensitive-runtime discovery risk). The plugin generator normalizes to
-  `SKILL.md`, so the plugin is correct regardless.
-- `.claude/skills/mm:help` references a `mm:save` command with no skill dir.
+- Standalone `.claude/skills/` now uses Windows-safe `mm-*` directories with
+  uppercase `SKILL.md` files while preserving Claude `mm:*` command names in
+  frontmatter.
+- `.claude/skills/mm-help` references a `mm:save` command with no skill dir.

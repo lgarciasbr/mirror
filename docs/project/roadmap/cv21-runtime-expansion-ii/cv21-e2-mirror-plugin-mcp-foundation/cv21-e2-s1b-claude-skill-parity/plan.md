@@ -45,7 +45,7 @@ A diff of skills that exist on both surfaces (`mm-mirror`, `mm-new`, `mm-help`,
 
 ## Implementation steps
 
-1. Author the four `.claude/skills/mm:{update,explore,soul,discard}/SKILL.md`
+1. Author the four `.claude/skills/mm-{update,explore,soul,discard}/SKILL.md`
    files per the rules above.
 2. Regenerate: `uv run python scripts/build_claude_plugin.py` → 25 plugin skills.
 3. Run the plugin tests: the drift guard and the "plugin skill set ==

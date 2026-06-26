@@ -15,11 +15,11 @@ uv run mypy src/memory
 git diff --check
 ```
 
-Expected result: all commands pass, including the new generator tests asserting
-the plugin manifest is valid (no `$schema`, version equals `pyproject.toml`), the
-21 Claude skills are materialized as `SKILL.md`, the drift guard is green
-(committed == generated from `.claude/skills/`), and the four plugin-relative
-hooks exist.
+Expected result: all commands pass, including the generator tests asserting the
+plugin manifest is valid (no `$schema`, version equals `pyproject.toml`), the
+Claude skills are materialized as `SKILL.md`, the drift guard is green
+(committed == generated from `.claude/skills/`), no generated skill directory uses
+Windows-illegal `:` characters, and the four plugin-relative hooks exist.
 
 The drift guard also runs as part of CI (it is a pure-Python test), so a future
 edit to a `.claude/skills/` body that is not regenerated into the plugin fails
@@ -44,12 +44,12 @@ Confirm the plugin skill set matches the Claude-tuned source:
 
 ```bash
 diff \
-  <(ls .claude/skills | sed 's/^mm://' | sort) \
-  <(ls plugins/mirror-mind/skills | sed 's/^mm://' | sort)
+  <(ls .claude/skills | sed 's/^mm-//' | sort) \
+  <(ls plugins/mirror-mind/skills | sed 's/^mm-//' | sort)
 ```
 
-Expected result: no differences — the plugin carries all 21 Claude skills. (The
-four Pi-only skills reach Claude parity in the sibling story S1b.)
+Expected result: no differences — the plugin carries all 25 Claude skills with
+Windows-safe filesystem names.
 
 ## Isolated smoke test
 
