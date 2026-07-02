@@ -93,7 +93,7 @@ per row).
 | Code | Epic | Done condition | Status |
 |------|------|----------------|--------|
 | [CV22.E1](cv22-e1-hybrid-search-parity-spike/index.md) | Hybrid-Search Parity Spike | A TS reimplementation of the hybrid ranker, reading the same SQLite file, reproduces Python's ordered results on synthetic data and on a real-DB snapshot; near-tie risk quantified | ✅ Done |
-| CV22.E2 | TS Foundation & Read-Only Command Parity | Stand up the TS core (`node:sqlite`, BLOB/embedding read, frozen-`now` golden contract); reach ordered/behavioral parity for read-only deterministic commands (`search`, `detect-persona`, journeys, memory listing) on real-DB copies | 🟡 Planned |
+| [CV22.E2](cv22-e2-ts-foundation-read-only-parity/index.md) | TS Foundation & Read-Only Command Parity | Stand up the TS core (`node:sqlite`, BLOB/embedding read, frozen-`now` golden contract); reach ordered/behavioral parity for read-only deterministic commands (`search`, `detect-persona`, journeys, memory listing) on real-DB copies | 🟢 In Progress · S1 done |
 | CV22.E3 | Pi TS Front Door | A TS front door on Pi that wraps the frozen Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | 🟡 Planned |
 | CV22.E4 | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible | 🟡 Planned |
 | CV22.E5 | External-API Commands | Port extraction (Gemini), embeddings (OpenAI), and consult; record/replay for non-determinism; live embedding-determinism contract; the end-to-end fresh-query path | 🟡 Planned |

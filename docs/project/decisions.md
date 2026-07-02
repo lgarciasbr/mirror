@@ -94,6 +94,43 @@ Consequences:
   derived from this record after the hybrid-search parity spike (CV22.E1)
   validated the approach on synthetic and real-DB data.
 
+### CV22 TypeScript core scaffolding: node:sqlite, single `ts/` package, Node 24, Biome
+
+**Date:** 2026-06-23
+**Reference:** [CV22 — TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV22.E2 — TS Foundation & Read-Only Command Parity](roadmap/cv22-typescript-core-port/cv22-e2-ts-foundation-read-only-parity/index.md), parent decision [database-seam strangler](#mirror-mind-ports-to-typescript-via-a-database-seam-strangler-not-a-rewrite)
+**Participants:** Vinícius Teles
+
+The strangler's transition state is durable — it must be comfortable to live in
+for the whole port — so its scaffolding is load-bearing. The granular foundation
+choices for the TS core were settled before standing it up:
+
+- **SQLite driver — `node:sqlite`, behind a thin driver seam.** Keeps the spike's
+  no-native-build payoff (FTS5 + bm25 come from the shared file; no
+  `better-sqlite3` compile step). `node:sqlite` is still experimental, so it is
+  isolated behind one driver module: the rest of the core never imports it
+  directly, making a later swap to `better-sqlite3` cheap (low coupling).
+- **Layout — a single top-level `ts/` package.** Seams mirror the Python core
+  (`db`, `storage`, `intelligence`, `services`, `cli`). No npm-workspaces
+  monorepo until a second publishable unit actually exists (front door / MCP in
+  E6) — speculative structure is avoided (YAGNI).
+- **Node floor — 24 LTS** (`engines.node >= 24`), where `node:sqlite` and native
+  `.ts` execution are solid.
+- **Parity net — committed synthetic goldens only.** CI runs golden parity over
+  synthetic, PII-free corpora; real-DB parity (the authors' actual `memory.db`)
+  stays a manual pre-merge dogfooding gate and never enters CI.
+- **Lint/format — Biome** from the first file (one tool, format + lint).
+- **Test runner — built-in `node:test` + `node:assert`** (zero-dependency, runs
+  `.ts` directly), matching the lean local-first ethos.
+- **Build — deferred.** Source stays `.ts`, run directly; `tsc --noEmit` for
+  type-checking and erasable-syntax-only so native execution keeps working. The
+  npm build/publish pipeline and the published package name (`memory` vs
+  `mirror`) are E6 concerns.
+- **CI — a new Node job** in `.github/workflows/tests.yml` (typecheck + Biome +
+  `node:test` on synthetic goldens, pinned to Node 24); the Python job is
+  unchanged.
+
+These are realized first in CV22.E2.S1 (TS package scaffold & driver seam).
+
 ### Builder adds Refinement Work before release/push governance
 
 **Date:** 2026-06-17

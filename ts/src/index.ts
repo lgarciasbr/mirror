@@ -1,0 +1,7 @@
+// Mirror Mind TypeScript core — package entry point.
+//
+// The core is being grown as a database-seam strangler of the Python core in
+// `src/memory/`. See docs/project/roadmap/cv22-typescript-core-port/.
+
+export type { Database, PreparedQuery, Row, SqlValue } from "./db/database.ts";
+export { openDatabaseReadOnly } from "./db/database.ts";
