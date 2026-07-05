@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.30.0 — Windows Installer Distribution](v0.30.0.md) — first public Windows installer distribution release, turning the native installer into a release-backed `.exe` asset path while keeping generated binaries out of the repository and preserving runtime self-update for existing installs.
 - [v0.29.3 — Pi External-Skill Discovery Fix](v0.29.3.md) — maintenance patch that fixes Pi external-skill discovery on the `~/.mirror-minds` home layout by resolving the mirror home like the core, records the resulting cross-language resolution duplication as TD-001, and hardens the Gemini smoke test's production-DB guard.
 - [v0.29.2 — Ariad Builder Flow Refinement](v0.29.2.md) — patch release that refines Ariad Builder surfaces, RS/CR display codes, Project Position orientation, artifact materialization reporting, and Delivery Done handoffs after dogfooding.
 - [v0.29.1 — Windows Compatibility Hardening](v0.29.1.md) — patch release that preserves Windows-safe Claude/plugin skill paths, UTF-8 console output, explicit mojibake repair, and cross-platform path rendering.

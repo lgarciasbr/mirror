@@ -3,6 +3,7 @@ name: Windows Installer
 on:
   push:
     branches: [main, "feature/windows-installer", "claude/**"]
+    tags: ["v*"]
     paths:
       - "installer/**"
       - ".github/workflows/windows-installer.yml"
