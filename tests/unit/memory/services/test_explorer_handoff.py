@@ -107,9 +107,7 @@ def test_write_builder_handoff_artifacts_expands_user_home(tmp_path, monkeypatch
         title="Home handoff",
     )
 
-    expected_dir = (
-        tmp_path / "project" / "docs" / "project" / "explorations" / "home-handoff"
-    )
+    expected_dir = tmp_path / "project" / "docs" / "project" / "explorations" / "home-handoff"
     assert handoff.artifact_dir == expected_dir.as_posix()
     assert expected_dir.is_dir()
 

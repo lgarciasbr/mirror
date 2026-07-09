@@ -323,18 +323,14 @@ class TestJourneyServiceProjectPath:
         with pytest.raises(ValueError, match="not found"):
             journey_service.set_project_path("inexistente", "/tmp/project")
 
-    def test_create_journey_expands_project_path(
-        self, journey_service, tmp_path, monkeypatch
-    ):
+    def test_create_journey_expands_project_path(self, journey_service, tmp_path, monkeypatch):
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
         content = (
             "# Child\n**Status:** active\n\n## Description\n\n"
             "Child journey with enough content for creation.\n"
         )
-        journey_service.create_journey(
-            slug="child", content=content, project_path="~/project"
-        )
+        journey_service.create_journey(slug="child", content=content, project_path="~/project")
         expected = str((tmp_path / "project").resolve())
         assert journey_service.get_project_path("child") == expected
 
@@ -360,7 +356,7 @@ class TestJourneyServiceProjectPath:
             metadata='{"project_path": "~/legacy"}',
         )
         result = journey_service.get_project_path("legacy")
-        assert result == str((tmp_path / "legacy"))
+        assert result == str(tmp_path / "legacy")
 
 
 class TestJourneyServiceGetSyncFile:
