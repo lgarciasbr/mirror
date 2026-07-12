@@ -11,6 +11,38 @@ resolved.
 
 ## Completed Decisions
 
+### Runtime state is contained in the mirror home for every environment
+
+**Date:** 2026-07-12
+**Reference:** journey `mirror`, [CV9.E2.S6](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s6-runtime-state-home-containment/index.md)
+**Participants:** Vinícius Teles
+
+Before this decision, the runtime directory honored the resolved mirror home
+only when `MEMORY_ENV=production`; development and test environments — and any
+run with an unresolvable home — silently targeted the homes root
+(`~/.mirror-minds`), pre-CV4 flat-layout semantics. Field evidence showed the
+consequence: orphan and live databases, logs, and locks accumulating in the
+root, and one session straddling two databases (the wrong-session export
+incident).
+
+Decided:
+
+1. **One mapping rule.** The runtime directory is the resolved mirror home for
+   every `MEMORY_ENV`; the environment selects only the database name
+   (`memory.db`, `memory_dev.db`, `memory_test.db`). Core and extension
+   dispatch share the rule (`db_path_for_home`).
+2. **Explicit overrides keep winning.** `MEMORY_PROD_DIR` (production),
+   `MEMORY_DIR`, and `DB_PATH` are never second-guessed.
+3. **Loud failure.** With no resolvable home and no overrides,
+   database-touching commands fail with an actionable one-line hint
+   (`MirrorHomeNotConfiguredError`, exit 2). Silent root fallback is removed.
+4. **Bootstrap exception.** The Pi logger may still write
+   `~/.mirror-minds/mirror-logger.log` when no home is resolvable — it is the
+   error channel that records exactly that failure class.
+5. **No automatic migration.** Legacy root artifacts are detected by
+   `runtime diagnose` (`legacy_root_runtime_state`) and relocated manually via
+   the documented REFERENCE route; histories are never merged automatically.
+
 ### BACKUP_DIR is demoted: redirection becomes an explicit, per-invocation choice
 
 **Date:** 2026-07-08

@@ -15,6 +15,7 @@ from pathlib import Path
 from memory.cli.backup import backup as create_backup
 from memory.cli.extensions import ExtensionValidationError, load_extension_manifest
 from memory.config import (
+    DEFAULT_USER_HOMES_DIR,
     MEMORY_ENV,
     default_db_path_for_home,
     default_extensions_dir_for_home,
@@ -1427,6 +1428,48 @@ def _git_dirty_finding(entry: GitWorktreeEntry) -> DriftFinding:
     )
 
 
+# CV9.E2.S6 — the homes root (~/.mirror-minds) must contain only user-home
+# directories. Runtime files found directly in the root are legacy artifacts
+# of the pre-containment resolution rule.
+_ROOT_RUNTIME_DIR_NAMES = frozenset({"backups"})
+
+
+def scan_homes_root_state(homes_root: Path) -> tuple[Path, ...]:
+    """Files and known runtime directories sitting directly in the homes root.
+
+    User-home directories and hidden entries (e.g. ``.DS_Store``) are not
+    offenders; everything else directly under the root is.
+    """
+    try:
+        entries = sorted(homes_root.iterdir())
+    except OSError:
+        return ()
+    return tuple(
+        entry
+        for entry in entries
+        if not entry.name.startswith(".")
+        and (entry.is_file() or entry.name in _ROOT_RUNTIME_DIR_NAMES)
+    )
+
+
+def root_state_findings(homes_root: Path) -> tuple[DriftFinding, ...]:
+    """Drift findings for legacy runtime state in the homes root."""
+    return tuple(
+        DriftFinding(
+            code="legacy_root_runtime_state",
+            severity="attention",
+            subject=f"homes root {homes_root}",
+            detail=str(path),
+            recommendation=(
+                "relocate into the owning mirror home "
+                "(see REFERENCE.md \u2014 Relocating legacy root runtime state)"
+            ),
+            repair_route="manual relocation",
+        )
+        for path in scan_homes_root_state(homes_root)
+    )
+
+
 def diagnose_runtime(
     report: RuntimeStatusReport,
     worktree_entries: tuple[GitWorktreeEntry, ...] = (),
@@ -2548,7 +2591,7 @@ def cmd_runtime(argv: list[str]) -> int:
     if args.command == "diagnose":
         report = build_runtime_status(mirror_home_arg=args.mirror_home)
         entries = inspect_git_worktree(report.git.repository)
-        findings = diagnose_runtime(report, entries)
+        findings = diagnose_runtime(report, entries) + root_state_findings(DEFAULT_USER_HOMES_DIR)
         sys.stdout.write(render_runtime_diagnosis(findings))
         return 0 if not findings else 1
 

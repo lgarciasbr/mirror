@@ -10,7 +10,7 @@ from pathlib import Path
 RETENTION_DAYS = 30
 
 
-def _default_paths() -> tuple[Path, Path]:
+def _default_paths() -> tuple[Path | None, Path | None]:
     from memory.config import DB_BACKUP_PATH, DB_PATH
 
     return DB_PATH, DB_BACKUP_PATH
@@ -61,6 +61,13 @@ def backup(
     if db_path is None:
         db_path = (mirror_home / "memory.db") if mirror_home is not None else default_db_path
 
+    if db_path is None:
+        from memory.config import MIRROR_HOME_REQUIRED_HINT
+
+        if not silent:
+            print(MIRROR_HOME_REQUIRED_HINT)
+        return None
+
     db_backup_path = resolve_backup_dir(
         db_backup_path=db_backup_path,
         mirror_home=mirror_home,
@@ -76,6 +83,13 @@ def backup(
     if not db_path.exists():
         if not silent:
             print(f"Database not found: {db_path}")
+        return None
+
+    if db_backup_path is None:
+        from memory.config import MIRROR_HOME_REQUIRED_HINT
+
+        if not silent:
+            print(MIRROR_HOME_REQUIRED_HINT)
         return None
 
     db_backup_path.mkdir(parents=True, exist_ok=True)
