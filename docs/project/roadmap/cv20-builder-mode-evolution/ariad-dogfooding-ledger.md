@@ -34,6 +34,7 @@ migration (that journey's Chapter 7). Sequence exercised: `build adopt` →
 | AF-003 | Major | DS plan template thinner than `plan_contract` | CV20.DS5 (DS plan artifact) | Open |
 | AF-004 | Minor | Scope-confirmation checkpoint collapses into plan | CV20.DS5 + cadence | Open |
 | AF-005 | Minor | Self-nested roadmap tree; child == parent | CV20.DS5 (expansion) | Open |
+| AF-006 | Minor | Approve reports "updated story index" but file is unchanged | CV20.DS4.TS3 (deterministic surfaces) | Open |
 
 ## What Worked (calibration)
 
@@ -206,6 +207,27 @@ indistinguishable.
   which supplies real child codes/titles.
 
 ---
+
+## AF-006 — `approve-delivery-story-plan` reports an update that did not happen
+
+**Severity:** Minor (surface trust) **Status:** Open **Likely owner:** CV20.DS4.TS3 (deterministic surface delivery) — same family as AF-002
+
+**Context.** `build approve-delivery-story-plan` for DS-31.
+
+**Observed.** The `ARTIFACTS_MATERIALIZED` surface listed:
+
+```text
+✎ updated story index
+docs/project/roadmap/ds-31-migration-foundation/index.md
+```
+
+but `git status` immediately afterward showed `index.md` unmodified — no diff. (The same command's `test-guide.md` line said "updated" for a file that already existed only because I had authored it by hand.)
+
+**Expected.** A file is reported as `updated` only when its content actually changed on disk; otherwise report `unchanged` or omit it.
+
+**Impact.** Same class as AF-002: the surface claims a write that did not occur. A Navigator trusting the surface believes the story index was refreshed when it was not. Because the surface is the runtime's trust boundary, false "updated" lines are as corrosive as false "created" lines.
+
+**Suggested fix.** Fold into the AF-002 fix: drive `ARTIFACTS_MATERIALIZED` from the file-writer's real result with a content-diff check — emit `created` only on new files, `updated` only on a real content change, and `unchanged` (or nothing) otherwise. One regression test covering create / update / no-op covers both AF-002 and AF-006.
 
 ## Harvest Workflow
 
