@@ -1284,4 +1284,34 @@ be artificially coupled.
 
 ---
 
+### Refinement returns to project documents as its canonical shared state
+
+**Date:** 2026-07-30
+**Reference:** [CV20.DS12](roadmap/cv20-builder-mode-evolution/cv20-ds12-refinement-work-artifacts/index.md), [experiment retrospective](roadmap/cv20-builder-mode-evolution/cv20-ds12-refinement-work-artifacts/experiment-retrospective.md)
+
+The first CV20.DS12 implementation was archived without merge. It converted a need for
+a canonical Refinement backlog and artifact trail into a distributed protocol spanning
+filesystem authority, SQLite projection, mutation recovery, Git topology, remote
+readiness, and cross-clone consumption. The design addressed possible failures but was
+disproportionate to the observed workflow and would have imposed excessive maintenance
+and adaptation cost.
+
+Decision: **project documents are the canonical shared state for Refinement Work.** One
+versioned index owns RS/CR backlog position and status; ordinary project directories own
+plans and evidence; Git owns history, collaboration, conflict resolution, and recovery.
+Journeys and databases may provide local runtime convenience but cannot compete with the
+project artifacts for shared meaning.
+
+No code, lifecycle completion record, or validation claim from the abandoned branch is
+carried into production. New automation requires evidence of recurring operational pain.
+The existing CV20.DS6 SQLite Workbench remains a separate compatibility and migration
+concern: it is neither endorsed as future authority nor removed implicitly by DS12.
+
+The global `mm-plan-review` technical panel was disabled with the experiment. It found
+valid risks but had no sufficient proportionality counterweight, allowing defensive
+completeness to dominate product relevance. Future review must evaluate necessity and
+maintenance cost before expanding scope.
+
+---
+
 **See also:** [Briefing](briefing.md) · [Roadmap](roadmap/index.md) · [Worklog](../process/worklog.md)
