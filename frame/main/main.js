@@ -153,8 +153,11 @@ ipcMain.handle("login:start", (_e, slug) => {
   try {
     if (!LOGIN_PROVIDERS.has(slug)) return { ok: false, err: `provedor não suportado: ${slug}` };
     if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup" };
+    // Pi puro, sem argumentos: mensagem inicial via CLI vira PROMPT pro modelo
+    // (não comando). O renderer digita '/login <slug>' quando o Pi anuncia
+    // prontidão no output.
     const id = openPty({
-      file: "cmd.exe", args: ["/c", "pi", `/login ${slug}`],
+      file: "cmd.exe", args: ["/c", "pi"],
       cwd: MIRROR_ROOT ?? process.cwd(), env: frameEnv(),
     }, "system");
     return { ok: true, id };

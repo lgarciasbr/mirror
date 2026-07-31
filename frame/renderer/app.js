@@ -47,6 +47,17 @@ function makeTab(sid, title, kind) {
 window.mirror.session.onData((sid, data) => {
   if (wLogin && sid === wLogin.sid) {
     wLogin.term.write(data);
+    // gatilho de prontidão: o Pi imprime estas linhas exatamente quando o input
+    // está pronto (visto nos testes reais de sandbox)
+    if (!wLogin.sent) {
+      wLogin.buf = ((wLogin.buf ?? "") + data).slice(-4000);
+      if (/Where shall we begin|No models available|ctrl\+o/i.test(wLogin.buf)) {
+        wLogin.sent = true;
+        setTimeout(() => {
+          if (wLogin && wLogin.sid === sid) window.mirror.session.input(sid, `/login ${wLogin.slug}\r`);
+        }, 600);
+      }
+    }
     return;
   }
   tabs.find((t) => t.sid === sid)?.term.write(data);
@@ -314,14 +325,27 @@ async function startWizLogin(slug) {
   term.open($("w-login-term"));
   term.onData((d) => window.mirror.session.input(r.id, d));
   term.onResize(({ cols, rows }) => window.mirror.session.resize(r.id, cols, rows));
-  // rede de segurança: se a mensagem inicial não disparar o fluxo, digita o
-  // comando dentro da sessão oculta depois que o Pi assentar.
+  // rede de segurança dupla: se o gatilho de prontidão não disparou em 10s,
+  // digita mesmo assim; se aos 18s ainda não conectou, o fluxo provavelmente
+  // pede uma escolha — revela o terminal para o usuário concluir.
   const fallback = setTimeout(() => {
-    if (wLogin && wLogin.sid === r.id && !wizConnected.includes(slug)) {
+    if (wLogin && wLogin.sid === r.id && !wLogin.sent) {
+      wLogin.sent = true;
       window.mirror.session.input(r.id, `/login ${slug}\r`);
     }
-  }, 9000);
-  wLogin = { sid: r.id, term, fit, slug, fallback };
+  }, 10000);
+  const reveal = setTimeout(() => {
+    if (wLogin && wLogin.sid === r.id && !wizConnected.includes(slug)) {
+      const t = $("w-login-term");
+      if (t && t.style.display === "none") {
+        t.style.display = "block";
+        $("w-login-toggle").textContent = "Ocultar detalhes ▴";
+        $("w-login-lbl").innerHTML = `O fluxo da <b>${p.name}</b> precisa de uma confirmação — conclua no terminal abaixo (o navegador abre em seguida).`;
+        requestAnimationFrame(() => { fit.fit(); term.focus(); });
+      }
+    }
+  }, 18000);
+  wLogin = { sid: r.id, term, fit, slug, fallback, reveal, sent: false, buf: "" };
   renderProvCards();
   $("w-login-cancel").addEventListener("click", () => finishWizLogin(false));
   $("w-login-toggle").addEventListener("click", () => {
@@ -338,6 +362,7 @@ function finishWizLogin(ok) {
   wLogin = null;
   if (l) {
     clearTimeout(l.fallback);
+    clearTimeout(l.reveal);
     window.mirror.session.close(l.sid);
     l.term.dispose();
   }
