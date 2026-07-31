@@ -45,15 +45,29 @@ function makeTab(sid, title, kind) {
 }
 
 window.mirror.session.onData((sid, data) => {
+  if (wLogin && sid === wLogin.sid) {
+    wLogin.term.write(data);
+    if (!wLogin.sent) {
+      wLogin.sent = true;
+      setTimeout(() => window.mirror.session.input(sid, `/login ${wLogin.slug}\r`), 900);
+    }
+    return;
+  }
   tabs.find((t) => t.sid === sid)?.term.write(data);
 });
 window.mirror.session.onExit((sid, code) => {
+  if (wLogin && sid === wLogin.sid) { finishWizLogin(false); return; }
   const t = tabs.find((x) => x.sid === sid);
   if (t) {
     t.exited = true;
     t.term.write(`\r\n\x1b[90m[sessão encerrada · exit ${code}]\x1b[0m\r\n`);
     renderStatus();
   }
+});
+window.mirror.login.onChange((list) => {
+  wizConnected = list;
+  if (wLogin && list.includes(wLogin.slug)) finishWizLogin(true);
+  if (wiz === 3 && !$("view-wizard").classList.contains("hidden")) renderProvCards();
 });
 window.mirror.gate.onChange((g) => { if (CFG) { CFG.gate = g; renderStatus(); } });
 window.addEventListener("resize", () => currentTab()?.fit.fit());
@@ -235,7 +249,7 @@ function renderPersonas() {
     timer = setTimeout(async () => {
       $("p-tryres").textContent = "consultando detect-persona…";
       const r = await window.mirror.cmd.run("detectPersona", { query: q });
-      $("p-tryres").textContent = (r.out || r.err || "(sem saída)").trim();
+      $("p-tryres").textContent = fmtDetect((r.out || r.err || "(sem saída)").trim());
     }, 500);
   });
 }
@@ -262,6 +276,77 @@ function escapeHtml(s) {
 
 /* ============ wizard de 1º acesso (6 passos, como no mockup) ============ */
 const WSTEPS = ["Boas-vindas", "Identidade", "Chave OpenRouter", "Assinatura de modelos", "Conheça as personas", "Primeira conversa"];
+const WPROVS = [
+  { slug: "anthropic", name: "Anthropic", sub: "Claude (recomendado) — planos Pro/Max" },
+  { slug: "openai-codex", name: "OpenAI", sub: "GPT — assinatura ChatGPT (Codex)" },
+];
+let wizConnected = [];
+let wLogin = null; // sessão de login em andamento no wizard
+
+function renderProvCards() {
+  const host = $("w-provs");
+  if (!host) return;
+  host.innerHTML = WPROVS.map((p) => {
+    const on = wizConnected.includes(p.slug);
+    const busy = wLogin?.slug === p.slug;
+    return `<div class="subcard" data-slug="${p.slug}" style="cursor:${on ? "default" : "pointer"};border-color:${on ? "#2c5c42" : "var(--line)"}">
+      <h3>${p.name} ${on ? '<span style="color:var(--ok);font-size:12px">● conectada</span>' : ""}</h3>
+      <p>${p.sub}</p>
+      ${on ? "" : `<p style="margin-top:8px;color:var(--accent);font-weight:600;font-size:13px">${busy ? "conectando…" : "Conectar →"}</p>`}
+    </div>`;
+  }).join("");
+  host.querySelectorAll("[data-slug]").forEach((c) => c.addEventListener("click", () => {
+    const slug = c.dataset.slug;
+    if (!wizConnected.includes(slug)) startWizLogin(slug);
+  }));
+}
+
+async function startWizLogin(slug) {
+  if (wLogin) return;
+  const r = await window.mirror.session.openSystem("login");
+  if (!r.ok) { $("w-login-lbl").textContent = r.err; $("w-login-wrap").classList.remove("hidden"); return; }
+  const p = WPROVS.find((x) => x.slug === slug);
+  $("w-login-wrap").classList.remove("hidden");
+  $("w-login-lbl").textContent = `Conectando ${p.name} — siga o fluxo abaixo; o navegador vai abrir para autenticar.`;
+  const term = new Terminal({
+    theme: TERM_THEME, fontFamily: '"Cascadia Mono", Consolas, monospace',
+    fontSize: 12.5, cursorBlink: true, scrollback: 2000,
+  });
+  const fit = new FitAddon.FitAddon();
+  term.loadAddon(fit);
+  term.open($("w-login-term"));
+  term.onData((d) => window.mirror.session.input(r.id, d));
+  term.onResize(({ cols, rows }) => window.mirror.session.resize(r.id, cols, rows));
+  wLogin = { sid: r.id, term, fit, slug, sent: false };
+  renderProvCards();
+  requestAnimationFrame(() => { fit.fit(); term.focus(); });
+}
+
+function finishWizLogin(ok) {
+  const l = wLogin;
+  wLogin = null;
+  if (l) {
+    window.mirror.session.close(l.sid);
+    l.term.dispose();
+  }
+  const wrap = $("w-login-wrap");
+  if (wrap) {
+    if (ok) {
+      wrap.classList.add("hidden");
+    } else {
+      $("w-login-lbl").textContent = "Fluxo encerrado sem conectar — clique no provedor para tentar de novo.";
+      $("w-login-term").innerHTML = "";
+    }
+  }
+  renderProvCards();
+}
+
+function fmtDetect(raw) {
+  if (/no persona match/i.test(raw)) {
+    return "→ nenhuma persona acima do limiar — o ego responde (sem assinatura ◇).\nDica: as keywords de roteamento padrão são em inglês (ex.: bug, code, design).";
+  }
+  return raw;
+}
 const MODES = [
   { cls: "m1", name: "Mirror",   desc: "reflexão e decisões pessoais" },
   { cls: "m2", name: "Builder",  desc: "código e construção" },
@@ -338,17 +423,20 @@ function renderWizard() {
     $("w-key").addEventListener("input", (e) => { wst.key = e.target.value.trim(); });
   }
 
-  if (wiz === 3) m.innerHTML = `
-    <h1>Conecte sua assinatura</h1>
-    <p class="sub">A <b>conversa</b> usa a sua assinatura de IA (Anthropic ou OpenAI) através do
-    login oficial do Pi — o Mirror <b>nunca vê sua senha</b>.</p>
-    <div class="subcards">
-      <div class="subcard"><h3>Anthropic</h3><p>Claude (recomendado) — planos Pro/Max</p></div>
-      <div class="subcard"><h3>OpenAI</h3><p>GPT — opcional, dá para adicionar depois</p></div>
-    </div>
-    <p class="sub" style="margin-top:14px">A conexão acontece <b>na sua primeira conversa</b>:
-    dentro da sessão, digite <code>/login</code> e siga o fluxo oficial no navegador. Uma vez só.</p>
-    ${wizNav(true, "Entendi →", false)}`;
+  if (wiz === 3) {
+    m.innerHTML = `
+      <h1>Conecte sua assinatura</h1>
+      <p class="sub">A <b>conversa</b> usa a sua assinatura de IA através do login oficial do Pi —
+      o Mirror <b>nunca vê sua senha</b>. Clique num provedor para conectar agora: o fluxo roda
+      no terminal abaixo e o navegador abre sozinho.</p>
+      <div class="subcards" id="w-provs"></div>
+      <div id="w-login-wrap" class="hidden" style="margin-top:14px;max-width:660px">
+        <div style="font-size:12.5px;color:var(--dim);margin-bottom:6px" id="w-login-lbl"></div>
+        <div id="w-login-term" style="height:250px;background:var(--termbg);border:1px solid var(--line);border-radius:8px;padding:6px"></div>
+      </div>
+      ${wizNav(true, "Continuar →", false)}`;
+    renderProvCards();
+  }
 
   if (wiz === 4) {
     m.innerHTML = `
@@ -369,7 +457,7 @@ function renderWizard() {
       timer = setTimeout(async () => {
         $("w-tryres").textContent = "consultando detect-persona…";
         const r = await window.mirror.cmd.run("detectPersona", { query: q });
-        $("w-tryres").textContent = (r.out || r.err || "(sem saída)").trim();
+        $("w-tryres").textContent = fmtDetect((r.out || r.err || "(sem saída)").trim());
       }, 500);
     });
   }
@@ -382,7 +470,8 @@ function renderWizard() {
       <div class="summary">
         ${wchk("g", "Identidade", "~\\.mirror-minds\\" + escapeHtml(wst.user || "?"))}
         ${wchk(wst.key ? "g" : "y", "Memória (OpenRouter)", wst.key ? "chave configurada" : "sem chave — adicione no ⚙ Setup")}
-        ${wchk("y", "Assinatura", "conecte com /login na primeira conversa")}
+        ${wchk(wizConnected.length ? "g" : "y", "Assinatura",
+          wizConnected.length ? "conectada: " + wizConnected.join(", ") : "conecte com /login na primeira conversa")}
         ${wchk("g", "Runtime", "Mirror instalado · warm-up ao abrir")}
       </div>
       <p class="sub">Na primeira sessão: digite <code>/login</code>, conecte sua assinatura, e conversa.</p>
@@ -390,11 +479,12 @@ function renderWizard() {
   }
 
   const back = $("w-back");
-  if (back) back.addEventListener("click", () => { wiz--; renderWizard(); });
+  if (back) back.addEventListener("click", () => { if (wLogin) finishWizLogin(false); wiz--; renderWizard(); });
   $("w-next").addEventListener("click", onWizNext);
 }
 
 async function onWizNext() {
+  if (wLogin) finishWizLogin(false);
   const msg = $("w-msg"), btn = $("w-next");
   if (wiz === 2) {
     if (wst.key && !wst.key.startsWith("sk-or-")) { msg.textContent = "A chave OpenRouter começa com sk-or-…"; return; }
@@ -429,6 +519,7 @@ async function onWizNext() {
 /* ============ boot ============ */
 async function boot() {
   CFG = await window.mirror.config.get();
+  try { wizConnected = await window.mirror.login.providers(); } catch { wizConnected = []; }
   if (CFG.firstRun && CFG.mirrorRoot) {
     $("view-wizard").classList.remove("hidden");
     wiz = 0;

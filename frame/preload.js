@@ -22,4 +22,8 @@ contextBridge.exposeInMainWorld("mirror", {
   gate: {
     onChange: (fn) => ipcRenderer.on("gate:changed", (_e, st) => fn(st)),
   },
+  login: {
+    providers: () => ipcRenderer.invoke("login:providers"),
+    onChange: (fn) => ipcRenderer.on("login:changed", (_e, list) => fn(list)),
+  },
 });

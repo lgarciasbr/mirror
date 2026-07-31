@@ -7,6 +7,7 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const { execFile } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
+const os = require("node:os");
 
 const { resolveMirrorRoot } = require("./root-resolve.js");
 const { sessionEnv } = require("./env-profile.js");
@@ -135,6 +136,16 @@ ipcMain.handle("cmd:run", async (_e, id, opts) => {
   return r;
 });
 
+/* ---------- IPC: assinaturas do Pi (auth.json é a fonte da verdade) ---------- */
+// O Pi grava os tokens OAuth em ~/.pi/agent/auth.json. O frame NUNCA toca o
+// arquivo — só observa as chaves para saber quando um /login concluiu.
+const AUTH_PATH = path.join(os.homedir(), ".pi", "agent", "auth.json");
+function authProviders() {
+  try { return Object.keys(JSON.parse(fs.readFileSync(AUTH_PATH, "utf8"))); }
+  catch { return []; }
+}
+ipcMain.handle("login:providers", () => authProviders());
+
 /* ---------- IPC: sessões PTY ---------- */
 // ConPTY não lança .cmd diretamente — o Pi (shim npm) precisa do cmd.exe /c.
 const SYSTEM_SCRIPTS = {
@@ -212,5 +223,10 @@ function createWindow() {
   win.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  fs.watchFile(AUTH_PATH, { interval: 1200 }, () => {
+    win?.webContents.send("login:changed", authProviders());
+  });
+});
 app.on("window-all-closed", async () => { await ptys.closeAll(); app.quit(); });
