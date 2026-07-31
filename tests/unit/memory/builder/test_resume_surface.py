@@ -88,6 +88,39 @@ def test_render_builder_resume_surface_shows_active_refinement_field(store):
     assert "no story lifecycle work" in rendered
 
 
+def test_render_builder_resume_surface_prefers_canonical_project_index_to_legacy_state(
+    store,
+):
+    set_adopted_method(store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS12.US2",
+    )
+    story = store.create_refinement_story(
+        journey="sandbox-pet-store",
+        title="Stale Local Refinement",
+    )
+    store.update_refinement_story_status(story.id, "active")
+    store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        last_refinement_event="refinement_story_pulled",
+    )
+    state = read_builder_resume_state(store, "sandbox-pet-store")
+
+    rendered = render_builder_resume_surface(
+        state,
+        canonical_refinement_index="docs/project/refinement/index.md",
+    )
+
+    assert "authority: project files" in rendered
+    assert "docs/project/refinement/index.md" in rendered
+    assert "Stale Local Refinement" not in rendered
+    assert "last refinement event:" not in rendered
+
+
 def test_render_builder_resume_surface_shows_non_resumable_reason():
     state = BuilderResumeState(
         journey="sandbox-pet-store",

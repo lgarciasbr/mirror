@@ -315,6 +315,63 @@ recommended candidate or inspect the roadmap further after the verbatim blocks.
 
 ## Compose Refinement Work
 
+### Choose the Refinement authority
+
+Before inspecting, capturing, selecting, continuing, or changing Refinement Work,
+check for this exact path beneath the trusted `project_path`:
+
+```text
+docs/project/refinement/index.md
+```
+
+If it exists, use the **file-first path** below. The root index is the sole
+authority for focus, ordering, and current RS/CR status; linked documents own
+narrative, plans, evidence, and outcomes. Read the project's own convention from
+the index before acting. Do not invoke SQLite Workbench commands, inspect legacy
+rows, compare the two stores, or fall back to SQLite when a file-first operation
+is unclear.
+
+If the path does not exist, use the **legacy SQLite path** below. File-first and
+legacy behavior are alternatives selected by the explicit path, never dual
+writers or competing authorities.
+
+### File-first path
+
+When the Navigator asks to inspect or show Refinement Work, read the canonical
+index and relevant linked documents. Read-only intent stays read-only: report a
+structural defect and recommend a concrete correction, but do not mutate files.
+
+When the Navigator authorizes a mutable operation such as capture, select,
+continue, update, or implement, that request also authorizes structural repairs
+needed to complete it without a second confirmation only when every repair is:
+
+- necessary for the requested operation;
+- deterministic from existing project evidence;
+- local to the involved Refinement documents;
+- non-destructive and reversible through Git;
+- meaning-preserving; and
+- free of unrequested status, priority, focus, identity, SQLite, configuration,
+  commit, push, publication, or release decisions.
+
+After completing the operation, explain in Navigator-facing project language
+what defect was found, what was repaired, and what was left unchanged. Do not
+lead with internal Mirror terms such as projection, artifact mismatch, or
+runtime coherence.
+
+Stop only when repair would choose product meaning, delete content, resolve a
+concurrent conflict, or expand the original request. In that case, explain the
+practical consequence, recommend the smallest safe solution, name the files it
+would change, and ask for the missing decision. Never use legacy SQLite as a
+recovery path.
+
+Follow the canonical file's status vocabulary and ID convention. Do not invent
+missing narrative or an RS assignment. Do not treat journey-local UUIDs or
+legacy display codes as project artifact identity. Git owns history, conflicts,
+and recovery; ordinary file work must not create an application-level Git
+protocol.
+
+### Legacy SQLite path
+
 When the Navigator uses natural language such as "capture this as a CR", "create
 a CR", "register this refinement", "add this to the Workbench", or "this should
 be a refinement", treat it as Refinement Work capture rather than roadmap
@@ -324,7 +381,7 @@ missing title/body/RS target.
 
 When the Navigator asks to "create an RS", "compose a refinement story", "group
 these CRs", or "show me that refinement story", route to the Builder Workbench
-commands:
+commands only when the canonical project index is absent:
 
 ```bash
 uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]

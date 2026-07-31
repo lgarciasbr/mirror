@@ -276,9 +276,31 @@ Failures print a recovery block with the backup path and previous commit when re
 
 If the full status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate: clean git tree, configured upstream, optional fetch, optional database backup when the Mirror home and database are available, fast-forward only code update, and migrations skipped. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
 
-### Builder Workbench composition
+### Builder Refinement authority
 
-Ariad-adopted Builder journeys can compose Refinement Work without pulling it into active lifecycle execution:
+Builder selects Refinement behavior from one explicit project-relative path:
+
+```text
+docs/project/refinement/index.md
+```
+
+When the file exists, it is the sole shared authority for Refinement focus, ordering,
+and current RS/CR status. Builder reads that index and its linked project documents; it
+does not inspect, compare, synchronize, or mutate personal SQLite Workbench rows. Builder
+entry surfaces point to the canonical index rather than rendering SQLite state. An
+unreadable or ambiguous canonical document never causes a silent fallback to SQLite.
+
+Read-only requests remain read-only. During an already-authorized mutable operation,
+Builder may repair and report a structural defect without another confirmation only when
+the repair is deterministic, local, non-destructive, reversible, meaning-preserving, and
+contained in the original request. A repair that chooses status, priority, focus,
+identity, deletion, or conflict meaning stops with a concrete recommendation for the
+Navigator. This repair policy never authorizes a commit, push, publication, release,
+configuration change, or legacy data mutation.
+
+When the canonical index is absent, Ariad-adopted journeys retain the compatibility-only
+SQLite Workbench commands. They can compose Refinement Work without pulling it into
+active lifecycle execution:
 
 ```bash
 uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]

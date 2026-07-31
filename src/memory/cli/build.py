@@ -39,6 +39,7 @@ from memory.builder.flow_unit import (
     set_navigator_flow_unit,
 )
 from memory.builder.home_surface import (
+    find_canonical_refinement_index,
     inspect_refinement_field,
     render_builder_orientation_surface,
 )
@@ -291,8 +292,13 @@ def _print_builder_entry_surface(
     adopted_method: str,
     project_path: str | None,
 ) -> None:
-    resume_state = read_builder_resume_state(mem.store, slug)
     project_root = Path(project_path) if project_path else None
+    canonical_refinement_index = find_canonical_refinement_index(project_root)
+    resume_state = read_builder_resume_state(
+        mem.store,
+        slug,
+        include_refinement=canonical_refinement_index is None,
+    )
     if (
         resume_state.cursor
         and not resume_state.cursor.active_item
@@ -317,6 +323,7 @@ def _print_builder_entry_surface(
         render_builder_resume_surface(
             resume_state,
             roadmap_position=resolve_roadmap_position(project_root) if project_root else None,
+            canonical_refinement_index=canonical_refinement_index,
         )
     )
 

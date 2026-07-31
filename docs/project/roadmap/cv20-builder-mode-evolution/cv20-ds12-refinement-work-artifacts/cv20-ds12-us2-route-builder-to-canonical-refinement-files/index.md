@@ -2,7 +2,7 @@
 
 # CV20.DS12.US2 — Route Builder To Canonical Refinement Files
 
-**Status:** 🟡 Planned
+**Status:** 🟠 Implemented — validation pending
 **Type:** User Story
 
 ---
@@ -24,19 +24,35 @@ And it does not invoke SQLite Workbench commands for that request
 Given a project without the canonical index
 When the same request is made
 Then existing legacy Workbench guidance remains available
+
+Given authorized mutable file-first work encounters a deterministic structural defect
+When the defect can be repaired locally without choosing product meaning
+Then Builder repairs it and reports the repair after the operation
+
+Given a read-only request or a defect that requires a semantic decision
+When Builder cannot safely repair within the original intent
+Then it explains the practical problem in Navigator language
+And recommends the smallest safe next action instead of falling back to SQLite
 ```
 
 ## Scope
 
 - Define file-first versus legacy routing in the Builder skill contract.
 - Update operational reference documentation to describe the authority check.
-- Preserve explicit Navigator control over file mutations and lifecycle transitions.
+- Make Builder orientation name project files without inspecting or presenting legacy rows
+  when the canonical index exists.
+- Repair and report deterministic, local, non-destructive structural defects during an
+  already-authorized mutable operation; preserve Navigator authority over meaning.
+- Keep read-only requests read-only, and recommend a concrete correction when safe repair
+  is not possible.
 - Validate natural-language inspection and one bounded file-first action without SQLite.
 - Keep routing based on the explicit canonical relative path, not prose discovery.
 
 ## Out Of Scope
 
-- Changing Python or TypeScript Workbench commands, storage, schemas, or migrations.
+- Changing Python or TypeScript Workbench commands, domain behavior, storage, schemas, or
+  migrations; the current Python surface may receive only the minimal authority-routing
+  correction needed to stop implicit legacy inspection.
 - Reading, exporting, reconciling, freezing, or deleting legacy rows.
 - Dual-writing files and SQLite.
 - Adding a parser, watcher, projection, synchronization, or handoff protocol.
