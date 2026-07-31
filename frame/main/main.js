@@ -146,6 +146,23 @@ function authProviders() {
 }
 ipcMain.handle("login:providers", () => authProviders());
 
+// Login fluido: Pi roda num PTY oculto com o slash command como mensagem
+// inicial; o próprio Pi abre o navegador (OAuth). O frame só observa auth.json.
+const LOGIN_PROVIDERS = new Set(["anthropic", "openai-codex"]);
+ipcMain.handle("login:start", (_e, slug) => {
+  try {
+    if (!LOGIN_PROVIDERS.has(slug)) return { ok: false, err: `provedor não suportado: ${slug}` };
+    if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup" };
+    const id = openPty({
+      file: "cmd.exe", args: ["/c", "pi", `/login ${slug}`],
+      cwd: MIRROR_ROOT ?? process.cwd(), env: frameEnv(),
+    }, "system");
+    return { ok: true, id };
+  } catch (e) {
+    return { ok: false, err: `falha ao iniciar login: ${e.message}` };
+  }
+});
+
 /* ---------- IPC: sessões PTY ---------- */
 // ConPTY não lança .cmd diretamente — o Pi (shim npm) precisa do cmd.exe /c.
 const SYSTEM_SCRIPTS = {

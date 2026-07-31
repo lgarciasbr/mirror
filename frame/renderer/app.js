@@ -47,10 +47,6 @@ function makeTab(sid, title, kind) {
 window.mirror.session.onData((sid, data) => {
   if (wLogin && sid === wLogin.sid) {
     wLogin.term.write(data);
-    if (!wLogin.sent) {
-      wLogin.sent = true;
-      setTimeout(() => window.mirror.session.input(sid, `/login ${wLogin.slug}\r`), 900);
-    }
     return;
   }
   tabs.find((t) => t.sid === sid)?.term.write(data);
@@ -303,11 +299,12 @@ function renderProvCards() {
 
 async function startWizLogin(slug) {
   if (wLogin) return;
-  const r = await window.mirror.session.openSystem("login");
+  const r = await window.mirror.login.start(slug);
   if (!r.ok) { $("w-login-lbl").textContent = r.err; $("w-login-wrap").classList.remove("hidden"); return; }
   const p = WPROVS.find((x) => x.slug === slug);
   $("w-login-wrap").classList.remove("hidden");
-  $("w-login-lbl").textContent = `Conectando ${p.name} — siga o fluxo abaixo; o navegador vai abrir para autenticar.`;
+  $("w-login-lbl").innerHTML = `Conectando <b>${p.name}</b> — o navegador vai abrir para você autenticar.
+    <span style="color:var(--dim)">Conclua por lá; eu detecto sozinho quando terminar…</span>`;
   const term = new Terminal({
     theme: TERM_THEME, fontFamily: '"Cascadia Mono", Consolas, monospace',
     fontSize: 12.5, cursorBlink: true, scrollback: 2000,
@@ -317,15 +314,30 @@ async function startWizLogin(slug) {
   term.open($("w-login-term"));
   term.onData((d) => window.mirror.session.input(r.id, d));
   term.onResize(({ cols, rows }) => window.mirror.session.resize(r.id, cols, rows));
-  wLogin = { sid: r.id, term, fit, slug, sent: false };
+  // rede de segurança: se a mensagem inicial não disparar o fluxo, digita o
+  // comando dentro da sessão oculta depois que o Pi assentar.
+  const fallback = setTimeout(() => {
+    if (wLogin && wLogin.sid === r.id && !wizConnected.includes(slug)) {
+      window.mirror.session.input(r.id, `/login ${slug}\r`);
+    }
+  }, 9000);
+  wLogin = { sid: r.id, term, fit, slug, fallback };
   renderProvCards();
-  requestAnimationFrame(() => { fit.fit(); term.focus(); });
+  $("w-login-cancel").addEventListener("click", () => finishWizLogin(false));
+  $("w-login-toggle").addEventListener("click", () => {
+    const t = $("w-login-term");
+    const showing = t.style.display !== "none";
+    t.style.display = showing ? "none" : "block";
+    $("w-login-toggle").textContent = showing ? "Ver detalhes ▾" : "Ocultar detalhes ▴";
+    if (!showing) requestAnimationFrame(() => { fit.fit(); term.focus(); });
+  });
 }
 
 function finishWizLogin(ok) {
   const l = wLogin;
   wLogin = null;
   if (l) {
+    clearTimeout(l.fallback);
     window.mirror.session.close(l.sid);
     l.term.dispose();
   }
@@ -336,6 +348,7 @@ function finishWizLogin(ok) {
     } else {
       $("w-login-lbl").textContent = "Fluxo encerrado sem conectar — clique no provedor para tentar de novo.";
       $("w-login-term").innerHTML = "";
+      $("w-login-term").style.display = "none";
     }
   }
   renderProvCards();
@@ -430,9 +443,13 @@ function renderWizard() {
       o Mirror <b>nunca vê sua senha</b>. Clique num provedor para conectar agora: o fluxo roda
       no terminal abaixo e o navegador abre sozinho.</p>
       <div class="subcards" id="w-provs"></div>
-      <div id="w-login-wrap" class="hidden" style="margin-top:14px;max-width:660px">
-        <div style="font-size:12.5px;color:var(--dim);margin-bottom:6px" id="w-login-lbl"></div>
-        <div id="w-login-term" style="height:250px;background:var(--termbg);border:1px solid var(--line);border-radius:8px;padding:6px"></div>
+      <div id="w-login-wrap" class="hidden" style="margin-top:16px;max-width:660px;background:var(--panelbg);border:1px solid var(--line);border-radius:9px;padding:16px 18px">
+        <div style="font-size:14px;color:var(--ink)" id="w-login-lbl"></div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn" id="w-login-cancel" style="font-size:12.5px;padding:7px 14px">Cancelar</button>
+          <button class="btn" id="w-login-toggle" style="font-size:12.5px;padding:7px 14px">Ver detalhes ▾</button>
+        </div>
+        <div id="w-login-term" style="display:none;margin-top:12px;height:230px;background:var(--termbg);border:1px solid var(--line);border-radius:8px;padding:6px"></div>
       </div>
       ${wizNav(true, "Continuar →", false)}`;
     renderProvCards();
