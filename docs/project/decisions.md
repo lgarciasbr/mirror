@@ -1314,4 +1314,32 @@ maintenance cost before expanding scope.
 
 ---
 
+### Project files supersede the SQLite Workbench as shared Refinement authority
+
+**Date:** 2026-07-30
+**Reference:** [CV20.DS12.TS2](roadmap/cv20-builder-mode-evolution/cv20-ds12-refinement-work-artifacts/cv20-ds12-ts2-legacy-workbench-migration-boundary/index.md), [legacy boundary](roadmap/cv20-builder-mode-evolution/cv20-ds12-refinement-work-artifacts/cv20-ds12-ts2-legacy-workbench-migration-boundary/legacy-workbench-boundary.md)
+
+CV20.DS6 shipped a journey-scoped SQLite Workbench with mutable RS/CR records, local
+cursors, commands, and Builder Home surfaces. DS12 subsequently established a
+project-local Refinement index whose purpose is durable shared meaning across sessions
+and collaborators. Treating both as equal authorities would create unresolved identity,
+status, focus, and ordering conflicts.
+
+Decision: **when `docs/project/refinement/index.md` exists, project files are the sole
+canonical shared Refinement authority.** The SQLite Workbench is preserved as
+compatibility-only local state. Existing rows are not implicitly assigned, imported,
+exported, reconciled, published, or deleted.
+
+Automatic migration is rejected because legacy identity is journey-scoped, carries no
+stable repository identity, uses different status vocabularies, and compresses narrative
+into structured fields. Matching display codes do not establish identity. Migrations
+`015`/`016` and their TypeScript schema recognition remain intact while supported
+databases depend on them.
+
+Legacy commands do not change in this decision. File-first routing, explicit export,
+deprecation, and physical removal are separate changes with their own evidence and
+approval gates. No future transition may dual-write files and SQLite as peer authorities.
+
+---
+
 **See also:** [Briefing](briefing.md) · [Roadmap](roadmap/index.md) · [Worklog](../process/worklog.md)

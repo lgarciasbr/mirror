@@ -2,56 +2,55 @@
 
 # CV20.DS12.TS2 — Define Legacy Workbench Migration Boundary
 
-**Status:** 🟡 Planned
+**Status:** 🟠 Implemented — validation pending
 **Type:** Technical Story
 
 ---
 
 ## Outcome
 
-The project has one explicit decision for the existing CV20.DS6 SQLite Workbench: what
-remains supported during transition, which authority is canonical, how existing data is
-protected, and what evidence would justify export, deprecation, or removal.
+The project explicitly decides how the shipped CV20.DS6 SQLite Workbench relates to the
+new canonical project files, without reading, transforming, or deleting local records.
+The decision protects schema compatibility while preventing accidental dual authority.
 
 ## Acceptance Behavior
 
 ```text
 Given project files now own canonical shared Refinement state
-And production and TypeScript compatibility still recognize the SQLite Workbench
-When the transition boundary is decided
-Then files remain the sole canonical shared authority
-And existing local data is neither silently migrated nor deleted
-And runtime behavior during the transition is explicit
-And any future migration is a separate, reversible story
+And production still ships an SQLite Workbench and its commands
+When the transition boundary is recorded
+Then files are named as the only shared authority
+And legacy rows and migrations are preserved without implicit import
+And unsafe automatic identity/status mapping is rejected
+And the next compatibility change is isolated as a later story
 ```
 
 ## Scope
 
-- Inventory the shipped SQLite tables, commands, surfaces, and TypeScript schema
-  compatibility related to the Workbench.
-- Distinguish current production compatibility from desired future authority.
-- Compare bounded transition options: retain unchanged, freeze writes, offer explicit
-  export, deprecate, or remove later.
-- Record one decision, consequences, and triggers for future work.
-- Capture conflicts with the document-first model as findings rather than fixing them.
+- Inventory shipped schema, storage, commands, Home surface, skill routing, reference
+  documentation, and TypeScript schema coupling.
+- Compare bounded transition options.
+- Record one authority and compatibility decision in project documentation.
+- Define prohibitions and explicit triggers for future export, deprecation, or removal.
+- Name the smallest follow-up needed to route file-enabled projects safely.
 
 ## Out Of Scope
 
-- Reading or transforming personal Workbench rows.
-- Exporting, migrating, deleting, or reconciling production data.
-- Removing migrations or TypeScript schema compatibility.
-- Changing Builder commands, surfaces, storage, or lifecycle behavior.
+- Reading personal Workbench rows or production counts.
+- Exporting, migrating, deleting, or reconciling data.
+- Changing Python/TypeScript source, commands, surfaces, storage, or lifecycle behavior.
+- Removing migrations `015`/`016` or TypeScript schema recognition.
 - Implementing CR001, CR002, or CR004.
 
 ## Validation
 
-A reviewer can determine from project documents which authority wins today, what legacy
-behavior remains, what is prohibited, and what trigger permits a future migration.
-Repository and documentation checks must remain clean; no source or database mutation is
-allowed.
+A reviewer can determine which authority wins, why automatic migration is unsafe, what
+legacy behavior remains compatible, and which future event permits behavior or schema
+changes. Documentation and scope checks pass with no executable changes.
 
-## Done Condition
+---
 
-The transition decision is explicit enough that subsequent work cannot accidentally
-restore dual authority or delete legacy data, while leaving implementation for a later,
-separately approved story.
+## Artifacts
+
+- [Plan](plan.md)
+- [Test Guide](test-guide.md)
