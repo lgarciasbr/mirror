@@ -2,6 +2,13 @@
 
 # ES-004 Windows Desktop Frame (mirror.exe)
 
+> **Product reframe (Navigator, 2026-07-31):** the deliverable is not "a frame"
+> — it is the **Mirror installer package**, an evolution of the official
+> Windows installer (release v0.30.0+): the user downloads one setup that
+> installs Frame + initial onboarding + Pi + Mirror with everything needed to
+> run on Windows. The frame is a component the installer ships and makes the
+> primary shortcut.
+
 **Status:** Open — Experiment 1 published, collecting feedback
 **Experiment 1:** https://windows-frame-mockup.vercel.app (source: `spikes/windows-frame-mockup/`)
 **Source:** Windows adoption work that produced the native installer (PR #26), plus a Builder/Explorer conversation on 2026-07-31 that converged on a desktop frame design ("Fusão A+C")

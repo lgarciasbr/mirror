@@ -112,13 +112,17 @@ Source: "configure.ps1";      DestDir: "{app}\bin";                  Flags: igno
 Source: "install.ps1";        DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "health-check.ps1";   DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "assets\mirror.ico";  DestDir: "{app}\bin";                  Flags: ignoreversion skipifsourcedoesntexist
+; Desktop frame (ES-004): tabbed Pi sessions + guided onboarding. Packaged by
+; frame build (Electron portable); becomes the primary "Mirror Mind" shortcut.
+Source: "..\frame\out\MirrorFrame-win32-x64\*"; DestDir: "{app}\frame"; Flags: recursesubdirs ignoreversion skipifsourcedoesntexist
 ; Wizard banner illustration, extracted to {tmp} and loaded by [Code].
 Source: "assets\wizard-banner.bmp"; Flags: dontcopy
 
 [Icons]
-Name: "{group}\{#AppName}";            Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"
+Name: "{group}\{#AppName}";            Filename: "{app}\frame\MirrorFrame.exe"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"
+Name: "{group}\{#AppName} (Terminal)"; Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"
 Name: "{group}\{#AppName} Health Check"; Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -NoExit -File ""{app}\bin\health-check.ps1"" -InstallDir ""{app}"""; WorkingDir: "{app}\app"
-Name: "{userdesktop}\{#AppName}";      Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"; Tasks: desktopicon
+Name: "{userdesktop}\{#AppName}";      Filename: "{app}\frame\MirrorFrame.exe"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"; Tasks: desktopicon
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\app"

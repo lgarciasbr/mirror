@@ -10,9 +10,9 @@ let warmupOut = "";
 
 /* ============ terminal ============ */
 const TERM_THEME = {
-  background: "#0e0f14", foreground: "#d6d9e4", cursor: "#8fb4ff",
-  selectionBackground: "#33405e",
-  black: "#1b1d26", brightBlack: "#6a7086",
+  background: "#0e0f14", foreground: "#eceff7", cursor: "#9dbeff",
+  selectionBackground: "#3d4d75",
+  black: "#1b1d26", brightBlack: "#9aa1b8",
   blue: "#8fb4ff", brightBlue: "#a9c4ff",
   magenta: "#b79cff", brightMagenta: "#cbb6ff",
   green: "#58c08a", brightGreen: "#79d3a6",
@@ -28,7 +28,7 @@ function makeTab(sid, title, kind) {
   $("term-host").appendChild(slot);
   const term = new Terminal({
     theme: TERM_THEME, fontFamily: '"Cascadia Mono", Consolas, monospace',
-    fontSize: 13, cursorBlink: true, allowProposedApi: true, scrollback: 5000,
+    fontSize: 14, cursorBlink: true, allowProposedApi: true, scrollback: 5000,
   });
   const fit = new FitAddon.FitAddon();
   term.loadAddon(fit);

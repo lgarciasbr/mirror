@@ -1,12 +1,13 @@
 /* Mirror Frame — renderer (paleta da ES-004) */
 * { box-sizing: border-box; }
 :root {
-  --win: #14151b; --bar: #1b1d26; --line: #262834; --panelbg: #171922;
-  --termbg: #0e0f14; --ink: #d6d9e4; --muted: #8a8fa3; --dim: #6a7086;
-  --accent: #8fb4ff; --persona: #b79cff; --ok: #58c08a; --warn: #e0b45c; --err: #d16060;
+  /* contraste alto (feedback do Navigator: legibilidade primeiro) */
+  --win: #14151b; --bar: #1b1d26; --line: #32354a; --panelbg: #1a1c26;
+  --termbg: #0e0f14; --ink: #f0f2f8; --muted: #c0c5d8; --dim: #9aa1b8;
+  --accent: #9dbeff; --persona: #c4adff; --ok: #6cd49e; --warn: #e8c274; --err: #e07575;
 }
 html, body { margin: 0; height: 100%; overflow: hidden; }
-body { background: var(--win); color: var(--ink); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; }
+body { background: var(--win); color: var(--ink); font: 15px/1.55 "Segoe UI", system-ui, sans-serif; }
 code { font-family: "Cascadia Mono", Consolas, monospace; color: var(--accent); font-size: .93em; }
 .hidden { display: none !important; }
 
@@ -41,11 +42,11 @@ code { font-family: "Cascadia Mono", Consolas, monospace; color: var(--accent); 
 .tabstrip { display: flex; align-items: flex-end; gap: 4px; background: var(--bar); padding: 6px 10px 0; flex: none; overflow-x: auto; -webkit-app-region: drag; }
 .tabstrip button { -webkit-app-region: no-drag; }
 .tab {
-  display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 13px;
-  background: #20222d; color: #9aa0b4; border: 1px solid var(--line); border-bottom: none;
+  display: flex; align-items: center; gap: 8px; padding: 9px 15px; font-size: 13.5px;
+  background: #232532; color: #c0c5d8; border: 1px solid var(--line); border-bottom: none;
   border-radius: 8px 8px 0 0; white-space: nowrap; cursor: pointer; font-family: inherit;
 }
-.tab.active { background: var(--termbg); color: #e2e4ee; border-color: #2e3140; }
+.tab.active { background: var(--termbg); color: #ffffff; border-color: #3a3d55; }
 .tab .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--persona); }
 .tab .dot.sys { background: var(--warn); }
 .tab .x { color: var(--dim); font-size: 11px; padding-left: 4px; }
@@ -66,13 +67,13 @@ code { font-family: "Cascadia Mono", Consolas, monospace; color: var(--accent); 
 .checks { display: flex; flex-direction: column; gap: 9px; max-width: 680px; }
 .check {
   display: flex; align-items: center; gap: 13px; background: var(--panelbg);
-  border: 1px solid var(--line); border-radius: 8px; padding: 11px 15px; font-size: 13px;
+  border: 1px solid var(--line); border-radius: 8px; padding: 12px 15px; font-size: 13.5px;
 }
 .light { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .light.g { background: var(--ok); box-shadow: 0 0 8px rgba(88,192,138,.5); }
 .light.y { background: var(--warn); box-shadow: 0 0 8px rgba(224,180,92,.5); }
 .light.r { background: var(--err); box-shadow: 0 0 8px rgba(209,96,96,.5); }
-.check .name { font-weight: 600; color: #dfe2ec; width: 215px; flex: none; }
+.check .name { font-weight: 600; color: #ffffff; width: 215px; flex: none; }
 .check .detail { color: var(--muted); flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .check button {
   flex: none; font: 600 12px "Segoe UI", system-ui, sans-serif; color: var(--accent);
@@ -83,8 +84,8 @@ code { font-family: "Cascadia Mono", Consolas, monospace; color: var(--accent); 
 .setup-note.ok { color: var(--ok); }
 .mono-out {
   margin-top: 16px; max-width: 680px; background: var(--panelbg); border: 1px solid var(--line);
-  border-radius: 8px; padding: 12px 15px; font: 12px/1.6 "Cascadia Mono", Consolas, monospace;
-  color: #c9cdd9; white-space: pre-wrap; max-height: 300px; overflow-y: auto;
+  border-radius: 8px; padding: 12px 15px; font: 13px/1.65 "Cascadia Mono", Consolas, monospace;
+  color: #e6e9f2; white-space: pre-wrap; max-height: 300px; overflow-y: auto;
 }
 .tryit { margin-top: 18px; border: 1px dashed #33405e; border-radius: 9px; padding: 15px 17px; background: #121826; max-width: 680px; }
 .tryit .lbl { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 9px; }
@@ -100,8 +101,8 @@ code { font-family: "Cascadia Mono", Consolas, monospace; color: var(--accent); 
 
 .statusbar {
   display: flex; gap: 18px; align-items: center; background: var(--bar); border-top: 1px solid var(--line);
-  padding: 6px 14px; font-size: 12px; color: var(--muted); flex: none; flex-wrap: wrap;
+  padding: 7px 14px; font-size: 12.5px; color: var(--muted); flex: none; flex-wrap: wrap;
 }
-.statusbar b { color: #c3c7d6; font-weight: 600; }
+.statusbar b { color: #ffffff; font-weight: 600; }
 .statusbar .right { margin-left: auto; display: flex; gap: 18px; }
 .statusbar .okdot { color: var(--ok); }
