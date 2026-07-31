@@ -569,7 +569,9 @@ function renderWizard() {
           wizConnected.length ? "conectada: " + wizConnected.join(", ") : "conecte com /login na primeira conversa")}
         ${wchk("g", "Runtime", "Mirror instalado · warm-up ao abrir")}
       </div>
-      <p class="sub">Na primeira sessão: digite <code>/login</code>, conecte sua assinatura, e conversa.</p>
+      ${wizConnected.length
+        ? `<p class="sub">Tudo conectado — é só abrir e conversar.</p>`
+        : `<p class="sub">Sem assinatura conectada ainda: na primeira sessão, digite <code>/login</code> para conectar (ou volte ao passo 4).</p>`}
       ${wizNav(true, "Abrir meu Mirror ◇", false)}`;
   }
 
