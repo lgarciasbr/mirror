@@ -29,3 +29,4 @@ cannot choose safely.
 - [CR001 — Make scope confirmation an honest checkpoint](cr001-scope-confirmation-checkpoint.md)
 - [CR002 — Refuse ambiguous roadmap selection during cursor sync](cr002-cursor-sync-roadmap-selection.md)
 - [CR003 — Make artifact materialization surfaces truthful](cr003-surface-materialization-truth.md)
+- [CR004 — Preserve authored story index during Plan materialization](cr004-preserve-authored-story-index.md)

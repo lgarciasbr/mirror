@@ -2,7 +2,7 @@
 
 # CV20.DS12.US1 — Dogfood File-Only Refinement
 
-**Status:** 🟠 Implemented — validation pending
+**Status:** ✅ Done
 **Type:** User Story
 
 ---

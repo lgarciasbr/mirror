@@ -50,11 +50,12 @@ workflow. The retained learning is recorded in the
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
 | [CV20.DS12.TS1](cv20-ds12-ts1-canonical-refinement-index-and-artifact-convention/index.md) | Canonical Refinement Index And Artifact Convention | Technical Story | A real file-only Workbench proves the canonical backlog, identity, status, and navigation contract | ✅ Done |
-| [CV20.DS12.US1](cv20-ds12-us1-dogfood-file-only-refinement/index.md) | Dogfood File-Only Refinement | User Story | Navigator selects and plans real Refinement work from the canonical files alone, exposing usability gaps before automation | 🟠 Implemented — validation pending |
+| [CV20.DS12.US1](cv20-ds12-us1-dogfood-file-only-refinement/index.md) | Dogfood File-Only Refinement | User Story | Navigator selects and plans real Refinement work from the canonical files alone, exposing usability gaps before automation | ✅ Done |
+| [CV20.DS12.TS2](cv20-ds12-ts2-legacy-workbench-migration-boundary/index.md) | Define Legacy Workbench Migration Boundary | Technical Story | The project decides how the existing SQLite Workbench coexists with, transitions to, or retires behind canonical project files without migrating data yet | 🟡 Planned |
 
-Later stories may add lightweight structural validation and an explicit migration
-boundary from the existing SQLite Workbench, but only after TS1 is used and reviewed.
-The archived experiment's TS/US decomposition is not reused.
+Later stories may add lightweight structural validation or execute an explicitly
+approved transition, but only after TS2 settles the legacy Workbench boundary. The
+archived experiment's TS/US decomposition is not reused.
 
 ---
 
