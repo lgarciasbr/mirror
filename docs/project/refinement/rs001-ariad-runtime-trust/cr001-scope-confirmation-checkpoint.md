@@ -20,9 +20,19 @@ A checkpoint that does not checkpoint weakens trust in every other Ariad stop co
 
 ## Plan Or Decision
 
-Pending. Evaluate the smallest correction only when this CR is selected. Candidate
-routes are a separate confirmation step or cadence-aware non-gating wording; neither is
-chosen by capture alone.
+1. Reproduce the scope-confirmation ordering under checkpoint cadence against the
+   current runtime.
+2. If the finding no longer reproduces, record current evidence and close this CR
+   without changing code.
+3. If it reproduces, characterize both the emitted surface order and filesystem writes
+   before making a change.
+4. Choose one smallest honest behavior: either stop before plan materialization or make
+   the scope surface explicitly non-gating. Do not implement both routes.
+5. Add focused regression evidence for the chosen ordering and disk effects.
+6. Preserve existing Navigator approval and publication boundaries.
+
+This document records the plan only. Selecting and planning CR001 does not authorize its
+implementation.
 
 ## Evidence
 

@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: none
-- Change Request: none
+- Refinement Story: [RS001 — Ariad Runtime Trust](rs001-ariad-runtime-trust/index.md)
+- Change Request: [CR001 — Make Scope Confirmation An Honest Checkpoint](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md)
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -18,7 +18,7 @@ executes work.
 
 | Order | ID | Story | Status |
 |------:|----|-------|--------|
-| 1 | [RS001](rs001-ariad-runtime-trust/index.md) | Ariad Runtime Trust | proposed |
+| 1 | [RS001](rs001-ariad-runtime-trust/index.md) | Ariad Runtime Trust | active |
 
 ## Change Requests
 
@@ -26,7 +26,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status |
 |------:|----|----|--------|--------|
-| 1 | [CR001](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md) | RS001 | Make scope confirmation an honest checkpoint | captured |
+| 1 | [CR001](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md) | RS001 | Make scope confirmation an honest checkpoint | planned |
 | 2 | [CR002](rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md) | RS001 | Refuse ambiguous roadmap selection during cursor sync | captured |
 | — | [CR003](rs001-ariad-runtime-trust/cr003-surface-materialization-truth.md) | RS001 | Make artifact materialization surfaces truthful | done |
 
