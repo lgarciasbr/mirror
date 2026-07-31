@@ -233,6 +233,17 @@ code { font-family: "Cascadia Mono", Consolas, monospace; font-size: .92em; colo
 .modal-term { padding: 16px 18px; min-height: 150px; font: 12.5px/1.7 "Cascadia Mono", Consolas, monospace; color: #c9cdd9; white-space: pre-wrap; }
 .modal-actions { padding: 10px 16px 14px; display: flex; justify-content: flex-end; }
 
+/* ===== guia abaixo do frame ===== */
+.guide {
+  width: min(1080px, 100%); margin-top: 22px; background: var(--win);
+  border: 1px solid #2a2c38; border-radius: 10px; padding: 22px 28px 12px;
+}
+.guide h2 { margin: 0 0 12px; font-size: 15px; color: #c3c7d6; letter-spacing: .02em; }
+.guide ul { margin: 0; padding-left: 20px; }
+.guide li { margin-bottom: 11px; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+.guide li b { color: var(--ink); }
+.guide li i { color: #aab0c2; }
+
 /* ===== rodapé da página ===== */
 .pagefoot { margin-top: 14px; font-size: 12px; color: #5b6075; text-align: center; max-width: 760px; }
 .pagefoot b { color: #8a8fa3; }

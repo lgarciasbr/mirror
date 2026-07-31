@@ -80,6 +80,28 @@
   </div>
 </div>
 
+<section class="guide">
+  <h2>O que dá pra experimentar nele</h2>
+  <ul>
+    <li><b>1º acesso completo</b> — wizard de 6 passos: identidade → chave OpenRouter (com validação
+    simulada e a distinção <i>memória vs conversa</i> explicada) → conexão de assinatura (modal simulando
+    o <code>pi /login</code>) → tour de personas → primeira conversa real no terminal.</li>
+    <li><b>"Pular para o app configurado"</b> — pra quem quiser ver direto o dia-a-dia: abas de sessão
+    por jornada (cores!), terminal com conversa roteirizada onde <b>as personas ativam de verdade por
+    keyword</b> (digite "o deploy quebrou" → <code>◇ engineer</code>; "estou inseguro com o preço" →
+    <code>◇ strategist</code>; sem match → ego, sem assinatura) — a mesma lógica do
+    <code>detect-persona</code> real.</li>
+    <li><b>Comandos</b>: <code>/help</code>, <code>/mm-journeys</code>, <code>/model</code>,
+    <code>/mm-mirror</code> funcionam no terminal.</li>
+    <li><b>⚙ Setup com semáforos</b> — inclusive a regra R2 encenada: o botão "Atualizar Mirror" fica
+    desabilitado com sessões abertas; feche as abas e rode o update simulado (backup → fast-forward →
+    migrations → warm-up), mostrando o <b>"update sem reinstalar"</b> como experiência.</li>
+    <li><b>◇ Personas</b> — glossário de modos + 12 personas com o "Experimente" interativo.</li>
+    <li><b>↺ reiniciar demo</b> na barra de título reseta tudo (estado persiste em
+    <code>localStorage</code> entre visitas).</li>
+  </ul>
+</section>
+
 <footer class="pagefoot">
   Mockup funcional — Experimento 1 da <b>ES-004 Windows Desktop Frame</b> · base Mirror stable v0.31.5 ·
   nada aqui toca o core: o frame apenas orquestra comandos existentes.
