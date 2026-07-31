@@ -3,7 +3,7 @@
 // Papel: orquestrar. Toda mutação passa pelo command-registry (argv fixo);
 // sessões Pi respeitam o SessionGate; segurança Electron: contextIsolation,
 // sem nodeIntegration, sem conteúdo remoto.
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const { execFile } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
@@ -145,6 +145,17 @@ function authProviders() {
   catch { return []; }
 }
 ipcMain.handle("login:providers", () => authProviders());
+
+// Abre a URL de autenticação no navegador padrão do usuário. Só https.
+ipcMain.handle("shell:open", (_e, url) => {
+  try {
+    if (typeof url !== "string" || url.length > 600 || !/^https:\/\/[^\s]+$/.test(url)) {
+      return { ok: false, err: "url inválida" };
+    }
+    shell.openExternal(url);
+    return { ok: true };
+  } catch (e) { return { ok: false, err: String(e.message) }; }
+});
 
 // Login fluido: Pi roda num PTY oculto com o slash command como mensagem
 // inicial; o próprio Pi abre o navegador (OAuth). O frame só observa auth.json.

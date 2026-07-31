@@ -47,15 +47,42 @@ function makeTab(sid, title, kind) {
 window.mirror.session.onData((sid, data) => {
   if (wLogin && sid === wLogin.sid) {
     wLogin.term.write(data);
-    // gatilho de prontidão: o Pi imprime estas linhas exatamente quando o input
-    // está pronto (visto nos testes reais de sandbox)
-    if (!wLogin.sent) {
-      wLogin.buf = ((wLogin.buf ?? "") + data).slice(-4000);
-      if (/Where shall we begin|No models available|ctrl\+o/i.test(wLogin.buf)) {
-        wLogin.sent = true;
-        setTimeout(() => {
-          if (wLogin && wLogin.sid === sid) window.mirror.session.input(sid, `/login ${wLogin.slug}\r`);
-        }, 600);
+    wLogin.buf = ((wLogin.buf ?? "") + data).slice(-12000);
+    const clean = stripAnsi(wLogin.buf);
+    // 1) Pi pronto → digita o comando (comprovado em reprodução no host)
+    if (!wLogin.sent && /Where shall we begin|No models available|ctrl\+o/i.test(clean)) {
+      wLogin.sent = true;
+      setTimeout(() => {
+        if (wLogin && wLogin.sid === sid) window.mirror.session.input(sid, `/login ${wLogin.slug}\r`);
+      }, 600);
+    }
+    // 2) menu de método → Enter em "Sign in with an account" (default)
+    if (wLogin.sent && !wLogin.menuDone && /Select authentication method/i.test(clean)) {
+      wLogin.menuDone = true;
+      $("w-login-lbl").innerHTML = "Confirmando método (conta com assinatura)… gerando o link de autenticação.";
+      setTimeout(() => {
+        if (wLogin && wLogin.sid === sid) window.mirror.session.input(sid, "\r");
+      }, 500);
+    }
+    // 3) Pi abriu o navegador (comprovado: ele não imprime a URL — abre direto
+    //    e deixa um prompt de colagem como fallback)
+    if (wLogin.menuDone && !wLogin.browserMsg && /Complete login in your browser/i.test(clean)) {
+      wLogin.browserMsg = true;
+      $("w-login-lbl").innerHTML = `O navegador abriu com a página de autenticação — <b>autorize por lá</b>.<br>
+        <span style="color:var(--muted);font-size:13px">Eu detecto sozinho quando concluir. Se o navegador não
+        abriu, clique em "Ver detalhes" para copiar o link ou colar o código.</span>`;
+    }
+    // 3b) se alguma URL aparecer no output, vira botão clicável (bônus)
+    if (!wLogin.url) {
+      const urls = clean.match(/https:\/\/[^\s"'<>\)\]]+/g) ?? [];
+      const auth = urls.find((u) => !/\.md\b|earendil|npmjs|github\.com\/earendil/i.test(u));
+      if (auth) {
+        wLogin.url = auth.replace(/[.,;]+$/, "");
+        $("w-login-lbl").innerHTML = `Tudo pronto — <b>clique para autenticar no navegador</b>:<br>
+          <button class="btn primary" id="w-login-open" style="margin-top:10px">Abrir página de autenticação ↗</button>
+          <div style="font-size:11.5px;color:var(--dim);margin-top:8px;word-break:break-all">${escapeHtml(wLogin.url)}</div>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:6px">Depois de autorizar, eu detecto sozinho e sigo em frente.</div>`;
+        $("w-login-open").addEventListener("click", () => window.mirror.shell.open(wLogin.url));
       }
     }
     return;
@@ -277,6 +304,10 @@ function renderStatus() {
     </span>`;
 }
 
+function stripAnsi(s) {
+  return s.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "").replace(/\x1b\][^\x07]*(\x07|\x1b\\)/g, "");
+}
+
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -335,7 +366,7 @@ async function startWizLogin(slug) {
     }
   }, 10000);
   const reveal = setTimeout(() => {
-    if (wLogin && wLogin.sid === r.id && !wizConnected.includes(slug)) {
+    if (wLogin && wLogin.sid === r.id && !wLogin.url && !wizConnected.includes(slug)) {
       const t = $("w-login-term");
       if (t && t.style.display === "none") {
         t.style.display = "block";
@@ -345,7 +376,7 @@ async function startWizLogin(slug) {
       }
     }
   }, 18000);
-  wLogin = { sid: r.id, term, fit, slug, fallback, reveal, sent: false, buf: "" };
+  wLogin = { sid: r.id, term, fit, slug, fallback, reveal, sent: false, menuDone: false, browserMsg: false, url: null, buf: "" };
   renderProvCards();
   $("w-login-cancel").addEventListener("click", () => finishWizLogin(false));
   $("w-login-toggle").addEventListener("click", () => {

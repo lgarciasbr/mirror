@@ -27,4 +27,7 @@ contextBridge.exposeInMainWorld("mirror", {
     start: (slug) => ipcRenderer.invoke("login:start", slug),
     onChange: (fn) => ipcRenderer.on("login:changed", (_e, list) => fn(list)),
   },
+  shell: {
+    open: (url) => ipcRenderer.invoke("shell:open", url),
+  },
 });
