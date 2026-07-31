@@ -49,17 +49,20 @@ window.mirror.session.onData((sid, data) => {
     wLogin.term.write(data);
     wLogin.buf = ((wLogin.buf ?? "") + data).slice(-12000);
     const clean = stripAnsi(wLogin.buf);
-    // 1) Pi pronto → digita o comando (comprovado em reprodução no host)
-    if (!wLogin.sent && /Where shall we begin|No models available|ctrl\+o/i.test(clean)) {
-      wLogin.sent = true;
-      setTimeout(() => {
-        if (wLogin && wLogin.sid === sid) window.mirror.session.input(sid, `/login ${wLogin.slug}\r`);
-      }, 600);
+    // prontidão anunciada — mas no cold start as extensões carregam DEPOIS e o
+    // editor descarta input precoce. Então: digita só quando o output assentar.
+    if (!wLogin.ready && /Where shall we begin|No models available|ctrl\+o/i.test(clean)) {
+      wLogin.ready = true;
+      wLoginState("Pi iniciado — aguardando assentar…");
     }
-    // 2) menu de método → Enter em "Sign in with an account" (default)
-    if (wLogin.sent && !wLogin.menuDone && /Select authentication method/i.test(clean)) {
+    clearTimeout(wLogin.quiet);
+    wLogin.quiet = setTimeout(() => tryTypeLogin(sid), 2000);
+    // menu de método → Enter em "Sign in with an account" (default)
+    if (!wLogin.menuDone && /Select authentication method/i.test(clean)) {
       wLogin.menuDone = true;
-      $("w-login-lbl").innerHTML = "Confirmando método (conta com assinatura)… gerando o link de autenticação.";
+      clearTimeout(wLogin.check);
+      wLoginState("menu respondido — abrindo o navegador…");
+      $("w-login-lbl").innerHTML = "Confirmando método (conta com assinatura)… o navegador vai abrir.";
       setTimeout(() => {
         if (wLogin && wLogin.sid === sid) window.mirror.session.input(sid, "\r");
       }, 500);
@@ -68,6 +71,7 @@ window.mirror.session.onData((sid, data) => {
     //    e deixa um prompt de colagem como fallback)
     if (wLogin.menuDone && !wLogin.browserMsg && /Complete login in your browser/i.test(clean)) {
       wLogin.browserMsg = true;
+      wLoginState("navegador aberto — aguardando sua autorização");
       $("w-login-lbl").innerHTML = `O navegador abriu com a página de autenticação — <b>autorize por lá</b>.<br>
         <span style="color:var(--muted);font-size:13px">Eu detecto sozinho quando concluir. Se o navegador não
         abriu, clique em "Ver detalhes" para copiar o link ou colar o código.</span>`;
@@ -356,27 +360,24 @@ async function startWizLogin(slug) {
   term.open($("w-login-term"));
   term.onData((d) => window.mirror.session.input(r.id, d));
   term.onResize(({ cols, rows }) => window.mirror.session.resize(r.id, cols, rows));
-  // rede de segurança dupla: se o gatilho de prontidão não disparou em 10s,
-  // digita mesmo assim; se aos 18s ainda não conectou, o fluxo provavelmente
-  // pede uma escolha — revela o terminal para o usuário concluir.
+  // rede de segurança: prontidão nunca anunciada em 12s → tenta mesmo assim;
+  // aos 30s sem navegador/menu → revela o terminal para conclusão manual.
   const fallback = setTimeout(() => {
-    if (wLogin && wLogin.sid === r.id && !wLogin.sent) {
-      wLogin.sent = true;
-      window.mirror.session.input(r.id, `/login ${slug}\r`);
-    }
-  }, 10000);
+    if (wLogin && wLogin.sid === r.id && !wLogin.ready) { wLogin.ready = true; tryTypeLogin(r.id); }
+  }, 12000);
   const reveal = setTimeout(() => {
-    if (wLogin && wLogin.sid === r.id && !wLogin.url && !wizConnected.includes(slug)) {
+    if (wLogin && wLogin.sid === r.id && !wLogin.url && !wLogin.browserMsg && !wizConnected.includes(slug)) {
       const t = $("w-login-term");
       if (t && t.style.display === "none") {
         t.style.display = "block";
         $("w-login-toggle").textContent = "Ocultar detalhes ▴";
-        $("w-login-lbl").innerHTML = `O fluxo da <b>${p.name}</b> precisa de uma confirmação — conclua no terminal abaixo (o navegador abre em seguida).`;
+        $("w-login-lbl").innerHTML = `O fluxo da <b>${p.name}</b> não avançou sozinho — conclua no terminal abaixo.`;
         requestAnimationFrame(() => { fit.fit(); term.focus(); });
       }
     }
-  }, 18000);
-  wLogin = { sid: r.id, term, fit, slug, fallback, reveal, sent: false, menuDone: false, browserMsg: false, url: null, buf: "" };
+  }, 30000);
+  wLogin = { sid: r.id, term, fit, slug, fallback, reveal, ready: false, attempts: 0,
+    menuDone: false, browserMsg: false, url: null, buf: "", quiet: null, check: null };
   renderProvCards();
   $("w-login-cancel").addEventListener("click", () => finishWizLogin(false));
   $("w-login-toggle").addEventListener("click", () => {
@@ -388,12 +389,32 @@ async function startWizLogin(slug) {
   });
 }
 
+function wLoginState(text) {
+  const el = $("w-login-state");
+  if (el) el.textContent = "estado: " + text;
+}
+
+function tryTypeLogin(sid) {
+  if (!wLogin || wLogin.sid !== sid || wLogin.menuDone || !wLogin.ready) return;
+  if ((wLogin.attempts ?? 0) >= 3) { wLoginState("3 tentativas sem resposta — veja os detalhes"); return; }
+  wLogin.attempts = (wLogin.attempts ?? 0) + 1;
+  wLoginState(`enviando /login ${wLogin.slug} (tentativa ${wLogin.attempts})…`);
+  window.mirror.session.input(sid, "\x15");
+  window.mirror.session.input(sid, `/login ${wLogin.slug}\r`);
+  clearTimeout(wLogin.check);
+  wLogin.check = setTimeout(() => {
+    if (wLogin && wLogin.sid === sid && !wLogin.menuDone) tryTypeLogin(sid);
+  }, 4000);
+}
+
 function finishWizLogin(ok) {
   const l = wLogin;
   wLogin = null;
   if (l) {
     clearTimeout(l.fallback);
     clearTimeout(l.reveal);
+    clearTimeout(l.quiet);
+    clearTimeout(l.check);
     window.mirror.session.close(l.sid);
     l.term.dispose();
   }
@@ -501,6 +522,7 @@ function renderWizard() {
       <div class="subcards" id="w-provs"></div>
       <div id="w-login-wrap" class="hidden" style="margin-top:16px;max-width:660px;background:var(--panelbg);border:1px solid var(--line);border-radius:9px;padding:16px 18px">
         <div style="font-size:14px;color:var(--ink)" id="w-login-lbl"></div>
+        <div style="font-size:11.5px;color:var(--dim);margin-top:8px;font-family:'Cascadia Mono',Consolas,monospace" id="w-login-state"></div>
         <div style="display:flex;gap:10px;margin-top:12px">
           <button class="btn" id="w-login-cancel" style="font-size:12.5px;padding:7px 14px">Cancelar</button>
           <button class="btn" id="w-login-toggle" style="font-size:12.5px;padding:7px 14px">Ver detalhes ▾</button>

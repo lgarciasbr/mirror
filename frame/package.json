@@ -1,6 +1,6 @@
 {
   "name": "mirror-frame",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Mirror Mind desktop frame for Windows (ES-004 Fusão A+C): tabbed Pi sessions over ConPTY with guided setup",
   "main": "main/main.js",
