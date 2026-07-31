@@ -118,9 +118,31 @@ If promoted, a new CV ("Windows Desktop Frame") with epics roughly:
 Each story follows upstream practice: `plan.md` + `test-guide.md` before code,
 TDD, and use-case simulators under `spikes/`.
 
+## Experiment 2 — Real frame v0 (post-approval, 2026-07-31)
+
+The Navigator approved promotion to construction. Built under `frame/`:
+
+- **Stack decision (E0 spike, fact-driven):** Electron 33 + `@lydell/node-pty`
+  (prebuilt ConPTY, no build tools — Rust and VS Build Tools are absent on the
+  reference machine). Spike proved a real PTY on first try.
+- **TDD:** 27 unit tests green over the five logic modules (root-resolve,
+  env-profile, command-registry, session-gate, config-store). Session lifecycle
+  covered by an executable simulator (`sim/sim-session.mjs`, exit 0 on green):
+  2 concurrent PTYs, per-session isolation, resize, graceful shutdown.
+- **Security posture:** contextIsolation on, no nodeIntegration, narrow preload
+  API, CSP, all mutations through the allowlisted argv registry, `.env` written
+  UTF-8 no BOM, Pi flows orchestrated in terminal tabs (never reimplemented).
+- **Real integration proven on host:** `uv sync` + `memory runtime status`
+  v0.31.5 executed against this clone; warm-up switched to a DB-opening command
+  (`identity list`) because `runtime status` only inspects and does not trigger
+  migrations — a design finding worth upstreaming in docs.
+- **Windows Sandbox kit:** `frame/sandbox/mirror-frame-test.wsb` +
+  `sandbox-setup.ps1` (host repo mapped read-only; everything copied
+  sandbox-local so no writes touch the host) + `README-SANDBOX.md` test script.
+
 ## Open Decisions
 
-- Frame stack: Tauri vs Electron — decided by E0 spike, not by preference.
+- Frame stack: ~~Tauri vs Electron~~ — **decided: Electron 33** (see Experiment 2).
 - Mockup language: PT-BR first (presentation audience); EN before upstream PR.
 - Commit trailer convention for this fork (RansomGuard ADR-15 forbids AI
   trailers; upstream has no stated rule) — Navigator to confirm.
