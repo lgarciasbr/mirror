@@ -45,19 +45,15 @@ workflow. The retained learning is recorded in the
 
 ---
 
-## Initial Scope
+## Candidate Stories
 
-1. Define the canonical Refinement index: RS/CR identity, status vocabulary, ordering,
-   active focus, and links.
-2. Define the minimal directory and artifact conventions for RSs and CRs.
-3. Prove that another session or clone can understand and continue Refinement work from
-   project files and Git alone.
-4. Add only lightweight structural validation justified by the document contract.
-5. Define, but do not yet execute, the migration boundary from the existing SQLite
-   Workbench.
+| Code | Story | Type | Outcome | Status |
+|------|-------|------|---------|--------|
+| [CV20.DS12.TS1](cv20-ds12-ts1-canonical-refinement-index-and-artifact-convention/index.md) | Canonical Refinement Index And Artifact Convention | Technical Story | A real file-only Workbench proves the canonical backlog, identity, status, and navigation contract | 🟠 Implemented — validation pending |
 
-Detailed candidate stories will be authored after the document examples and status
-vocabulary are reviewed. The archived experiment's TS/US decomposition is not reused.
+Later stories may add lightweight structural validation and an explicit migration
+boundary from the existing SQLite Workbench, but only after TS1 is used and reviewed.
+The archived experiment's TS/US decomposition is not reused.
 
 ---
 
