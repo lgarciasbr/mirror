@@ -2,7 +2,7 @@
 
 # CV20.DS12.TS1 — Canonical Refinement Index And Artifact Convention
 
-**Status:** 🟠 Implemented — validation pending
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
