@@ -2,7 +2,7 @@
 
 # CV20.DS12.TS2 — Define Legacy Workbench Migration Boundary
 
-**Status:** 🟠 Implemented — validation pending
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
