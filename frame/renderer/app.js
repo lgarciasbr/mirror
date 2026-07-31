@@ -260,40 +260,179 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/* ============ wizard de 1º acesso (6 passos, como no mockup) ============ */
+const WSTEPS = ["Boas-vindas", "Identidade", "Chave OpenRouter", "Assinatura de modelos", "Conheça as personas", "Primeira conversa"];
+const MODES = [
+  { cls: "m1", name: "Mirror",   desc: "reflexão e decisões pessoais" },
+  { cls: "m2", name: "Builder",  desc: "código e construção" },
+  { cls: "m3", name: "Explorer", desc: "incerteza antes de construir" },
+  { cls: "m4", name: "Soul",     desc: "escuta ritual da vida interior" },
+];
+const PCARDS = [
+  ["engineer", "software, arquitetura, debugging, testes"],
+  ["strategist", "negócio, posicionamento, lançamentos"],
+  ["therapist", "tensões psicológicas e emoções"],
+  ["writer", "textos, narrativa, edição"],
+  ["coach", "hábitos, metas, accountability"],
+  ["+ 7 personas", "teacher, researcher, doctor, financial…"],
+];
+let wiz = 0;
+const wst = { user: "", key: "", inited: false };
+
+function wizNav(backOk, label, disabled) {
+  return `<div class="wiz-nav">
+    ${backOk ? '<button class="btn" id="w-back">← Voltar</button>' : ""}
+    <button class="btn primary" id="w-next" ${disabled ? "disabled" : ""}>${label}</button>
+  </div><p class="wiz-msg" id="w-msg"></p>`;
+}
+function wchk(l, name, detail) {
+  return `<div class="check"><span class="light ${l}"></span><span class="name">${name}</span><span class="detail">${detail}</span></div>`;
+}
+
+function renderWizard() {
+  $("wiz-steps").innerHTML = WSTEPS.map((s, i) => {
+    const cls = i < wiz ? "done" : i === wiz ? "now" : "";
+    return `<div class="step ${cls}"><span class="n">${i < wiz ? "✓" : i + 1}</span> ${s}</div>`;
+  }).join("");
+  const m = $("wiz-main");
+
+  if (wiz === 0) m.innerHTML = `
+    <div class="wiz-glyph">◇</div>
+    <h1>Bem-vindo ao seu Mirror</h1>
+    <p class="sub">O Mirror é um espelho com memória: uma IA que conversa com você
+    <b>lembrando quem você é</b> — sua identidade, suas jornadas, suas decisões.
+    Tudo fica <b>na sua máquina</b>, num banco local. Nada vai para um servidor nosso.</p>
+    <p class="sub">Nos próximos passos vamos: criar sua identidade local, ligar a memória,
+    entender como a conversa se conecta e te apresentar as <b>personas</b> — as lentes que o
+    Mirror ativa sozinho conforme o assunto.</p>
+    <p class="sub">Leva menos de 5 minutos.</p>
+    ${wizNav(false, "Começar →", false)}`;
+
+  if (wiz === 1) {
+    m.innerHTML = `
+      <h1>Sua identidade local</h1>
+      <p class="sub">Esse nome define <b>sua casa no Mirror</b> — a pasta local onde vivem sua
+      memória e identidade (<code>~\\.mirror-minds\\&lt;nome&gt;</code>). Sem espaços ou acentos.</p>
+      <div class="field"><label for="w-user">Seu nome</label>
+        <input id="w-user" value="${escapeHtml(wst.user)}" placeholder="ex.: Rodrigo"></div>
+      <p class="hint" id="w-user-hint">${wst.user ? "Casa: ~\\.mirror-minds\\" + escapeHtml(wst.user) : ""}</p>
+      ${wizNav(true, "Continuar →", !/^[A-Za-z0-9_-]{1,64}$/.test(wst.user))}`;
+    $("w-user").addEventListener("input", (e) => {
+      wst.user = e.target.value.trim();
+      $("w-user-hint").textContent = wst.user ? `Casa: ~\\.mirror-minds\\${wst.user}` : "";
+      $("w-next").disabled = !/^[A-Za-z0-9_-]{1,64}$/.test(wst.user);
+    });
+  }
+
+  if (wiz === 2) {
+    m.innerHTML = `
+      <h1>Ligue a memória (OpenRouter)</h1>
+      <p class="sub">A chave OpenRouter alimenta <b>só a memória</b> do Mirror — embeddings e
+      extração de memórias. <b>Não é</b> o modelo da conversa (esse vem no próximo passo).
+      Crie uma conta em <b>openrouter.ai</b>, gere uma chave e adicione ≥ US$5 de crédito.</p>
+      <div class="field"><label for="w-key">Chave OpenRouter</label>
+        <input id="w-key" value="${escapeHtml(wst.key)}" placeholder="sk-or-..."></div>
+      <p class="hint">Dá para pular e adicionar depois no ⚙ Setup — mas sem chave o Mirror
+      conversa sem gravar memórias.</p>
+      ${wizNav(true, "Continuar →", false)}`;
+    $("w-key").addEventListener("input", (e) => { wst.key = e.target.value.trim(); });
+  }
+
+  if (wiz === 3) m.innerHTML = `
+    <h1>Conecte sua assinatura</h1>
+    <p class="sub">A <b>conversa</b> usa a sua assinatura de IA (Anthropic ou OpenAI) através do
+    login oficial do Pi — o Mirror <b>nunca vê sua senha</b>.</p>
+    <div class="subcards">
+      <div class="subcard"><h3>Anthropic</h3><p>Claude (recomendado) — planos Pro/Max</p></div>
+      <div class="subcard"><h3>OpenAI</h3><p>GPT — opcional, dá para adicionar depois</p></div>
+    </div>
+    <p class="sub" style="margin-top:14px">A conexão acontece <b>na sua primeira conversa</b>:
+    dentro da sessão, digite <code>/login</code> e siga o fluxo oficial no navegador. Uma vez só.</p>
+    ${wizNav(true, "Entendi →", false)}`;
+
+  if (wiz === 4) {
+    m.innerHTML = `
+      <h1>As lentes do seu Mirror</h1>
+      <p class="sub">Você não escolhe persona — <b>o Mirror escolhe sozinho</b>, pelo assunto.
+      Quatro <b>modos</b> definem o tipo de trabalho; as <b>personas</b> assinam com <b>◇</b> quando ativam.</p>
+      <div class="modegrid">${MODES.map(x => `<div class="mode ${x.cls}"><b>${x.name}</b><span>${x.desc}</span></div>`).join("")}</div>
+      <div class="pgrid">${PCARDS.map(p => `<div class="pcard"><b>${p[0]}</b><span>${p[1]}</span></div>`).join("")}</div>
+      <div class="tryit"><div class="lbl">Experimente — qual persona responderia? (detect-persona real)</div>
+        <input id="w-try" placeholder='digite algo como "o deploy quebrou depois do merge"'>
+        <div class="res" id="w-tryres">${wst.inited ? "" : "…preparando sua base para o teste ao vivo"}</div></div>
+      ${wizNav(true, "Continuar →", false)}`;
+    let timer = null;
+    $("w-try").addEventListener("input", (e) => {
+      clearTimeout(timer);
+      const q = e.target.value.trim();
+      if (!q) { $("w-tryres").textContent = ""; return; }
+      timer = setTimeout(async () => {
+        $("w-tryres").textContent = "consultando detect-persona…";
+        const r = await window.mirror.cmd.run("detectPersona", { query: q });
+        $("w-tryres").textContent = (r.out || r.err || "(sem saída)").trim();
+      }, 500);
+    });
+  }
+
+  if (wiz === 5) {
+    m.innerHTML = `
+      <h1>Tudo pronto, ${escapeHtml(wst.user || "…")}</h1>
+      <p class="sub">Seu Mirror nasce agora — e a partir da primeira conversa ele começa a
+      <b>lembrar</b>. Confira:</p>
+      <div class="summary">
+        ${wchk("g", "Identidade", "~\\.mirror-minds\\" + escapeHtml(wst.user || "?"))}
+        ${wchk(wst.key ? "g" : "y", "Memória (OpenRouter)", wst.key ? "chave configurada" : "sem chave — adicione no ⚙ Setup")}
+        ${wchk("y", "Assinatura", "conecte com /login na primeira conversa")}
+        ${wchk("g", "Runtime", "Mirror instalado · warm-up ao abrir")}
+      </div>
+      <p class="sub">Na primeira sessão: digite <code>/login</code>, conecte sua assinatura, e conversa.</p>
+      ${wizNav(true, "Abrir meu Mirror ◇", false)}`;
+  }
+
+  const back = $("w-back");
+  if (back) back.addEventListener("click", () => { wiz--; renderWizard(); });
+  $("w-next").addEventListener("click", onWizNext);
+}
+
+async function onWizNext() {
+  const msg = $("w-msg"), btn = $("w-next");
+  if (wiz === 2) {
+    if (wst.key && !wst.key.startsWith("sk-or-")) { msg.textContent = "A chave OpenRouter começa com sk-or-…"; return; }
+    btn.disabled = true;
+    msg.textContent = "Gravando configuração…";
+    const vals = { MIRROR_USER: wst.user };
+    if (wst.key) vals.OPENROUTER_API_KEY = wst.key;
+    const r = await window.mirror.config.save(vals);
+    if (!r.ok) { msg.textContent = r.err; btn.disabled = false; return; }
+    msg.textContent = "Criando sua identidade local (memory init)…";
+    const ri = await window.mirror.cmd.run("initIdentity", { user: wst.user });
+    if (!ri.ok && !/already|exists|existe/i.test(ri.out + ri.err)) {
+      msg.textContent = "init falhou: " + (ri.err || ri.out).slice(0, 280);
+      btn.disabled = false; return;
+    }
+    msg.textContent = "Semeando identidade e personas (memory seed)…";
+    await window.mirror.cmd.run("seed");
+    window.mirror.cmd.run("warmup");
+    wst.inited = true;
+  }
+  if (wiz === 5) {
+    CFG = await window.mirror.config.get();
+    $("view-wizard").classList.add("hidden");
+    await enterFrame();
+    if (CFG.gate?.warm || (await window.mirror.config.get()).gate?.warm) openMirrorSession();
+    return;
+  }
+  wiz++;
+  renderWizard();
+}
+
 /* ============ boot ============ */
 async function boot() {
   CFG = await window.mirror.config.get();
   if (CFG.firstRun && CFG.mirrorRoot) {
     $("view-wizard").classList.remove("hidden");
-    $("w-user").addEventListener("input", (e) => {
-      $("w-user-hint").textContent = e.target.value.trim()
-        ? `Casa: ~\\.mirror-minds\\${e.target.value.trim()}` : "";
-    });
-    $("w-save").addEventListener("click", async () => {
-      const user = $("w-user").value.trim();
-      const key = $("w-key").value.trim();
-      if (!/^[A-Za-z0-9_-]{1,64}$/.test(user)) {
-        $("w-msg").textContent = "Nome sem espaços/acentos (letras, números, - e _)."; return;
-      }
-      if (key && !key.startsWith("sk-or-")) { $("w-msg").textContent = "A chave OpenRouter começa com sk-or-…"; return; }
-      const btn = $("w-save"); btn.disabled = true;
-      const vals = { MIRROR_USER: user };
-      if (key) vals.OPENROUTER_API_KEY = key;
-      const r = await window.mirror.config.save(vals);
-      if (!r.ok) { $("w-msg").textContent = r.err; btn.disabled = false; return; }
-      // onboarding real, como o configure.ps1: init → seed (idempotente)
-      $("w-msg").textContent = "Criando sua identidade local (memory init)…";
-      const ri = await window.mirror.cmd.run("initIdentity", { user });
-      if (!ri.ok && !/already|exists|existe/i.test(ri.out + ri.err)) {
-        $("w-msg").textContent = "init falhou: " + (ri.err || ri.out).slice(0, 300);
-        btn.disabled = false; return;
-      }
-      $("w-msg").textContent = "Semeando identidade (memory seed)…";
-      await window.mirror.cmd.run("seed");
-      CFG = await window.mirror.config.get();
-      $("view-wizard").classList.add("hidden");
-      enterFrame();
-    });
+    wiz = 0;
+    renderWizard();
     return;
   }
   enterFrame();

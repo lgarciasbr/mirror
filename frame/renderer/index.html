@@ -10,29 +10,10 @@
 </head>
 <body>
 
-<!-- ===== Wizard (1º acesso) ===== -->
+<!-- ===== Wizard (1º acesso — 6 passos, como no mockup) ===== -->
 <div class="wizard hidden" id="view-wizard">
-  <div class="wiz-card">
-    <div class="wiz-glyph">◇</div>
-    <h1>Bem-vindo ao seu Mirror</h1>
-    <p class="lead">Vamos preparar sua identidade local e ligar a memória. Leva um minuto —
-    e tudo fica na sua máquina.</p>
-
-    <div class="field">
-      <label for="w-user">Seu nome (identidade local)</label>
-      <input id="w-user" placeholder="ex.: Rodrigo">
-      <p class="hint" id="w-user-hint"></p>
-    </div>
-    <div class="field">
-      <label for="w-key">Chave OpenRouter (memória — embeddings e extração)</label>
-      <input id="w-key" placeholder="sk-or-...">
-      <p class="hint">Crie em openrouter.ai · a conversa usa sua assinatura via <code>/login</code> dentro do Pi</p>
-    </div>
-    <p class="wiz-msg" id="w-msg"></p>
-    <div class="wiz-nav">
-      <button class="btn primary" id="w-save">Salvar e continuar →</button>
-    </div>
-  </div>
+  <div class="wiz-steps" id="wiz-steps"></div>
+  <div class="wiz-main" id="wiz-main"></div>
 </div>
 
 <!-- ===== Frame principal ===== -->
