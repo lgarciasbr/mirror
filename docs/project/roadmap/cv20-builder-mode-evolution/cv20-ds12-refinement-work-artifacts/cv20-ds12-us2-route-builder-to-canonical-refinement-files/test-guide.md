@@ -104,4 +104,7 @@ check_doc_links: passed
 git diff --check: passed
 ```
 
-Navigator-visible E2E and acceptance remain pending.
+Navigator-visible E2E passed in a fresh Pi session from the journey clone. Builder named
+`docs/project/refinement/index.md` as authority, stated that no SQLite was consulted, and
+reported RS001 with CR001 planned, CR002/CR004 captured, and CR003 done. The read-only
+request caused no file mutation. Navigator acceptance was recorded.

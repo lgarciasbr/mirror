@@ -2,7 +2,7 @@
 
 # CV20.DS12 — Document-First Refinement Workbench
 
-**Status:** 🟡 Planned — redesign approved
+**Status:** ✅ Done
 
 ---
 
@@ -52,7 +52,7 @@ workflow. The retained learning is recorded in the
 | [CV20.DS12.TS1](cv20-ds12-ts1-canonical-refinement-index-and-artifact-convention/index.md) | Canonical Refinement Index And Artifact Convention | Technical Story | A real file-only Workbench proves the canonical backlog, identity, status, and navigation contract | ✅ Done |
 | [CV20.DS12.US1](cv20-ds12-us1-dogfood-file-only-refinement/index.md) | Dogfood File-Only Refinement | User Story | Navigator selects and plans real Refinement work from the canonical files alone, exposing usability gaps before automation | ✅ Done |
 | [CV20.DS12.TS2](cv20-ds12-ts2-legacy-workbench-migration-boundary/index.md) | Define Legacy Workbench Migration Boundary | Technical Story | The project decides how the existing SQLite Workbench coexists with, transitions to, or retires behind canonical project files without migrating data yet | ✅ Done |
-| [CV20.DS12.US2](cv20-ds12-us2-route-builder-to-canonical-refinement-files/index.md) | Route Builder To Canonical Refinement Files | User Story | Builder uses the project index for Refinement requests when it exists and preserves legacy behavior for projects without one | 🟠 Implemented — validation pending |
+| [CV20.DS12.US2](cv20-ds12-us2-route-builder-to-canonical-refinement-files/index.md) | Route Builder To Canonical Refinement Files | User Story | Builder uses the project index for Refinement requests when it exists and preserves legacy behavior for projects without one | ✅ Done |
 
 Later stories may add lightweight structural validation or execute an explicitly
 approved transition, but only after TS2 settles the legacy Workbench boundary. The
@@ -73,7 +73,8 @@ archived experiment's TS/US decomposition is not reused.
 
 ## Done Condition
 
-DS12 is done when a collaborator or fresh agent session can open the project, read one
-canonical Refinement index, identify the current RS/CR backlog state, navigate to its
-artifacts, and continue the documented workflow using ordinary files and Git — without
-requiring the originating journey or database.
+Satisfied. A fresh Pi session launched from the journey clone identified
+`docs/project/refinement/index.md` as canonical, reported RS001 and the exact CR backlog
+from files, and stated that no SQLite state was consulted. The Navigator accepted the
+result after the file-only workflow, legacy boundary, and absent-index compatibility had
+all been validated.

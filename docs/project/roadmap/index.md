@@ -96,7 +96,7 @@ Done. CV19 turns Soul Mode from a ritual that can produce insight into a ritual 
 
 ## CV20 — Builder Mode Evolution
 
-In progress. CV20 evolves Builder Mode from a context-loading skill into a disciplined delivery environment governed by a declarative method DSL. Ariad is the inaugural method, with adoption, resume, Delivery lifecycle, Refinement Workbench, debt review, coherence, history, release, and push policies represented as method data rather than hard-coded agent habit. CV20.DS6 Refinement Workbench And Flow is complete; CV20.DS12 has returned to planning as a document-first Refinement Workbench after its previous implementation experiment was archived without merge. See the [CV20 index](cv20-builder-mode-evolution/index.md).
+In progress. CV20 evolves Builder Mode from a context-loading skill into a disciplined delivery environment governed by a declarative method DSL. Ariad is the inaugural method, with adoption, resume, Delivery lifecycle, Refinement Workbench, debt review, coherence, history, release, and push policies represented as method data rather than hard-coded agent habit. CV20.DS6 delivered the original local SQLite Workbench; CV20.DS12 has now delivered the document-first canonical Workbench after archiving its disproportionate implementation experiment without merge. See the [CV20 index](cv20-builder-mode-evolution/index.md).
 
 ## CV21 — Runtime Expansion II: Plugin & MCP Convergence
 

@@ -41,7 +41,7 @@ Ariad governs the first implementation. The architecture must remain open enough
 | [CV20.DS9](cv20-ds9-method-preferences-and-overrides/index.md) | Method Preferences And Overrides | Builder resolves Ariad defaults, project-local config, and Navigator overrides into inspectable effective preferences | 🟡 Planned |
 | [CV20.DS10](cv20-ds10-builder-documentation-migration/index.md) | Builder Documentation And Migration | User-facing docs, process docs, and journey guidance explain Ariad Builder adoption, DSL overrides, lifecycle, and operational boundaries | 🟡 Planned |
 | [CV20.DS11](cv20-ds11-refinement-lifecycle-dsl-governance/index.md) | Refinement Lifecycle DSL Governance | Refinement Stories, Change Requests, CR-cycle gates, transition prompts, and Refinement surfaces are governed by Ariad method data like Delivery Work | 🟡 Planned |
-| [CV20.DS12](cv20-ds12-refinement-work-artifacts/index.md) | Document-First Refinement Workbench | One project index owns canonical RS/CR backlog status and links to ordinary, versioned Refinement artifacts without requiring local database state | 🟡 Planned — redesign approved |
+| [CV20.DS12](cv20-ds12-refinement-work-artifacts/index.md) | Document-First Refinement Workbench | One project index owns canonical RS/CR backlog status and links to ordinary, versioned Refinement artifacts without requiring local database state | ✅ Done |
 | [CV20.DS13](cv20-ds13-ds-grammar-roadmap-support/index.md) | Delivery Story Grammar Roadmap Support | Builder reads Delivery Story grammar roadmaps (hyphenated `DS-NN` codes, `## Chapter N —` sections, DS tables) as correctly as the CV grammar — fixing pull candidates, expand, and delivery-cursor drift | ✅ Done |
 | [CV20.DS14](cv20-ds14-change-request-terminal-verbs/index.md) | Change Request Terminal Verbs | Builder can park, reject, and promote a Change Request (and park a Refinement Story) through the CLI — the terminal states the domain models but the runtime cannot reach — so an RS holding such a CR closes cleanly instead of forcing an off-contract storage write | ✅ Done |
 
@@ -94,7 +94,7 @@ Refinement Lifecycle
 - No operational-update lifecycle beyond the scoped Ariad Refinement Workbench path.
 - No redesign of Ariad visual grammar before implementation pressure requires it.
 - No claim that Refinement Work is fully DSL-governed until CV20.DS11 is delivered.
-- No claim that Refinement Work has a durable project artifact trail until CV20.DS12 is delivered.
+- Refinement Work has a durable project artifact trail through the document-first Workbench delivered by CV20.DS12.
 - No silent state transitions without method checks.
 - No autonomous Navigator decisions.
 - No remote push or release publication without the effective policy allowing it.

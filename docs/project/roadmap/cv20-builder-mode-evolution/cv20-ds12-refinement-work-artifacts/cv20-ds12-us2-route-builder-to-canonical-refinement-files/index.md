@@ -2,7 +2,7 @@
 
 # CV20.DS12.US2 — Route Builder To Canonical Refinement Files
 
-**Status:** 🟠 Implemented — validation pending
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
