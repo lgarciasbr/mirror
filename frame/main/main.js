@@ -21,10 +21,39 @@ const ptys = new PtyManager();
 let win = null;
 
 /* ---------- helpers ---------- */
+const { execFileSync } = require("node:child_process");
+
+// PATH fresco lido do registro: logo após a instalação, o PATH herdado pelo
+// processo é obsoleto (git/node/uv/pi acabaram de entrar). Sem isso, o frame
+// não enxerga as ferramentas até o usuário reiniciar a sessão do Windows.
+function _regPath(hive, key) {
+  try {
+    const out = execFileSync("reg.exe", ["query", `${hive}\\${key}`, "/v", "Path"],
+      { encoding: "utf8", windowsHide: true });
+    const m = /Path\s+REG(?:_EXPAND)?_SZ\s+(.+)/i.exec(out);
+    if (!m) return "";
+    return m[1].trim().replace(/%([^%]+)%/g, (_s, v) => process.env[v] ?? `%${v}%`);
+  } catch { return ""; }
+}
+
+function freshPath() {
+  const sys = _regPath("HKLM", "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment");
+  const usr = _regPath("HKCU", "Environment");
+  const parts = [process.env.PATH ?? "", sys, usr].join(";")
+    .split(";").map((p) => p.trim()).filter(Boolean);
+  return [...new Set(parts)].join(";");
+}
+
+function frameEnv() {
+  const e = sessionEnv(process.env, MIRROR_ROOT);
+  e.PATH = freshPath();
+  return e;
+}
+
 function whichSync(cmd) {
   try {
-    const { execFileSync } = require("node:child_process");
-    const out = execFileSync("where.exe", [cmd], { encoding: "utf8", windowsHide: true });
+    const out = execFileSync("where.exe", [cmd],
+      { encoding: "utf8", windowsHide: true, env: { ...process.env, PATH: freshPath() } });
     return out.split(/\r?\n/)[0]?.trim() || null;
   } catch { return null; }
 }
@@ -45,7 +74,7 @@ function runCommand(id, opts = {}) {
     if (!cwd) return resolve({ ok: false, code: -1, out: "", err: "MIRROR_ROOT não resolvido" });
     const file = c.file === "npm" && process.platform === "win32" ? "npm.cmd" : c.file;
     execFile(file, c.args, {
-      cwd, env: sessionEnv(process.env, MIRROR_ROOT), timeout: c.timeoutMs,
+      cwd, env: frameEnv(), timeout: c.timeoutMs,
       windowsHide: true, encoding: "utf8", maxBuffer: 4 * 1024 * 1024, shell: false,
     }, (error, stdout, stderr) => {
       resolve({
@@ -107,6 +136,7 @@ ipcMain.handle("cmd:run", async (_e, id, opts) => {
 });
 
 /* ---------- IPC: sessões PTY ---------- */
+// ConPTY não lança .cmd diretamente — o Pi (shim npm) precisa do cmd.exe /c.
 const SYSTEM_SCRIPTS = {
   shell: () => ({ file: "powershell.exe", args: ["-NoLogo", "-NoExit"], cwd: MIRROR_ROOT ?? process.cwd() }),
   bootstrap: () => ({
@@ -115,7 +145,7 @@ const SYSTEM_SCRIPTS = {
       path.join(MIRROR_ROOT ?? "", "installer", "bootstrap.ps1")],
     cwd: MIRROR_ROOT ?? process.cwd(),
   }),
-  login: () => ({ file: process.platform === "win32" ? "pi.cmd" : "pi", args: [], cwd: MIRROR_ROOT ?? process.cwd() }),
+  login: () => ({ file: "cmd.exe", args: ["/c", "pi"], cwd: MIRROR_ROOT ?? process.cwd() }),
 };
 
 function openPty(spec, kind) {
@@ -129,26 +159,32 @@ function openPty(spec, kind) {
 }
 
 ipcMain.handle("session:open", () => {
-  if (!gate.canOpenSession()) return { ok: false, err: "warm-up necessário antes de abrir sessões" };
-  const piFile = process.platform === "win32" ? "pi.cmd" : "pi";
-  if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup" };
-  const id = openPty({
-    file: piFile, args: [], cwd: MIRROR_ROOT,
-    env: sessionEnv(process.env, MIRROR_ROOT),
-  }, "mirror");
-  gate.sessionOpened(id); pushGate();
-  return { ok: true, id };
+  try {
+    if (!gate.canOpenSession()) return { ok: false, err: "warm-up necessário antes de abrir sessões" };
+    if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup e reabra o app" };
+    const id = openPty({
+      file: "cmd.exe", args: ["/c", "pi"], cwd: MIRROR_ROOT, env: frameEnv(),
+    }, "mirror");
+    gate.sessionOpened(id); pushGate();
+    return { ok: true, id };
+  } catch (e) {
+    return { ok: false, err: `falha ao abrir sessão: ${e.message}` };
+  }
 });
 
 ipcMain.handle("session:openSystem", (_e, script) => {
-  const mk = SYSTEM_SCRIPTS[script];
-  if (!mk) return { ok: false, err: `script desconhecido: ${script}` };
-  const spec = mk();
-  if (script === "bootstrap" && !fs.existsSync(spec.args[spec.args.length - 1])) {
-    return { ok: false, err: "installer/bootstrap.ps1 não encontrado no MIRROR_ROOT" };
+  try {
+    const mk = SYSTEM_SCRIPTS[script];
+    if (!mk) return { ok: false, err: `script desconhecido: ${script}` };
+    const spec = mk();
+    if (script === "bootstrap" && !fs.existsSync(spec.args[spec.args.length - 1])) {
+      return { ok: false, err: "installer/bootstrap.ps1 não encontrado no MIRROR_ROOT" };
+    }
+    const id = openPty({ ...spec, env: frameEnv() }, "system");
+    return { ok: true, id };
+  } catch (e) {
+    return { ok: false, err: `falha ao abrir terminal: ${e.message}` };
   }
-  const id = openPty({ ...spec, env: sessionEnv(process.env, MIRROR_ROOT) }, "system");
-  return { ok: true, id };
 });
 
 ipcMain.on("session:input", (_e, id, data) => {
@@ -163,6 +199,7 @@ function createWindow() {
     width: 1180, height: 760, minWidth: 900, minHeight: 560,
     backgroundColor: "#14151b",
     title: "Mirror Mind",
+    icon: path.join(__dirname, "..", "assets", "mirror.ico"),
     webPreferences: {
       preload: path.join(__dirname, "..", "preload.js"),
       contextIsolation: true,

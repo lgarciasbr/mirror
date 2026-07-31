@@ -440,8 +440,10 @@ end;
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
-  { If bootstrap failed, do not ask for identity - nothing to configure. }
-  if (PageID = IdPage.ID) and (not BootstrapOk) then
+  { The desktop frame now owns first-run onboarding (name + OpenRouter key),
+    so the installer's identity page is always skipped. The page and its
+    controls are kept so this stays a minimal, reversible diff. }
+  if PageID = IdPage.ID then
     Result := True;
 end;
 

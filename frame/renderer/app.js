@@ -61,14 +61,22 @@ window.addEventListener("resize", () => currentTab()?.fit.fit());
 function currentTab() { return activeTab >= 0 ? tabs[activeTab] : null; }
 
 async function openMirrorSession() {
-  const r = await window.mirror.session.open();
-  if (!r.ok) { flashEmpty("Não deu para abrir a sessão", r.err, true); return; }
-  makeTab(r.id, `◇ sessão ${tabs.filter(t => t.kind === "mirror").length + 1}`, "mirror");
+  try {
+    const r = await window.mirror.session.open();
+    if (!r.ok) { flashEmpty("Não deu para abrir a sessão", r.err, true); return; }
+    makeTab(r.id, `◇ sessão ${tabs.filter(t => t.kind === "mirror").length + 1}`, "mirror");
+  } catch (e) {
+    flashEmpty("Erro inesperado ao abrir a sessão", String(e?.message ?? e), true);
+  }
 }
 async function openSystem(script, title) {
-  const r = await window.mirror.session.openSystem(script);
-  if (!r.ok) { flashEmpty("Não deu para abrir o terminal", r.err, true); return; }
-  makeTab(r.id, title, "system");
+  try {
+    const r = await window.mirror.session.openSystem(script);
+    if (!r.ok) { flashEmpty("Não deu para abrir o terminal", r.err, true); return; }
+    makeTab(r.id, title, "system");
+  } catch (e) {
+    flashEmpty("Erro inesperado ao abrir o terminal", String(e?.message ?? e), true);
+  }
 }
 async function closeTab(i) {
   const t = tabs[i];
