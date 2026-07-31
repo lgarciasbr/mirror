@@ -2,7 +2,8 @@
 
 # ES-004 Windows Desktop Frame (mirror.exe)
 
-**Status:** Open — Experiment 1 in progress
+**Status:** Open — Experiment 1 published, collecting feedback
+**Experiment 1:** https://windows-frame-mockup.vercel.app (source: `spikes/windows-frame-mockup/`)
 **Source:** Windows adoption work that produced the native installer (PR #26), plus a Builder/Explorer conversation on 2026-07-31 that converged on a desktop frame design ("Fusão A+C")
 **Current attractor:** A native Windows desktop app that makes Mirror + Pi adoption effortless — install, understand, converse — without changing Mirror core
 **Delivery handoff:** not yet — promotion to a Capability Value is the exit condition of this story
