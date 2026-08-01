@@ -5,9 +5,7 @@ from memory.builder.home_surface import (
 from memory.builder.pull_candidates import PullCandidatesReport
 
 
-def test_canonical_refinement_index_bypasses_legacy_snapshot_and_orients_to_files(
-    tmp_path, mocker
-):
+def test_canonical_refinement_index_bypasses_legacy_snapshot_and_orients_to_files(tmp_path, mocker):
     index = tmp_path / "docs/project/refinement/index.md"
     index.parent.mkdir(parents=True)
     index.write_text("# Refinement Workbench\n", encoding="utf-8")

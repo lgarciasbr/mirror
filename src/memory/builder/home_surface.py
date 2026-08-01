@@ -41,7 +41,11 @@ def find_canonical_refinement_index(project_path: Path | None) -> str | None:
     if project_path is None:
         return None
     root = project_path.expanduser().resolve()
-    return CANONICAL_REFINEMENT_INDEX.as_posix() if (root / CANONICAL_REFINEMENT_INDEX).is_file() else None
+    return (
+        CANONICAL_REFINEMENT_INDEX.as_posix()
+        if (root / CANONICAL_REFINEMENT_INDEX).is_file()
+        else None
+    )
 
 
 def inspect_refinement_field(

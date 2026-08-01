@@ -93,9 +93,7 @@ def test_resume_state_skips_legacy_refinement_snapshot_when_disabled(tmp_path, m
     )
     get_snapshot = mocker.patch("memory.builder.resume_state.get_workbench_snapshot")
 
-    state = read_builder_resume_state(
-        store, "sandbox-pet-store", include_refinement=False
-    )
+    state = read_builder_resume_state(store, "sandbox-pet-store", include_refinement=False)
 
     assert state.refinement is None
     get_snapshot.assert_not_called()

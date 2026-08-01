@@ -69,9 +69,7 @@ def read_builder_resume_state(
             ),
         )
 
-    refinement = (
-        get_workbench_snapshot(store, normalized_journey) if include_refinement else None
-    )
+    refinement = get_workbench_snapshot(store, normalized_journey) if include_refinement else None
     allowed_next_actions: tuple[str, ...]
     if cursor.pending_confirmation:
         allowed_next_actions = PENDING_CONFIRMATION_ACTIONS
