@@ -12,6 +12,7 @@ def render_builder_resume_surface(
     state: BuilderResumeState,
     *,
     roadmap_position: RoadmapPosition | None = None,
+    canonical_refinement_index: str | None = None,
 ) -> str:
     """Render the Builder resume surface for an Ariad-governed journey."""
     cursor = state.cursor
@@ -61,7 +62,7 @@ def render_builder_resume_surface(
             ),
             "│                                                        │",
             _card_text("🧰 Refinement field"),
-            *_refinement_field_lines(state),
+            *_refinement_field_lines(state, canonical_refinement_index),
             "│                                                        │",
             _card_text("allowed next actions"),
             *_card_prefixed(state.allowed_next_actions, "-"),
@@ -74,7 +75,15 @@ def render_builder_resume_surface(
     return wrap_ariad_surface("builder_resume", "\n".join(lines) + "\n")
 
 
-def _refinement_field_lines(state: BuilderResumeState) -> list[str]:
+def _refinement_field_lines(
+    state: BuilderResumeState,
+    canonical_refinement_index: str | None,
+) -> list[str]:
+    if canonical_refinement_index:
+        return [
+            _card_text("authority: project files"),
+            *_card_wrapped(f"index: {canonical_refinement_index}"),
+        ]
     refinement = state.refinement
     if refinement is None:
         return [_card_text("active RS: none"), _card_text("active CR: none")]

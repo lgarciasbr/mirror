@@ -198,6 +198,51 @@ def test_build_load_renders_resume_surface_when_adopted_journey_has_active_item(
     assert "ROADMAP SNAPSHOT" not in out
 
 
+def test_build_load_uses_canonical_refinement_authority_without_legacy_snapshot(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/cv20/index.md"
+    roadmap.parent.mkdir(parents=True)
+    roadmap.write_text(
+        "# CV20 — Builder Mode Evolution\n\n**Status:** 🟢 Active\n",
+        encoding="utf-8",
+    )
+    refinement_index = project_path / "docs/project/refinement/index.md"
+    refinement_index.parent.mkdir(parents=True)
+    refinement_index.write_text("# Refinement Workbench\n", encoding="utf-8")
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS12.US2",
+        last_delivery_event="plan_approved",
+    )
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+    mocker.patch("memory.cli.build.switch_conversation")
+    mocker.patch("memory.cli.build._persist_global_sticky_defaults")
+    mocker.patch("memory.cli.build._is_mirror_mind_checkout", return_value=False)
+    mocker.patch.object(mem, "load_mirror_context", return_value="context")
+    mocker.patch.object(mem, "search", return_value=[])
+    legacy_snapshot = mocker.patch("memory.builder.resume_state.get_workbench_snapshot")
+
+    build.cmd_load("sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    legacy_snapshot.assert_not_called()
+    assert "authority: project files" in out
+    assert "docs/project/refinement/index.md" in out
+    assert "workbench storage:" not in out
+    assert "last refinement event:" not in out
+
+
 def test_build_load_preserves_base_behavior_for_non_ariad_journey(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
