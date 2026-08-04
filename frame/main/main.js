@@ -88,7 +88,7 @@ function runCommand(id, opts = {}) {
 
 function gateState() {
   return {
-    warm: gate.isWarm, updating: gate.isUpdating, sessions: gate.openSessions,
+    updating: gate.isUpdating, sessions: gate.openSessions,
     canOpenSession: gate.canOpenSession(), canUpdate: gate.canUpdate(),
   };
 }
@@ -131,9 +131,7 @@ ipcMain.handle("cmd:run", async (_e, id, opts) => {
     gate.updateFinished(); pushGate();
     return r;
   }
-  const r = await runCommand(id, opts ?? {});
-  if (id === "warmup" && r.ok) { gate.warmupDone(); pushGate(); }
-  return r;
+  return runCommand(id, opts ?? {});
 });
 
 /* ---------- IPC: assinaturas do Pi (auth.json é a fonte da verdade) ---------- */
@@ -202,7 +200,7 @@ function openPty(spec, kind) {
 
 ipcMain.handle("session:open", () => {
   try {
-    if (!gate.canOpenSession()) return { ok: false, err: "warm-up necessário antes de abrir sessões" };
+    if (!gate.canOpenSession()) return { ok: false, err: "um update está em andamento — aguarde concluir para abrir sessões" };
     if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup e reabra o app" };
     const id = openPty({
       file: "cmd.exe", args: ["/c", "pi"], cwd: MIRROR_ROOT, env: frameEnv(),

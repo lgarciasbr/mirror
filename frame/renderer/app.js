@@ -179,18 +179,10 @@ function renderTabs() {
 }
 
 function renderEmpty() {
-  const g = CFG?.gate;
-  if (!g?.warm) {
-    $("empty-title").textContent = "Preparando o Mirror…";
-    $("empty-msg").textContent = "Rodando o warm-up (runtime status) antes de liberar sessões.";
-    $("btn-open-session").classList.add("hidden");
-    $("btn-goto-setup").classList.add("hidden");
-  } else {
-    $("empty-title").textContent = "Pronto para conversar";
-    $("empty-msg").textContent = "Abra uma sessão — o Pi assume daqui, com a memória do Mirror ligada.";
-    $("btn-open-session").classList.remove("hidden");
-    $("btn-goto-setup").classList.add("hidden");
-  }
+  $("empty-title").textContent = "Pronto para conversar";
+  $("empty-msg").textContent = "Abra uma sessão — o Pi assume daqui, com a memória do Mirror ligada.";
+  $("btn-open-session").classList.remove("hidden");
+  $("btn-goto-setup").classList.add("hidden");
 }
 function flashEmpty(title, msg, showSetup) {
   activeView = "sessions";
@@ -198,7 +190,7 @@ function flashEmpty(title, msg, showSetup) {
   $("empty-state").classList.remove("hidden");
   $("empty-title").textContent = title;
   $("empty-msg").textContent = msg;
-  $("btn-open-session").classList.toggle("hidden", !CFG?.gate?.warm);
+  $("btn-open-session").classList.remove("hidden");
   $("btn-goto-setup").classList.toggle("hidden", !showSetup);
 }
 
@@ -211,6 +203,9 @@ function chk(l, name, detail, btn) {
 function renderSetup() {
   const t = CFG.tools, g = CFG.gate;
   const sess = tabs.filter((x) => x.kind === "mirror" && !x.exited).length;
+  const diagState = diagResult === null ? "y" : diagResult ? "g" : "r";
+  const diagDetail = diagResult === null ? "não executado — opcional, nunca bloqueia a conversa"
+    : diagResult ? "ok (identidade e banco legíveis)" : "falhou — veja a saída abaixo";
   $("panel-setup").innerHTML = `
     <h2>Setup do Mirror</h2>
     <p class="sub">Cada item é um check real. Os botões executam apenas comandos oficiais
@@ -222,8 +217,8 @@ function renderSetup() {
       ${chk(t.uv ? "g" : "r", "uv (runtime Python)", t.uv ?? "ausente", t.uv ? "" : `<button id="su-boot1">Instalar pré-requisitos</button>`)}
       ${chk(t.pi ? "g" : "r", "Pi (harness da conversa)", t.pi ?? "ausente", t.pi ? "" : `<button id="su-boot2">Instalar pré-requisitos</button>`)}
       ${chk(t.git ? "g" : "r", "Git", t.git ?? "ausente")}
-      ${chk(g.warm ? "g" : "y", "Warm-up (runtime status)", g.warm ? "concluído — sessões liberadas" : "pendente",
-        `<button id="su-warm">${g.warm ? "Rodar de novo" : "Rodar warm-up"}</button>`)}
+      ${chk(diagState, "Diagnóstico do Mirror", diagDetail,
+        `<button id="su-warm">Rodar diagnóstico</button>`)}
       ${chk("g", "Update do Mirror", "git fast-forward + backup + migrations, sem reinstalar",
         `<button id="su-upmirror" ${g.canUpdate ? "" : "disabled"}>Atualizar Mirror</button>`)}
       ${chk("g", "Update do Pi", "@earendil-works/pi-coding-agent@latest (npm)",
@@ -251,10 +246,15 @@ function renderSetup() {
   });
 }
 
+// Diagnóstico explícito e NÃO bloqueante (decisão dos mantenedores): roda o
+// comando de leitura do banco sob demanda e mostra o resultado — nunca é
+// pré-condição para conversar.
+let diagResult = null; // null = nunca rodou · true/false = último resultado
 async function runWarmup() {
-  warmupOut = "rodando: uv run python -m memory runtime status …";
+  warmupOut = "rodando diagnóstico (memory identity list)…";
   renderSetup();
   const r = await window.mirror.cmd.run("warmup");
+  diagResult = r.ok;
   warmupOut = (r.out + (r.err ? "\n" + r.err : "")).trim() || "(sem saída)";
   CFG = await window.mirror.config.get();
   render();
@@ -300,7 +300,6 @@ function renderStatus() {
     ? `<span><b>${t.title}</b>${t.exited ? " · encerrada" : ""}</span>`
     : `<span>◇ <b>Mirror Mind</b></span>`;
   $("statusbar").innerHTML = left + `
-    <span>warm-up <b>${g.warm ? "ok" : "pendente"}</b></span>
     <span>sessões <b>${g.sessions ?? 0}</b></span>
     <span class="right">
       <span>${CFG?.mirrorUser ? escapeHtml(CFG.mirrorUser) + " · " : ""}frame v${CFG?.frameVersion ?? "?"}</span>
@@ -567,7 +566,7 @@ function renderWizard() {
         ${wchk(wst.key ? "g" : "y", "Memória (OpenRouter)", wst.key ? "chave configurada" : "sem chave — adicione no ⚙ Setup")}
         ${wchk(wizConnected.length ? "g" : "y", "Assinatura",
           wizConnected.length ? "conectada: " + wizConnected.join(", ") : "conecte com /login na primeira conversa")}
-        ${wchk("g", "Runtime", "Mirror instalado · warm-up ao abrir")}
+        ${wchk("g", "Runtime", "Mirror instalado — pronto para conversar")}
       </div>
       ${wizConnected.length
         ? `<p class="sub">Tudo conectado — é só abrir e conversar.</p>`
@@ -599,14 +598,13 @@ async function onWizNext() {
     }
     msg.textContent = "Semeando identidade e personas (memory seed)…";
     await window.mirror.cmd.run("seed");
-    window.mirror.cmd.run("warmup");
     wst.inited = true;
   }
   if (wiz === 5) {
     CFG = await window.mirror.config.get();
     $("view-wizard").classList.add("hidden");
     await enterFrame();
-    if (CFG.gate?.warm || (await window.mirror.config.get()).gate?.warm) openMirrorSession();
+    if (CFG.tools?.pi) openMirrorSession();
     return;
   }
   wiz++;
@@ -632,14 +630,10 @@ async function enterFrame() {
   $("btn-goto-setup").addEventListener("click", () => { activeView = "setup"; render(); });
   activeView = "sessions";
   render();
-  // warm-up serializado antes de liberar sessões (mitiga a lacuna fcntl)
-  if (CFG.mirrorRoot && CFG.tools.uv) {
-    const r = await window.mirror.cmd.run("warmup");
-    warmupOut = (r.out + (r.err ? "\n" + r.err : "")).trim();
-    CFG = await window.mirror.config.get();
-    render();
-    if (!CFG.gate.warm) flashEmpty("Warm-up falhou", "Veja o Setup para diagnosticar (saída registrada).", true);
-  } else {
+  // Sessões abrem sem warm-up: uma falha do Mirror nunca impede conversar no
+  // Pi (a corrida de bootstrap foi resolvida pelo lock cross-process do #31).
+  // Diagnóstico do Mirror é explícito e opcional, no ⚙ Setup.
+  if (!CFG.mirrorRoot || !CFG.tools.uv) {
     flashEmpty("Mirror ainda não instalado por completo",
       CFG.mirrorRoot ? "uv ausente — instale os pré-requisitos no Setup." : "Instalação não encontrada — rode o instalador ou o bootstrap.", true);
   }
