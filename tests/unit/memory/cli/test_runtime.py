@@ -24,6 +24,7 @@ from memory.cli.runtime import (
     RuntimeVersionReport,
     _connect_read_only,
     build_release_doctor_report,
+    build_runtime_status,
     build_runtime_update_dry_run,
     check_runtime_update_availability,
     cmd_runtime,
@@ -602,6 +603,45 @@ def test_check_runtime_update_availability_reports_update_available(monkeypatch)
 
     assert report.status == "update_available"
     assert report.upstream == "origin/main"
+
+
+class TestRuntimeProbesTheActiveDatabase:
+    """Status, diagnosis and update must inspect the database the runtime opens.
+
+    A mirror home holds one database per environment. Probing the production
+    filename from a development runtime inspects a file nothing uses: extension
+    ledgers look empty, every command-skill extension is reported as having
+    pending migrations, and those false blockers refuse an update that is
+    perfectly safe.
+    """
+
+    def test_status_reports_the_environment_database(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("memory.config.MEMORY_ENV", "development")
+        home = tmp_path / "home"
+        home.mkdir()
+        (home / "memory_dev.db").write_text("development database")
+
+        report = build_runtime_status(mirror_home_arg=home)
+
+        assert report.db_path == home / "memory_dev.db"
+        assert report.db_exists is True
+
+    def test_bootstrap_does_not_create_a_production_database_in_a_dev_home(
+        self, tmp_path, monkeypatch
+    ):
+        from memory.cli.runtime import _attempt_database_bootstrap
+
+        monkeypatch.setattr("memory.config.MEMORY_ENV", "development")
+        home = tmp_path / "home"
+        home.mkdir()
+
+        ok, _detail = _attempt_database_bootstrap(home)
+
+        assert ok
+        assert (home / "memory_dev.db").exists()
+        assert not (home / "memory.db").exists(), (
+            "the update gate manufactured the decoy database it then trips over"
+        )
 
 
 class TestUpdateAvailabilityTrustsTheRemote:
@@ -1603,7 +1643,7 @@ def test_runtime_update_falls_back_to_repair_when_status_crashes(monkeypatch, tm
     backup_path = tmp_path / "backup.zip"
     monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda: tmp_path)
     monkeypatch.setattr(
-        "memory.cli.runtime.default_db_path_for_home", lambda home: tmp_path / "memory.db"
+        "memory.cli.runtime.db_path_for_home", lambda home: tmp_path / "memory.db"
     )
     (tmp_path / "memory.db").write_text("db", encoding="utf-8")
     monkeypatch.setattr("memory.cli.runtime.create_backup", lambda silent, mirror_home: backup_path)
@@ -1664,7 +1704,7 @@ def test_runtime_update_repair_allows_code_only_without_database(monkeypatch, tm
     monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
     monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda: tmp_path)
     monkeypatch.setattr(
-        "memory.cli.runtime.default_db_path_for_home", lambda home: tmp_path / "missing.db"
+        "memory.cli.runtime.db_path_for_home", lambda home: tmp_path / "missing.db"
     )
     monkeypatch.setattr("memory.cli.runtime._git_fast_forward", lambda upstream, cwd: (True, ""))
     monkeypatch.setattr(

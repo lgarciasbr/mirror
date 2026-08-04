@@ -23,7 +23,7 @@ from memory.config import (
     LLM_TIMEOUT_EXTRACTION,
     LLM_TIMEOUT_RECEPTION,
     MEMORY_ENV,
-    default_db_path_for_home,
+    db_path_for_home,
     default_extensions_dir_for_home,
     resolve_mirror_home,
 )
@@ -991,7 +991,7 @@ def build_runtime_status(
     except ValueError as exc:
         mirror_home_error = str(exc)
 
-    db_path = default_db_path_for_home(mirror_home) if mirror_home else None
+    db_path = db_path_for_home(mirror_home) if mirror_home else None
     db_exists = db_path.exists() if db_path else None
 
     return RuntimeStatusReport(
@@ -1897,7 +1897,11 @@ def _attempt_database_bootstrap(mirror_home_arg: str | Path | None) -> tuple[boo
         mirror_home = (
             Path(mirror_home_arg).expanduser() if mirror_home_arg else resolve_mirror_home()
         )
-        client = MemoryClient(env="production", db_path=default_db_path_for_home(mirror_home))
+        # Deliberately not env="production": forcing that here created a decoy
+        # memory.db inside development homes, which the extension-health probe
+        # then read as an empty migration ledger and reported as pending drift.
+        # The gate manufactured its own blocker.
+        client = MemoryClient(db_path=db_path_for_home(mirror_home))
         client.close()
     except Exception as exc:
         return False, str(exc)
@@ -1924,7 +1928,7 @@ def _try_runtime_backup(
             (),
         )
 
-    db_path = default_db_path_for_home(mirror_home)
+    db_path = db_path_for_home(mirror_home)
     if not db_path.exists():
         return RuntimeUpdateStage("backup", "skip", "database not found"), None, None, ()
 
@@ -2296,7 +2300,7 @@ def run_runtime_update(
         )
     if backup_path is None:
         stages.append(RuntimeUpdateStage("backup", "fail", "database not found"))
-        recovery.append(f"Expected database at: {default_db_path_for_home(mirror_home)}")
+        recovery.append(f"Expected database at: {db_path_for_home(mirror_home)}")
         return RuntimeUpdateResult(
             tuple(stages),
             previous_commit,
@@ -2767,7 +2771,7 @@ def cmd_runtime(argv: list[str]) -> int:
             return 1
         backup_path = create_backup(silent=True, mirror_home=mirror_home)
         if backup_path is None:
-            sys.stderr.write(f"Database not found: {default_db_path_for_home(mirror_home)}\n")
+            sys.stderr.write(f"Database not found: {db_path_for_home(mirror_home)}\n")
             return 1
         verification = verify_backup_archive(backup_path)
         sys.stdout.write(
