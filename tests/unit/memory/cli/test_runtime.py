@@ -535,7 +535,7 @@ def test_render_runtime_version():
 
 
 def test_check_runtime_update_availability_reports_up_to_date(monkeypatch):
-    def fake_run_git(args, *, cwd):
+    def fake_run_git(args, *, cwd, timeout=None):
         if args[0] == "rev-parse" and args[1] == "--show-toplevel":
             return 0, "/repo", ""
         if args == ["branch", "--show-current"]:
@@ -568,7 +568,7 @@ def test_check_runtime_update_availability_reports_up_to_date(monkeypatch):
 
 
 def test_check_runtime_update_availability_reports_update_available(monkeypatch):
-    def fake_run_git(args, *, cwd):
+    def fake_run_git(args, *, cwd, timeout=None):
         if args[0] == "rev-parse" and args[1] == "--show-toplevel":
             return 0, "/repo", ""
         if args == ["branch", "--show-current"]:
@@ -587,6 +587,10 @@ def test_check_runtime_update_availability_reports_update_available(monkeypatch)
             return 0, "https://example.test/repo.git", ""
         if args[:2] == ["ls-remote", "origin"]:
             return 0, "def5678901234567\trefs/heads/main", ""
+        if args[:2] == ["merge-base", "--is-ancestor"]:
+            return 1, "", ""
+        if args[0] == "cat-file":
+            return 128, "", ""
         if args == ["rev-parse", "HEAD"]:
             return 0, "abcdef1234567890", ""
         raise AssertionError(args)
@@ -598,6 +602,115 @@ def test_check_runtime_update_availability_reports_update_available(monkeypatch)
 
     assert report.status == "update_available"
     assert report.upstream == "origin/main"
+
+
+class TestUpdateAvailabilityTrustsTheRemote:
+    """Availability must be derived from the remote, not from local refs.
+
+    Remote-tracking refs go stale the moment someone else pushes. Deciding
+    "local_ahead" from them means a clone that has not fetched for two weeks is
+    told it is ahead of a channel that has already moved past it — the exact
+    failure that hid v0.31.6 and v0.31.7 from a 0.31.5 checkout.
+    """
+
+    @staticmethod
+    def _fake_git(*, counts, remote_sha, head_sha, ancestry=None, ls_remote_ok=True, calls=None):
+        ancestry = ancestry or {}
+
+        def fake_run_git(args, *, cwd, timeout=None):
+            if calls is not None:
+                calls.append((tuple(args), timeout))
+            if args[0] == "rev-parse" and args[1] == "--show-toplevel":
+                return 0, "/repo", ""
+            if args == ["branch", "--show-current"]:
+                return 0, "main", ""
+            if args == ["rev-parse", "--short", "HEAD"]:
+                return 0, head_sha[:7], ""
+            if args == ["status", "--porcelain"]:
+                return 0, "", ""
+            if args[:2] == ["rev-parse", "--abbrev-ref"]:
+                return 0, "origin/stable", ""
+            if args == ["rev-parse", "--verify", "origin/stable"]:
+                return 0, "origin/stable", ""
+            if args[:2] == ["rev-list", "--left-right"]:
+                return 0, counts, ""
+            if args[:3] == ["config", "--get", "remote.origin.url"]:
+                return 0, "https://example.test/repo.git", ""
+            if args[:2] == ["ls-remote", "origin"]:
+                if not ls_remote_ok:
+                    return 1, "", "timed out after 2 seconds"
+                return 0, f"{remote_sha}\trefs/heads/stable", ""
+            if args == ["rev-parse", "HEAD"]:
+                return 0, head_sha, ""
+            if args[:2] == ["merge-base", "--is-ancestor"]:
+                return (0, "", "") if ancestry.get((args[2], args[3])) else (1, "", "")
+            if args[0] == "cat-file":
+                return (0, "", "") if ancestry.get("remote_known") else (128, "", "")
+            raise AssertionError(args)
+
+        return fake_run_git
+
+    def test_stale_refs_claiming_local_ahead_report_update_available(self, monkeypatch):
+        # Local refs say "1 ahead, 0 behind" because origin/stable is stale; the
+        # remote actually carries a commit this clone has never seen.
+        monkeypatch.setattr(
+            "memory.cli.runtime._run_git",
+            self._fake_git(counts="1 0", remote_sha="f" * 40, head_sha="a" * 40),
+        )
+        monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
+
+        report = check_runtime_update_availability(Path("/repo"), channel="stable")
+
+        assert report.status == "update_available"
+        assert report.remote_commit == "f" * 40
+
+    def test_genuinely_ahead_is_still_reported_as_local_ahead(self, monkeypatch):
+        # The remote commit is contained in local history: really ahead.
+        monkeypatch.setattr(
+            "memory.cli.runtime._run_git",
+            self._fake_git(
+                counts="1 0",
+                remote_sha="f" * 40,
+                head_sha="a" * 40,
+                ancestry={(("f" * 40), "HEAD"): True, "remote_known": True},
+            ),
+        )
+        monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
+
+        report = check_runtime_update_availability(Path("/repo"), channel="stable")
+
+        assert report.status == "local_ahead"
+
+    def test_failed_remote_query_reports_unknown_never_a_confident_verdict(self, monkeypatch):
+        monkeypatch.setattr(
+            "memory.cli.runtime._run_git",
+            self._fake_git(
+                counts="1 0", remote_sha="f" * 40, head_sha="a" * 40, ls_remote_ok=False
+            ),
+        )
+        monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
+
+        report = check_runtime_update_availability(Path("/repo"), channel="stable")
+
+        assert report.status == "unknown"
+
+    def test_remote_query_uses_the_network_timeout(self, monkeypatch):
+        from memory.cli.runtime import _GIT_NETWORK_TIMEOUT_SECONDS
+
+        calls: list[tuple[tuple[str, ...], float | None]] = []
+        monkeypatch.setattr(
+            "memory.cli.runtime._run_git",
+            self._fake_git(
+                counts="0 0", remote_sha="a" * 40, head_sha="a" * 40, calls=calls
+            ),
+        )
+        monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
+
+        check_runtime_update_availability(Path("/repo"), channel="stable")
+
+        ls_remote = [(args, timeout) for args, timeout in calls if args[0] == "ls-remote"]
+        assert ls_remote, "ls-remote was never called"
+        assert ls_remote[0][1] == _GIT_NETWORK_TIMEOUT_SECONDS
 
 
 def test_render_runtime_update_availability():

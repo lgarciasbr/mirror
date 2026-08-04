@@ -1111,6 +1111,34 @@ def _split_upstream(upstream: str) -> tuple[str, str] | None:
     return remote, branch
 
 
+def _classify_update_status(
+    *, repository: Path, local_commit: str | None, remote_commit: str
+) -> str:
+    """Classify local HEAD against the authoritative remote commit.
+
+    Ancestry is asked of the local object database rather than of remote-tracking
+    refs, so the answer cannot silently age between fetches. When the remote
+    commit is not present locally at all, the clone provably lacks remote work and
+    that is reported as an available update rather than guessed at.
+    """
+    if local_commit and (remote_commit == local_commit or remote_commit.startswith(local_commit)):
+        return "up_to_date"
+    contains_remote, _out, _err = _run_git(
+        ["merge-base", "--is-ancestor", remote_commit, "HEAD"], cwd=repository
+    )
+    if contains_remote == 0:
+        return "local_ahead"
+    contained_by_remote, _out, _err = _run_git(
+        ["merge-base", "--is-ancestor", "HEAD", remote_commit], cwd=repository
+    )
+    if contained_by_remote == 0:
+        return "update_available"
+    remote_known, _out, _err = _run_git(
+        ["cat-file", "-e", f"{remote_commit}^{{commit}}"], cwd=repository
+    )
+    return "diverged" if remote_known == 0 else "update_available"
+
+
 def check_runtime_update_availability(
     start: Path | None = None, channel: str | None = None
 ) -> RuntimeUpdateAvailability:
@@ -1134,21 +1162,11 @@ def check_runtime_update_availability(
         return RuntimeUpdateAvailability(
             version, None, git.commit, None, "no_upstream", git_plan.note, update_channel
         )
-    if git_plan.ahead and git_plan.behind:
-        return RuntimeUpdateAvailability(
-            version, git_plan.upstream, git.commit, None, "diverged", git_plan.note, update_channel
-        )
-    if git_plan.ahead and not git_plan.behind:
-        return RuntimeUpdateAvailability(
-            version,
-            git_plan.upstream,
-            git.commit,
-            None,
-            "local_ahead",
-            git_plan.note,
-            update_channel,
-        )
-
+    # Deliberately no verdict from local refs alone. Remote-tracking refs are only
+    # as fresh as the last fetch, so "ahead" here can mean "ahead of where the
+    # channel stood two weeks ago". Returning early on that reading is how a clone
+    # two releases behind gets told it is ahead. The remote query below is the
+    # only authority.
     split = _split_upstream(git_plan.upstream)
     if split is None:
         return RuntimeUpdateAvailability(
@@ -1174,8 +1192,13 @@ def check_runtime_update_availability(
             remote_err or f"remote {remote} has no url",
             update_channel,
         )
+    # ls-remote talks to the network and must use the network budget. Under the
+    # 2s local budget it always timed out on SSH remotes, and the failure was
+    # invisible because the stale-ref path had already returned a verdict.
     code, output, ls_err = _run_git(
-        ["ls-remote", remote, f"refs/heads/{branch}"], cwd=git.repository
+        ["ls-remote", remote, f"refs/heads/{branch}"],
+        cwd=git.repository,
+        timeout=_GIT_NETWORK_TIMEOUT_SECONDS,
     )
     if code != 0 or not output:
         return RuntimeUpdateAvailability(
@@ -1201,11 +1224,9 @@ def check_runtime_update_availability(
     remote_commit = parts[0]
     local_full_code, local_full, _err = _run_git(["rev-parse", "HEAD"], cwd=git.repository)
     local_commit = local_full if local_full_code == 0 and local_full else git.commit
-    status = "up_to_date" if remote_commit.startswith(local_commit or "") else "update_available"
-    if local_commit and len(local_commit) < len(remote_commit):
-        status = "up_to_date" if remote_commit.startswith(local_commit) else "update_available"
-    elif local_commit:
-        status = "up_to_date" if remote_commit == local_commit else "update_available"
+    status = _classify_update_status(
+        repository=git.repository, local_commit=local_commit, remote_commit=remote_commit
+    )
     return RuntimeUpdateAvailability(
         version,
         git_plan.upstream,
