@@ -15,6 +15,7 @@ const { buildCommand } = require("./command-registry.js");
 const { SessionGate } = require("./session-gate.js");
 const { loadEnvFile, saveEnvValues, isFirstRun } = require("./config-store.js");
 const { PtyManager, sanitizeResize } = require("./pty-manager.js");
+const { resolveInstallerFile, readPinnedPiVersion } = require("./install-paths.js");
 
 const MIRROR_ROOT = resolveMirrorRoot({});
 const gate = new SessionGate();
@@ -92,27 +93,15 @@ function runCommand(id, opts = {}) {
   });
 }
 
-// Versão homologada do Pi (clarificação vinculante 1): o Frame EMPACOTADO lê a
-// cópia INSTALADA de pi-version.txt ({app}\bin, shipada pelo installer ao lado
-// do bootstrap) — nunca o clone, que avança por updateMirror sem que o Frame
-// instalado acompanhe. Em desenvolvimento, o fallback explícito é o arquivo do
-// checkout (installer/pi-version.txt). Ausência ou conteúdo inválido desabilita
-// o update automático do Pi — nunca @latest.
+// Versão homologada do Pi e bootstrap: resolução centralizada e testada em
+// install-paths.js (empacotado = cópia instalada {app}\bin; dev = checkout;
+// ausência = erro claro; nunca o clone, nunca @latest).
 function resolvePiVersion() {
-  const candidates = [];
-  if (app.isPackaged) {
-    // {app}\frame\MirrorFrame.exe → {app}\bin\pi-version.txt
-    candidates.push(path.join(path.dirname(app.getPath("exe")), "..", "bin", "pi-version.txt"));
-  } else {
-    candidates.push(path.join(__dirname, "..", "..", "installer", "pi-version.txt"));
-  }
-  for (const file of candidates) {
-    try {
-      const v = fs.readFileSync(file, "utf8").trim();
-      if (/^\d+\.\d+\.\d+$/.test(v)) return { version: v, source: file };
-    } catch { /* tenta o próximo */ }
-  }
-  return { version: null, source: null };
+  return readPinnedPiVersion({
+    isPackaged: app.isPackaged,
+    exeDir: path.dirname(app.getPath("exe")),
+    moduleDir: __dirname,
+  });
 }
 
 function gateState() {
@@ -237,14 +226,26 @@ ipcMain.handle("login:start", (e, slug) => {
 // ConPTY não lança .cmd diretamente — o Pi (shim npm) precisa do cmd.exe /c.
 const SYSTEM_SCRIPTS = {
   shell: () => ({ file: "powershell.exe", args: ["-NoLogo", "-NoExit"], cwd: MIRROR_ROOT ?? process.cwd() }),
-  bootstrap: () => ({
-    file: "powershell.exe",
-    args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-NoExit", "-File",
-      path.join(MIRROR_ROOT ?? "", "installer", "bootstrap.ps1")],
-    cwd: MIRROR_ROOT ?? process.cwd(),
-  }),
+  bootstrap: () => {
+    const resolved = resolveBootstrapPath();
+    if (!resolved.path) return { error: resolved.err };
+    return {
+      file: "powershell.exe",
+      args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-NoExit", "-File", resolved.path],
+      cwd: MIRROR_ROOT ?? process.cwd(),
+    };
+  },
   login: () => ({ file: "cmd.exe", args: ["/c", "pi"], cwd: MIRROR_ROOT ?? process.cwd() }),
 };
+
+function resolveBootstrapPath() {
+  return resolveInstallerFile({
+    isPackaged: app.isPackaged,
+    exeDir: path.dirname(app.getPath("exe")),
+    moduleDir: __dirname,
+    name: "bootstrap.ps1",
+  });
+}
 
 // Cada PTY do Frame entra no gate — mirror, login, shell E bootstrap: um
 // update nunca pode rodar em concorrência com QUALQUER processo aberto pelo
@@ -283,9 +284,7 @@ ipcMain.handle("session:openSystem", (e, script) => {
     const mk = SYSTEM_SCRIPTS[script];
     if (!mk) return { ok: false, err: `script desconhecido: ${script}` };
     const spec = mk();
-    if (script === "bootstrap" && !fs.existsSync(spec.args[spec.args.length - 1])) {
-      return { ok: false, err: "installer/bootstrap.ps1 não encontrado no MIRROR_ROOT" };
-    }
+    if (spec.error) return { ok: false, err: spec.error };
     const id = openPty({ ...spec, env: frameEnv() }, "system");
     return { ok: true, id };
   } catch (e) {
