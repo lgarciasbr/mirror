@@ -3,7 +3,7 @@
 // Papel: orquestrar. Toda mutação passa pelo command-registry (argv fixo);
 // sessões Pi respeitam o SessionGate; segurança Electron: contextIsolation,
 // sem nodeIntegration, sem conteúdo remoto.
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain } = require("electron");
 const { execFile } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
@@ -20,6 +20,12 @@ const MIRROR_ROOT = resolveMirrorRoot({});
 const gate = new SessionGate();
 const ptys = new PtyManager();
 let win = null;
+
+// Só a janela principal é interlocutor confiável: IPC vindo de qualquer outro
+// webContents (frame embutido, janela inesperada) é rejeitado na entrada.
+function trusted(event) {
+  return win !== null && event.sender === win.webContents;
+}
 
 /* ---------- helpers ---------- */
 const { execFileSync } = require("node:child_process");
@@ -95,7 +101,8 @@ function gateState() {
 function pushGate() { win?.webContents.send("gate:changed", gateState()); }
 
 /* ---------- IPC: config ---------- */
-ipcMain.handle("config:get", () => {
+ipcMain.handle("config:get", (e) => {
+  if (!trusted(e)) return null;
   const env = MIRROR_ROOT ? loadEnvFile(MIRROR_ROOT) : {};
   return {
     mirrorRoot: MIRROR_ROOT,
@@ -108,7 +115,8 @@ ipcMain.handle("config:get", () => {
   };
 });
 
-ipcMain.handle("config:save", (_e, values) => {
+ipcMain.handle("config:save", (e, values) => {
+  if (!trusted(e)) return { ok: false, err: "sender não confiável" };
   if (!MIRROR_ROOT) return { ok: false, err: "MIRROR_ROOT não resolvido" };
   const allowed = {};
   if (typeof values?.MIRROR_USER === "string" && values.MIRROR_USER.trim()) {
@@ -118,7 +126,12 @@ ipcMain.handle("config:save", (_e, values) => {
     allowed.OPENROUTER_API_KEY = values.OPENROUTER_API_KEY.trim();
   }
   if (Object.keys(allowed).length === 0) return { ok: false, err: "nada válido para salvar" };
-  saveEnvValues(MIRROR_ROOT, allowed);
+  try {
+    // config-store valida chave e formato e rejeita quebras de linha (injeção).
+    saveEnvValues(MIRROR_ROOT, allowed);
+  } catch (err) {
+    return { ok: false, err: String(err.message) };
+  }
   return { ok: true };
 });
 
@@ -131,7 +144,8 @@ const { COMMANDS } = require("./command-registry.js");
 const UPDATE_COMMANDS = new Set(
   Object.entries(COMMANDS).filter(([, spec]) => spec.gated).map(([id]) => id),
 );
-ipcMain.handle("cmd:run", async (_e, id, opts) => {
+ipcMain.handle("cmd:run", async (e, id, opts) => {
+  if (!trusted(e)) return { ok: false, code: -1, out: "", err: "sender não confiável" };
   if (UPDATE_COMMANDS.has(id)) {
     if (!gate.canUpdate()) {
       return { ok: false, code: -1, out: "", err: "update bloqueado: feche as sessões primeiro (regra R2)" };
@@ -152,24 +166,18 @@ function authProviders() {
   try { return Object.keys(JSON.parse(fs.readFileSync(AUTH_PATH, "utf8"))); }
   catch { return []; }
 }
-ipcMain.handle("login:providers", () => authProviders());
+ipcMain.handle("login:providers", (e) => (trusted(e) ? authProviders() : []));
 
-// Abre a URL de autenticação no navegador padrão do usuário. Só https.
-ipcMain.handle("shell:open", (_e, url) => {
-  try {
-    if (typeof url !== "string" || url.length > 600 || !/^https:\/\/[^\s]+$/.test(url)) {
-      return { ok: false, err: "url inválida" };
-    }
-    shell.openExternal(url);
-    return { ok: true };
-  } catch (e) { return { ok: false, err: String(e.message) }; }
-});
+// shell.openExternal foi removido por decisão dos mantenedores: o próprio Pi
+// abre o navegador no fluxo OAuth homologado, e o terminal ("Ver detalhes")
+// permite ver e copiar qualquer URL necessária como fallback.
 
 // Login fluido: Pi roda num PTY oculto com o slash command como mensagem
 // inicial; o próprio Pi abre o navegador (OAuth). O frame só observa auth.json.
 const LOGIN_PROVIDERS = new Set(["anthropic", "openai-codex"]);
-ipcMain.handle("login:start", (_e, slug) => {
+ipcMain.handle("login:start", (e, slug) => {
   try {
+    if (!trusted(e)) return { ok: false, err: "sender não confiável" };
     if (!LOGIN_PROVIDERS.has(slug)) return { ok: false, err: `provedor não suportado: ${slug}` };
     if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup" };
     // Pi puro, sem argumentos: mensagem inicial via CLI vira PROMPT pro modelo
@@ -208,8 +216,9 @@ function openPty(spec, kind) {
   return id;
 }
 
-ipcMain.handle("session:open", () => {
+ipcMain.handle("session:open", (e) => {
   try {
+    if (!trusted(e)) return { ok: false, err: "sender não confiável" };
     if (!gate.canOpenSession()) return { ok: false, err: "um update está em andamento — aguarde concluir para abrir sessões" };
     if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup e reabra o app" };
     const id = openPty({
@@ -222,8 +231,9 @@ ipcMain.handle("session:open", () => {
   }
 });
 
-ipcMain.handle("session:openSystem", (_e, script) => {
+ipcMain.handle("session:openSystem", (e, script) => {
   try {
+    if (!trusted(e)) return { ok: false, err: "sender não confiável" };
     const mk = SYSTEM_SCRIPTS[script];
     if (!mk) return { ok: false, err: `script desconhecido: ${script}` };
     const spec = mk();
@@ -237,11 +247,22 @@ ipcMain.handle("session:openSystem", (_e, script) => {
   }
 });
 
-ipcMain.on("session:input", (_e, id, data) => {
+// Operações de sessão exigem sender confiável E SID existente — um SID
+// desconhecido é rejeitado em vez de virar no-op silencioso.
+ipcMain.on("session:input", (e, id, data) => {
+  if (!trusted(e) || !ptys.has(id)) return;
   if (typeof data === "string" && data.length <= 8192) ptys.write(id, data);
 });
-ipcMain.on("session:resize", (_e, id, cols, rows) => ptys.resize(id, Number(cols) || 80, Number(rows) || 24));
-ipcMain.handle("session:close", async (_e, id) => { await ptys.close(id); return { ok: true }; });
+ipcMain.on("session:resize", (e, id, cols, rows) => {
+  if (!trusted(e) || !ptys.has(id)) return;
+  ptys.resize(id, Number(cols) || 80, Number(rows) || 24);
+});
+ipcMain.handle("session:close", async (e, id) => {
+  if (!trusted(e)) return { ok: false, err: "sender não confiável" };
+  if (!ptys.has(id)) return { ok: false, err: "sessão desconhecida" };
+  await ptys.close(id);
+  return { ok: true };
+});
 
 /* ---------- janela ---------- */
 function createWindow() {
@@ -254,13 +275,21 @@ function createWindow() {
       preload: path.join(__dirname, "..", "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      // Renderer sandboxed: o preload usa apenas contextBridge/ipcRenderer,
+      // que continuam disponíveis sob sandbox (viabilidade validada).
+      sandbox: true,
       spellcheck: false,
     },
   });
   win.removeMenu();
   win.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
 }
+
+// Nenhum webContents pode navegar para fora nem abrir janelas novas.
+app.on("web-contents-created", (_ev, contents) => {
+  contents.on("will-navigate", (ev) => ev.preventDefault());
+  contents.setWindowOpenHandler(() => ({ action: "deny" }));
+});
 
 app.whenReady().then(() => {
   createWindow();

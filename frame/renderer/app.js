@@ -76,19 +76,9 @@ window.mirror.session.onData((sid, data) => {
         <span style="color:var(--muted);font-size:13px">Eu detecto sozinho quando concluir. Se o navegador não
         abriu, clique em "Ver detalhes" para copiar o link ou colar o código.</span>`;
     }
-    // 3b) se alguma URL aparecer no output, vira botão clicável (bônus)
-    if (!wLogin.url) {
-      const urls = clean.match(/https:\/\/[^\s"'<>\)\]]+/g) ?? [];
-      const auth = urls.find((u) => !/\.md\b|earendil|npmjs|github\.com\/earendil/i.test(u));
-      if (auth) {
-        wLogin.url = auth.replace(/[.,;]+$/, "");
-        $("w-login-lbl").innerHTML = `Tudo pronto — <b>clique para autenticar no navegador</b>:<br>
-          <button class="btn primary" id="w-login-open" style="margin-top:10px">Abrir página de autenticação ↗</button>
-          <div style="font-size:11.5px;color:var(--dim);margin-top:8px;word-break:break-all">${escapeHtml(wLogin.url)}</div>
-          <div style="font-size:12.5px;color:var(--muted);margin-top:6px">Depois de autorizar, eu detecto sozinho e sigo em frente.</div>`;
-        $("w-login-open").addEventListener("click", () => window.mirror.shell.open(wLogin.url));
-      }
-    }
+    // Sem shell.openExternal (decisão dos mantenedores): o Pi abre o navegador
+    // no fluxo homologado; o terminal em "Ver detalhes" mostra qualquer URL
+    // para o usuário ver e copiar como fallback.
     return;
   }
   tabs.find((t) => t.sid === sid)?.term.write(data);
@@ -365,7 +355,7 @@ async function startWizLogin(slug) {
     if (wLogin && wLogin.sid === r.id && !wLogin.ready) { wLogin.ready = true; tryTypeLogin(r.id); }
   }, 12000);
   const reveal = setTimeout(() => {
-    if (wLogin && wLogin.sid === r.id && !wLogin.url && !wLogin.browserMsg && !wizConnected.includes(slug)) {
+    if (wLogin && wLogin.sid === r.id && !wLogin.browserMsg && !wizConnected.includes(slug)) {
       const t = $("w-login-term");
       if (t && t.style.display === "none") {
         t.style.display = "block";

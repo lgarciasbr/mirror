@@ -21,7 +21,24 @@ function loadEnvFile(root) {
   return out;
 }
 
+// Chaves que o frame tem permissão de gravar, com o formato aceito de cada
+// valor. Nenhum valor pode conter quebras de linha — um '\n' embutido criaria
+// uma variável nova no .env (injeção).
+const ALLOWED_KEYS = {
+  MIRROR_USER: /^[^\r\n]{1,128}$/,
+  OPENROUTER_API_KEY: /^sk-or-[^\s\r\n]{1,256}$/,
+};
+
+function assertWritable(key, value) {
+  const rule = ALLOWED_KEYS[key];
+  if (!rule) throw new Error(`chave não permitida no .env: ${key}`);
+  if (typeof value !== "string" || /[\r\n]/.test(value) || !rule.test(value)) {
+    throw new Error(`valor inválido para ${key}`);
+  }
+}
+
 function saveEnvValues(root, values) {
+  for (const [k, v] of Object.entries(values)) assertWritable(k, v);
   const file = envPath(root);
   let lines = [];
   if (fs.existsSync(file)) {

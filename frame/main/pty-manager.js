@@ -29,6 +29,7 @@ class PtyManager {
     return id;
   }
 
+  has(id) { return this._procs.has(id); }
   write(id, data) { this._procs.get(id)?.write(data); }
   resize(id, cols, rows) {
     if (cols > 0 && rows > 0) this._procs.get(id)?.resize(cols, rows);

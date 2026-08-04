@@ -41,6 +41,19 @@ test("writes UTF-8 WITHOUT BOM and with LF endings", () => {
   assert.strictEqual(loadEnvFile(root).MIRROR_USER, "Acentuação-çãé");
 });
 
+test("rejects values with embedded newlines — injection cannot create new keys", () => {
+  const root = tmpRoot();
+  assert.throws(() => saveEnvValues(root, { MIRROR_USER: "Rodrigo\nEVIL=1" }), /inválido/);
+  assert.throws(() => saveEnvValues(root, { MIRROR_USER: "Rodrigo\r\nEVIL=1" }), /inválido/);
+  assert.strictEqual(loadEnvFile(root).EVIL, undefined);
+});
+
+test("rejects keys outside the allowlist and malformed api keys", () => {
+  const root = tmpRoot();
+  assert.throws(() => saveEnvValues(root, { PATH: "C:\\evil" }), /não permitida/);
+  assert.throws(() => saveEnvValues(root, { OPENROUTER_API_KEY: "not-a-key" }), /inválido/);
+});
+
 test("tolerates a BOM left by other editors when reading", () => {
   const root = tmpRoot();
   fs.writeFileSync(path.join(root, ".env"), "﻿MIRROR_USER=Bom\n");
