@@ -53,3 +53,8 @@ test("every registered command declares cwd policy", () => {
     assert.ok(["root", "frame"].includes(COMMANDS[id].cwd), `${id} sem cwd policy`);
   }
 });
+
+test("BOTH updaters are marked gated — and only them", () => {
+  const gated = Object.entries(COMMANDS).filter(([, s]) => s.gated).map(([id]) => id).sort();
+  assert.deepStrictEqual(gated, ["updateMirror", "updatePi"]);
+});

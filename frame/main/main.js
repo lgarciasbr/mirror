@@ -123,9 +123,19 @@ ipcMain.handle("config:save", (_e, values) => {
 });
 
 /* ---------- IPC: comandos allowlisted ---------- */
+// A autoridade do gate de update é o main process — o estado dos botões do
+// renderer é só reflexo. Os DOIS updaters passam pelo mesmo SessionGate
+// (review do PR #32: updatePi escapava do gate e podia rodar npm install -g
+// com sessões Pi abertas). O conjunto vem do metadado `gated` do registry.
+const { COMMANDS } = require("./command-registry.js");
+const UPDATE_COMMANDS = new Set(
+  Object.entries(COMMANDS).filter(([, spec]) => spec.gated).map(([id]) => id),
+);
 ipcMain.handle("cmd:run", async (_e, id, opts) => {
-  if (id === "updateMirror") {
-    if (!gate.canUpdate()) return { ok: false, code: -1, out: "", err: "update bloqueado: feche as sessões primeiro (regra R2)" };
+  if (UPDATE_COMMANDS.has(id)) {
+    if (!gate.canUpdate()) {
+      return { ok: false, code: -1, out: "", err: "update bloqueado: feche as sessões primeiro (regra R2)" };
+    }
     gate.updateStarted(); pushGate();
     const r = await runCommand(id, opts ?? {});
     gate.updateFinished(); pushGate();

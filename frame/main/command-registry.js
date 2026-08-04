@@ -41,14 +41,16 @@ const COMMANDS = {
     file: "uv", args: ["run", "python", "-m", "memory", "detect-persona"],
     cwd: "root", timeoutMs: 60000, acceptsQuery: true,
   },
+  // `gated: true` = só roda com o SessionGate liberado (zero sessões abertas,
+  // nenhum update em andamento). A autoridade é o main process.
   updateMirror: {
     file: "uv", args: ["run", "python", "-m", "memory", "runtime", "update"],
-    cwd: "root", timeoutMs: 600000,
+    cwd: "root", timeoutMs: 600000, gated: true,
   },
   updatePi: {
     file: "npm",
     args: ["install", "-g", "@earendil-works/pi-coding-agent@latest"],
-    cwd: "frame", timeoutMs: 600000,
+    cwd: "frame", timeoutMs: 600000, gated: true,
   },
 };
 
