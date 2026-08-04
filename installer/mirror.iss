@@ -9,10 +9,10 @@
 ;   1. bootstrap.ps1 installs prerequisites (Git, Node, uv, Pi) and clones/syncs
 ;      the 'stable' release branch into {app}\app (shallow clone, keeps .git so
 ;      'memory runtime update' fast-forwards in place without a reinstall).
-;   2. A final wizard page explains WHY Mirror needs a name + OpenRouter key and
-;      collects them.
-;   3. configure.ps1 writes .env, initializes identity, validates OpenRouter.
-;   4. A Desktop shortcut points at {app}\bin\mirror.cmd.
+;   2. The identity page is always skipped: the Frame owns first-run
+;      onboarding (name + OpenRouter key) — see frame/README.md.
+;   3. The primary shortcuts point at {app}\frame\MirrorFrame.exe; the
+;      Terminal route ({app}\bin\mirror.cmd) remains as recovery fallback.
 ;   Logs for future analysis are kept under {app}\logs\.
 ;
 ; Per-user install (PrivilegesRequired=lowest) so no admin elevation is needed.

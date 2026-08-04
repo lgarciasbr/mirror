@@ -5,7 +5,7 @@ the user onboards, converses with Mirror through **Pi** in tabbed real
 terminal sessions (ConPTY), and manages setup. The Frame **orchestrates** the
 existing runtime — every mutation goes through a fixed-argv command registry
 that calls the official Mirror CLI; Pi flows (`/login`) are driven, never
-reimplemented; credentials never touch the Frame.
+reimplemented.
 
 Credential handling, stated precisely: the OpenRouter key transits the
 renderer and main process once, to be written into the local `.env` (password
@@ -81,8 +81,15 @@ opens the browser in the homologated OAuth flow, and the login terminal
 - Sessions are **never** gated on a Mirror warm-up: a Mirror failure must not
   prevent conversing in Pi. The Setup panel offers an explicit, optional,
   non-blocking diagnostic instead.
-- Updates (Mirror and Pi) only run with **zero open sessions** and never
-  concurrently — enforced in the main process; renderer buttons merely
-  reflect the gate.
+- The Pi update only runs with **zero open Frame ptys** — Mirror sessions,
+  the hidden `/login` pty, system terminals and bootstrap all count — and
+  never concurrently; enforced in the main process (renderer buttons merely
+  reflect the gate).
+- **No automatic Mirror core update in the first release** (maintainer
+  decision): the Frame follows the Mirror version, and `memory runtime
+  update` would advance only the clone, leaving the installed executable
+  running against a future minor with no compatibility contract. Full
+  Frame+Mirror updates arrive through a new installer; conscious manual
+  maintenance stays available through the Terminal shortcut.
 - The terminal route (`Mirror Mind (Terminal)` → `mirror.cmd`) remains a
   full recovery path independent of the Frame.

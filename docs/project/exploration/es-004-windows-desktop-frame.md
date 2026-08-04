@@ -9,7 +9,8 @@
 > run on Windows. The frame is a component the installer ships and makes the
 > primary shortcut.
 
-**Status:** Open — Experiment 1 published, collecting feedback
+**Status:** Promoted to construction — implementation under review in PR #32, awaiting Windows homologation
+**Delivery handoff:** PR #32 (maintainer review handoff + return handoffs); roadmap/release formalization remains with the maintainers
 **Experiment 1:** https://windows-frame-mockup.vercel.app (source: `spikes/windows-frame-mockup/`)
 **Source:** Windows adoption work that produced the native installer (PR #26), plus a Builder/Explorer conversation on 2026-07-31 that converged on a desktop frame design ("Fusão A+C")
 **Current attractor:** A native Windows desktop app that makes Mirror + Pi adoption effortless — install, understand, converse — without changing Mirror core
@@ -147,9 +148,41 @@ The Navigator approved promotion to construction. Built under `frame/`:
   `sandbox-setup.ps1` (host repo mapped read-only; everything copied
   sandbox-local so no writes touch the host) + `README-SANDBOX.md` test script.
 
+## △ EXPLORER → BUILDER BOUNDARY — construction status (PR #32)
+
+The Navigator approved promotion to construction; the maintainers formalized
+the boundary through the PR #32 review handoff (Driver: author + Mirror;
+Navigator: maintainers). Supersessions of this story's original premises,
+recorded without erasing the history above:
+
+- **Warm-up gate — superseded.** The serialized warm-up existed to mitigate
+  the Windows bootstrap race; PR #31 fixed the race with a real cross-process
+  lock, and the maintainers decided a Mirror failure must never block
+  conversing in Pi. Sessions open ungated; the Setup panel keeps an explicit,
+  optional, non-blocking diagnostic.
+- **Pi `@latest` — superseded.** The `/login` automation depends on observed
+  surfaces of a specific Pi version. The homologated version is pinned in
+  `installer/pi-version.txt` (0.83.0 at homologation), consumed from the
+  installed copy by bootstrap and the packaged Frame; a missing/invalid pin
+  disables the auto-update. `@latest` is never used.
+- **Electron 33 — superseded.** Out of official support at review time;
+  upgraded to the supported 42.x line after full regression (see PR #32
+  evidence for the official support source and the 42-over-41 rationale).
+- **Automatic Mirror core update in the Frame — withdrawn from the first
+  release** (maintainer decision): the Frame follows the Mirror version, and
+  `memory runtime update` advances only the clone, which would leave the
+  installed executable running against a future minor with no compatibility
+  contract. Full updates arrive via a new installer; the Terminal remains the
+  conscious manual-maintenance route. **Future CR recommendation:** a
+  Frame-aware update with an explicit compatibility contract between the
+  installed Frame and the core (not implemented in PR #32 by decision).
+- Release boundary, code signing and rollout remain maintainer decisions,
+  taken only after the Windows homologation matrix.
+
 ## Open Decisions
 
-- Frame stack: ~~Tauri vs Electron~~ — **decided: Electron 33** (see Experiment 2).
+- Frame stack: ~~Tauri vs Electron~~ — **decided: Electron** (33 at the spike;
+  upgraded to supported 42.x during the PR #32 review — see boundary section).
 - Mockup language: PT-BR first (presentation audience); EN before upstream PR.
 - Commit trailer convention for this fork (RansomGuard ADR-15 forbids AI
   trailers; upstream has no stated rule) — Navigator to confirm.
