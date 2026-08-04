@@ -47,10 +47,14 @@ const COMMANDS = {
     file: "uv", args: ["run", "python", "-m", "memory", "runtime", "update"],
     cwd: "root", timeoutMs: 600000, gated: true,
   },
+  // updatePi instala SEMPRE a versão homologada (pin), nunca @latest — a
+  // automação do /login depende de superfícies observadas de uma versão
+  // específica do Pi. A versão vem da cópia instalada de pi-version.txt e é
+  // validada aqui como MAJOR.MINOR.PATCH.
   updatePi: {
     file: "npm",
-    args: ["install", "-g", "@earendil-works/pi-coding-agent@latest"],
-    cwd: "frame", timeoutMs: 600000, gated: true,
+    args: ["install", "-g"],
+    cwd: "frame", timeoutMs: 600000, gated: true, acceptsPiVersion: true,
   },
 };
 
@@ -71,6 +75,13 @@ function buildCommand(id, opts = {}) {
       throw new Error(`command ${id} requires a user matching ${USER_RE}`);
     }
     args.push(u);
+  }
+  if (spec.acceptsPiVersion) {
+    const v = opts.piVersion;
+    if (typeof v !== "string" || !/^\d+\.\d+\.\d+$/.test(v)) {
+      throw new Error(`command ${id} requires a pinned MAJOR.MINOR.PATCH Pi version — '@latest' is never used`);
+    }
+    args.push(`@earendil-works/pi-coding-agent@${v}`);
   }
   return { id, file: spec.file, args, cwd: spec.cwd, timeoutMs: spec.timeoutMs };
 }

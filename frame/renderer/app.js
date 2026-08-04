@@ -211,8 +211,9 @@ function renderSetup() {
         `<button id="su-warm">Rodar diagnóstico</button>`)}
       ${chk("g", "Update do Mirror", "git fast-forward + backup + migrations, sem reinstalar",
         `<button id="su-upmirror" ${g.canUpdate ? "" : "disabled"}>Atualizar Mirror</button>`)}
-      ${chk("g", "Update do Pi", "@earendil-works/pi-coding-agent (npm)",
-        `<button id="su-uppi" ${g.canUpdate ? "" : "disabled"}>Atualizar Pi</button>`)}
+      ${chk(CFG.piPinnedVersion ? "g" : "y", "Update do Pi",
+        CFG.piPinnedVersion ? `versão homologada: ${CFG.piPinnedVersion}` : "desabilitado — pin homologado indisponível",
+        `<button id="su-uppi" ${g.canUpdate && CFG.piPinnedVersion ? "" : "disabled"}>Atualizar Pi</button>`)}
       ${chk("g", "Terminal do sistema", "PowerShell dentro do frame", `<button id="su-shell">Abrir terminal</button>`)}
     </div>
     ${sess > 0 ? `<p class="setup-note">⚠ Updates bloqueados: feche as ${sess} sessão(ões) Mirror abertas (regra R2 — backup, migrations e a troca de binários exigem exclusividade).</p>` : ""}

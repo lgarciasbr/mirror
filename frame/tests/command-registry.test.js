@@ -43,9 +43,16 @@ test("updateMirror accepts no extra arguments at all", () => {
   assert.deepStrictEqual(c.args, ["run", "python", "-m", "memory", "runtime", "update"]);
 });
 
-test("updatePi pins the official package name", () => {
-  const c = buildCommand("updatePi", {});
-  assert.ok(c.args.join(" ").includes("@earendil-works/pi-coding-agent@latest"));
+test("updatePi installs exactly the pinned version — never @latest", () => {
+  const c = buildCommand("updatePi", { piVersion: "0.83.0" });
+  assert.strictEqual(c.args[c.args.length - 1], "@earendil-works/pi-coding-agent@0.83.0");
+  assert.ok(!c.args.join(" ").includes("latest"));
+});
+
+test("updatePi refuses missing or malformed pins", () => {
+  assert.throws(() => buildCommand("updatePi", {}), /pinned/i);
+  assert.throws(() => buildCommand("updatePi", { piVersion: "latest" }), /pinned/i);
+  assert.throws(() => buildCommand("updatePi", { piVersion: "0.83" }), /pinned/i);
 });
 
 test("every registered command declares cwd policy", () => {

@@ -113,9 +113,29 @@ $script:Dependencies = @(
 # Pi is installed via npm (needs Node first), handled separately after Node.
 # The npm package that provides the `pi` binary is @earendil-works/pi-coding-agent
 # (the earlier @mariozechner/pi-coding-agent name is legacy).
-$script:PiPackage = '@earendil-works/pi-coding-agent'
+#
+# Controlled Pi version: the Frame's /login automation depends on observed Pi
+# surfaces, so the installed Pi is PINNED to the homologated version recorded
+# in the sibling pi-version.txt (shipped next to this script by the installer;
+# in the repo it lives at installer/pi-version.txt). Missing or invalid pin
+# fails explicitly - '@latest' is never an acceptable fallback.
+$script:PiPackageName = '@earendil-works/pi-coding-agent'
 $script:PiCommand = 'pi'
 $script:PiMinVersion = '0.1.0'
+
+function Get-PinnedPiVersion {
+    $pinFile = Join-Path $PSScriptRoot 'pi-version.txt'
+    if (-not (Test-Path -LiteralPath $pinFile)) {
+        throw "pi-version.txt not found next to bootstrap.ps1 ($pinFile). The Pi version must be pinned; refusing to install an unpinned Pi."
+    }
+    $v = (Get-Content -LiteralPath $pinFile -Raw).Trim()
+    if ($v -notmatch '^\d+\.\d+\.\d+$') {
+        throw "pi-version.txt contains an invalid version ('$v'). Expected MAJOR.MINOR.PATCH; refusing to install an unpinned Pi."
+    }
+    return $v
+}
+
+$script:PiPackage = "$($script:PiPackageName)@$(Get-PinnedPiVersion)"
 
 # ---------------------------------------------------------------------------
 # Install helpers

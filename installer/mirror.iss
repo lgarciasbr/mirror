@@ -108,6 +108,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "lib\*";              DestDir: "{app}\bin\lib";              Flags: recursesubdirs ignoreversion
 Source: "launcher\mirror.cmd"; DestDir: "{app}\bin";                 Flags: ignoreversion
 Source: "bootstrap.ps1";      DestDir: "{app}\bin";                  Flags: ignoreversion
+; Homologated Pi version pin — single versioned source (installer/pi-version.txt);
+; bootstrap and the packaged Frame read this same installed copy.
+Source: "pi-version.txt";     DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "configure.ps1";      DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "install.ps1";        DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "health-check.ps1";   DestDir: "{app}\bin";                  Flags: ignoreversion

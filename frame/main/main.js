@@ -92,6 +92,29 @@ function runCommand(id, opts = {}) {
   });
 }
 
+// Versão homologada do Pi (clarificação vinculante 1): o Frame EMPACOTADO lê a
+// cópia INSTALADA de pi-version.txt ({app}\bin, shipada pelo installer ao lado
+// do bootstrap) — nunca o clone, que avança por updateMirror sem que o Frame
+// instalado acompanhe. Em desenvolvimento, o fallback explícito é o arquivo do
+// checkout (installer/pi-version.txt). Ausência ou conteúdo inválido desabilita
+// o update automático do Pi — nunca @latest.
+function resolvePiVersion() {
+  const candidates = [];
+  if (app.isPackaged) {
+    // {app}\frame\MirrorFrame.exe → {app}\bin\pi-version.txt
+    candidates.push(path.join(path.dirname(app.getPath("exe")), "..", "bin", "pi-version.txt"));
+  } else {
+    candidates.push(path.join(__dirname, "..", "..", "installer", "pi-version.txt"));
+  }
+  for (const file of candidates) {
+    try {
+      const v = fs.readFileSync(file, "utf8").trim();
+      if (/^\d+\.\d+\.\d+$/.test(v)) return { version: v, source: file };
+    } catch { /* tenta o próximo */ }
+  }
+  return { version: null, source: null };
+}
+
 function gateState() {
   return {
     updating: gate.isUpdating, sessions: gate.openSessions,
@@ -112,6 +135,7 @@ ipcMain.handle("config:get", (e) => {
     tools: TOOLS(),
     gate: gateState(),
     frameVersion: app.getVersion(),
+    piPinnedVersion: resolvePiVersion().version,
   };
 });
 
@@ -146,16 +170,27 @@ const UPDATE_COMMANDS = new Set(
 );
 ipcMain.handle("cmd:run", async (e, id, opts) => {
   if (!trusted(e)) return { ok: false, code: -1, out: "", err: "sender não confiável" };
+  const safeOpts = { ...(opts ?? {}) };
+  if (id === "updatePi") {
+    const pin = resolvePiVersion();
+    if (!pin.version) {
+      return {
+        ok: false, code: -1, out: "",
+        err: "update automático do Pi desabilitado: versão homologada indisponível (pi-version.txt ausente ou inválido). Atualize manualmente: npm install -g @earendil-works/pi-coding-agent@<versão homologada>",
+      };
+    }
+    safeOpts.piVersion = pin.version;
+  }
   if (UPDATE_COMMANDS.has(id)) {
     if (!gate.canUpdate()) {
       return { ok: false, code: -1, out: "", err: "update bloqueado: feche as sessões primeiro (regra R2)" };
     }
     gate.updateStarted(); pushGate();
-    const r = await runCommand(id, opts ?? {});
+    const r = await runCommand(id, safeOpts);
     gate.updateFinished(); pushGate();
     return r;
   }
-  return runCommand(id, opts ?? {});
+  return runCommand(id, safeOpts);
 });
 
 /* ---------- IPC: assinaturas do Pi (auth.json é a fonte da verdade) ---------- */
