@@ -37,9 +37,8 @@ foreach ($scope in @('@lydell', '@xterm')) {
     }
 }
 
-# prova de vida do binário que faltou na primeira rodada
-$conpty = Join-Path $app 'node_modules\@lydell\node-pty-win32-x64\conpty.node'
-if (-not (Test-Path $conpty)) { throw "conpty.node NAO está no pacote - abortando." }
-
+# Validacao NAO acontece aqui: a fonte unica dos asserts e
+# scripts\verify-payload.ps1, executado UMA vez por cadeia de build
+# (package -> verify -> ISCC) pelo installer\build.ps1 e pelo CI.
 $mb = [math]::Round((Get-ChildItem $out -Recurse | Measure-Object Length -Sum).Sum / 1MB)
-Write-Host "OK: $out ($mb MB) - conpty.node presente." -ForegroundColor Green
+Write-Host "package OK: $out ($mb MB). Valide com scripts\verify-payload.ps1." -ForegroundColor Green

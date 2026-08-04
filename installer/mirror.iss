@@ -112,9 +112,12 @@ Source: "configure.ps1";      DestDir: "{app}\bin";                  Flags: igno
 Source: "install.ps1";        DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "health-check.ps1";   DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "assets\mirror.ico";  DestDir: "{app}\bin";                  Flags: ignoreversion skipifsourcedoesntexist
-; Desktop frame (ES-004): tabbed Pi sessions + guided onboarding. Packaged by
-; frame build (Electron portable); becomes the primary "Mirror Mind" shortcut.
-Source: "..\frame\out\MirrorFrame-win32-x64\*"; DestDir: "{app}\frame"; Flags: recursesubdirs ignoreversion skipifsourcedoesntexist
+; Desktop frame (ES-004): tabbed Pi sessions + guided onboarding; the primary
+; "Mirror Mind" shortcut targets it. REQUIRED source (fail-closed): the build
+; must run installer\build.ps1, which packages and verifies the payload before
+; compiling — a missing Frame aborts the build instead of shipping broken
+; shortcuts.
+Source: "..\frame\out\MirrorFrame-win32-x64\*"; DestDir: "{app}\frame"; Flags: recursesubdirs ignoreversion
 ; Wizard banner illustration, extracted to {tmp} and loaded by [Code].
 Source: "assets\wizard-banner.bmp"; Flags: dontcopy
 

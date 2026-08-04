@@ -63,6 +63,24 @@ function Get-InstallerVersion {
 
 if (-not $Version) { $Version = Get-InstallerVersion }
 
+# --- Fail-closed packaging chain: package -> verify (once) -> ISCC ----------
+# The Frame is a required component: shortcuts point at MirrorFrame.exe, so a
+# successful installer build without a valid Frame payload would ship broken
+# primary shortcuts. Both steps abort this script on failure.
+$frameScripts = Join-Path $repoRoot 'frame\scripts'
+Write-Host "Packaging the Frame..." -ForegroundColor White
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $frameScripts 'package.ps1')
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Frame packaging failed ($LASTEXITCODE) - installer build aborted." -ForegroundColor Red
+    exit 1
+}
+Write-Host "Verifying the Frame payload (single canonical validator)..." -ForegroundColor White
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $frameScripts 'verify-payload.ps1')
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Frame payload verification failed ($LASTEXITCODE) - installer build aborted." -ForegroundColor Red
+    exit 1
+}
+
 $iscc = Find-Iscc
 if (-not $iscc) {
     $fe = New-FriendlyError -Code 'NO_INNO_SETUP' `
