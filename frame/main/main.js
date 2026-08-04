@@ -291,7 +291,40 @@ app.on("web-contents-created", (_ev, contents) => {
   contents.setWindowOpenHandler(() => ({ action: "deny" }));
 });
 
+// Self-test mínimo (smoke Electron/ConPTY do CI): valida o binário nativo do
+// node-pty sob o Node DO ELECTRON, no layout empacotado. Ativado somente pela
+// variável de ambiente; sem janela, sem IPC novo, sem input externo — abre um
+// ConPTY, ecoa um marcador fixo e sai com código verificável.
+function runSelfTest() {
+  const marker = "MIRROR_FRAME_CONPTY_OK";
+  let buf = "";
+  let done = false;
+  const finish = (code, msg) => {
+    if (done) return;
+    done = true;
+    process.stdout.write(`[selftest] ${msg}\n`);
+    app.exit(code);
+  };
+  try {
+    ptys.open(
+      {
+        file: "cmd.exe", args: ["/c", `echo ${marker}`],
+        cwd: os.tmpdir(), env: process.env, cols: 80, rows: 24,
+      },
+      (_sid, data) => { buf += data; },
+      (_sid, exitCode) => {
+        const ok = buf.includes(marker) && exitCode === 0;
+        finish(ok ? 0 : 1, ok ? "ConPTY ok sob Electron empacotado" : `falhou (exit=${exitCode}, marcador=${buf.includes(marker)})`);
+      },
+    );
+  } catch (e) {
+    finish(1, `exceção: ${e.message}`);
+  }
+  setTimeout(() => finish(2, "timeout"), 20000);
+}
+
 app.whenReady().then(() => {
+  if (process.env.MIRROR_FRAME_SELFTEST === "1") { runSelfTest(); return; }
   createWindow();
   fs.watchFile(AUTH_PATH, { interval: 1200 }, () => {
     win?.webContents.send("login:changed", authProviders());
