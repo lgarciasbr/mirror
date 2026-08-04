@@ -509,10 +509,37 @@ function Resolve-GitHubLatestAsset {
     }
 }
 
+function Get-PiPinDecision {
+    <#
+    .SYNOPSIS
+        Decide how an installed Pi relates to the homologated pin.
+    .DESCRIPTION
+        The Frame's /login automation is homologated against ONE exact Pi
+        version, so anything other than exact equality requires convergence:
+        'ok'       - installed version equals the pin exactly;
+        'missing'  - no Pi installed (or unparseable version output);
+        'mismatch' - installed but different (older OR newer than the pin).
+        An invalid pin throws: installing an unpinned Pi is never acceptable.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$InstalledVersion,
+        [Parameter(Mandatory)][string]$PinnedVersion
+    )
+    if ($PinnedVersion -notmatch '^\d+\.\d+\.\d+$') {
+        throw "Invalid pinned Pi version '$PinnedVersion' (expected MAJOR.MINOR.PATCH)."
+    }
+    $normalized = ConvertTo-VersionString $InstalledVersion
+    if (-not $normalized) { return 'missing' }
+    if ($normalized -eq $PinnedVersion) { return 'ok' }
+    return 'mismatch'
+}
+
 Export-ModuleMember -Function `
     Get-MirrorLogPath, Write-MirrorLog, `
     New-FriendlyError, Format-FriendlyError, `
     Test-CommandAvailable, ConvertTo-VersionString, Compare-MirrorVersion, `
     Get-CommandVersion, Test-MirrorDependency, Invoke-MirrorStep, `
     Set-MirrorTls, Get-MirrorDownloadTransport, Invoke-MirrorDownload, `
-    Resolve-GitHubLatestAsset, Write-MirrorEnvironmentBanner, Update-SessionPath
+    Resolve-GitHubLatestAsset, Write-MirrorEnvironmentBanner, Update-SessionPath, `
+    Get-PiPinDecision

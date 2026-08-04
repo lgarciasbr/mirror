@@ -136,3 +136,15 @@ Describe 'Invoke-MirrorDownload' {
         Should -Invoke -ModuleName MirrorInstall Invoke-WebRequest -Times 1
     }
 }
+
+Describe 'Get-PiPinDecision (exact Pi pin convergence)' {
+    It 'equal version is ok'            { Get-PiPinDecision -InstalledVersion '0.83.0' -PinnedVersion '0.83.0' | Should -Be 'ok' }
+    It 'v-prefixed equal is ok'         { Get-PiPinDecision -InstalledVersion 'v0.83.0' -PinnedVersion '0.83.0' | Should -Be 'ok' }
+    It 'noisy CLI output equal is ok'   { Get-PiPinDecision -InstalledVersion 'pi 0.83.0 (win32)' -PinnedVersion '0.83.0' | Should -Be 'ok' }
+    It 'older install is mismatch'      { Get-PiPinDecision -InstalledVersion '0.82.1' -PinnedVersion '0.83.0' | Should -Be 'mismatch' }
+    It 'NEWER install is also mismatch' { Get-PiPinDecision -InstalledVersion '0.84.0' -PinnedVersion '0.83.0' | Should -Be 'mismatch' }
+    It 'absent install is missing'      { Get-PiPinDecision -InstalledVersion $null -PinnedVersion '0.83.0' | Should -Be 'missing' }
+    It 'unparseable output is missing'  { Get-PiPinDecision -InstalledVersion 'garbage' -PinnedVersion '0.83.0' | Should -Be 'missing' }
+    It 'invalid pin throws'             { { Get-PiPinDecision -InstalledVersion '0.83.0' -PinnedVersion 'latest' } | Should -Throw }
+    It 'partial pin throws'             { { Get-PiPinDecision -InstalledVersion '0.83.0' -PinnedVersion '0.83' } | Should -Throw }
+}
