@@ -60,9 +60,25 @@ function saveEnvValues(root, values) {
   fs.writeFileSync(file, next.join("\n") + "\n", { encoding: "utf8" });
 }
 
+// Remove chaves do .env preservando comentários e chaves desconhecidas.
+// Usado pela recuperação do onboarding: se init/seed falharem depois de o
+// MIRROR_USER ter sido gravado, o marcador é revertido para que o próximo
+// boot volte ao wizard em vez de considerar o onboarding completo.
+function removeEnvKeys(root, keys) {
+  const file = envPath(root);
+  if (!fs.existsSync(file)) return;
+  const drop = new Set(keys);
+  const lines = stripBom(fs.readFileSync(file, "utf8")).split(/\r?\n/).filter((line) => {
+    const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line);
+    return !(m && drop.has(m[1]) && !line.trimStart().startsWith("#"));
+  });
+  while (lines.length && lines[lines.length - 1] === "") lines.pop();
+  fs.writeFileSync(file, lines.length ? lines.join("\n") + "\n" : "", { encoding: "utf8" });
+}
+
 function isFirstRun(root) {
   const env = loadEnvFile(root);
   return !env.MIRROR_USER && !env.MIRROR_HOME;
 }
 
-module.exports = { loadEnvFile, saveEnvValues, isFirstRun };
+module.exports = { loadEnvFile, saveEnvValues, removeEnvKeys, isFirstRun };

@@ -7,6 +7,12 @@ existing runtime — every mutation goes through a fixed-argv command registry
 that calls the official Mirror CLI; Pi flows (`/login`) are driven, never
 reimplemented; credentials never touch the Frame.
 
+Credential handling, stated precisely: the OpenRouter key transits the
+renderer and main process once, to be written into the local `.env` (password
+field, no logging, cleared from transient state after persistence). Pi's OAuth
+tokens never touch the Frame — Pi owns them in `~/.pi/agent/auth.json`; the
+Frame only watches for key names to detect completion.
+
 Exploration story: `docs/project/exploration/es-004-windows-desktop-frame.md`.
 
 ## Versioning

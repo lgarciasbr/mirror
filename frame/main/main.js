@@ -13,7 +13,7 @@ const { resolveMirrorRoot } = require("./root-resolve.js");
 const { sessionEnv } = require("./env-profile.js");
 const { buildCommand } = require("./command-registry.js");
 const { SessionGate } = require("./session-gate.js");
-const { loadEnvFile, saveEnvValues, isFirstRun } = require("./config-store.js");
+const { loadEnvFile, saveEnvValues, removeEnvKeys, isFirstRun } = require("./config-store.js");
 const { PtyManager, sanitizeResize } = require("./pty-manager.js");
 const { resolveInstallerFile, readPinnedPiVersion } = require("./install-paths.js");
 
@@ -146,6 +146,21 @@ ipcMain.handle("config:save", (e, values) => {
     return { ok: false, err: String(err.message) };
   }
   return { ok: true };
+});
+
+// Recuperação do onboarding: se init/seed falharem DEPOIS de o MIRROR_USER ter
+// sido gravado, o wizard reverte o marcador para que o próximo boot volte à
+// rota de recuperação explícita (o wizard de novo), em vez de considerar o
+// onboarding completo. Só o marcador é removido — a chave persistida fica.
+ipcMain.handle("config:revertOnboarding", (e) => {
+  if (!trusted(e)) return { ok: false, err: "sender não confiável" };
+  if (!MIRROR_ROOT) return { ok: false, err: "MIRROR_ROOT não resolvido" };
+  try {
+    removeEnvKeys(MIRROR_ROOT, ["MIRROR_USER"]);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, err: String(err.message) };
+  }
 });
 
 /* ---------- IPC: comandos allowlisted ---------- */

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("mirror", {
   config: {
     get: () => ipcRenderer.invoke("config:get"),
     save: (values) => ipcRenderer.invoke("config:save", values),
+    revertOnboarding: () => ipcRenderer.invoke("config:revertOnboarding"),
   },
   cmd: {
     run: (id, opts) => ipcRenderer.invoke("cmd:run", id, opts),

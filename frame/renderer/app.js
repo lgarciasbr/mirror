@@ -437,7 +437,7 @@ const PCARDS = [
   ["+ 7 personas", "teacher, researcher, doctor, financial…"],
 ];
 let wiz = 0;
-const wst = { user: "", key: "", inited: false };
+const wst = { user: "", key: "", keySaved: false, seedWarnings: null, inited: false };
 
 function wizNav(backOk, label, disabled) {
   return `<div class="wiz-nav">
@@ -491,10 +491,14 @@ function renderWizard() {
       extração de memórias. <b>Não é</b> o modelo da conversa (esse vem no próximo passo).
       Crie uma conta em <b>openrouter.ai</b>, gere uma chave e adicione ≥ US$5 de crédito.</p>
       <div class="field"><label for="w-key">Chave OpenRouter</label>
-        <input id="w-key" value="${escapeHtml(wst.key)}" placeholder="sk-or-..."></div>
+        <input id="w-key" type="password" autocomplete="new-password" spellcheck="false"
+          placeholder="${wst.keySaved ? "já configurada — deixe em branco para manter" : "sk-or-..."}"></div>
       <p class="hint">Dá para pular e adicionar depois no ⚙ Setup — mas sem chave o Mirror
       conversa sem gravar memórias.</p>
       ${wizNav(true, "Continuar →", false)}`;
+    // o valor NUNCA vai para atributo/HTML — só a property do input e wst.key
+    // transitório, limpo assim que a persistência conclui.
+    $("w-key").value = wst.key;
     $("w-key").addEventListener("input", (e) => { wst.key = e.target.value.trim(); });
   }
 
@@ -549,7 +553,8 @@ function renderWizard() {
       <b>lembrar</b>. Confira:</p>
       <div class="summary">
         ${wchk("g", "Identidade", "~\\.mirror-minds\\" + escapeHtml(wst.user || "?"))}
-        ${wchk(wst.key ? "g" : "y", "Memória (OpenRouter)", wst.key ? "chave configurada" : "sem chave — adicione no ⚙ Setup")}
+        ${wchk(wst.keySaved ? "g" : "y", "Memória (OpenRouter)", wst.keySaved ? "chave configurada" : "sem chave — adicione no ⚙ Setup")}
+        ${wst.seedWarnings ? wchk("y", "Seed da identidade", `criada com aviso: ${escapeHtml(wst.seedWarnings)} — detalhes no diagnóstico do ⚙ Setup`) : ""}
         ${wchk(wizConnected.length ? "g" : "y", "Assinatura",
           wizConnected.length ? "conectada: " + wizConnected.join(", ") : "conecte com /login na primeira conversa")}
         ${wchk("g", "Runtime", "Mirror instalado — pronto para conversar")}
@@ -571,6 +576,10 @@ async function onWizNext() {
   if (wiz === 2) {
     if (wst.key && !wst.key.startsWith("sk-or-")) { msg.textContent = "A chave OpenRouter começa com sk-or-…"; return; }
     btn.disabled = true;
+    // Transação mínima do onboarding: o marcador (MIRROR_USER) só permanece se
+    // init E seed concluírem — falha em qualquer etapa reverte o marcador, e o
+    // próximo boot volta ao wizard (rota de recuperação explícita; retry é
+    // idempotente: init tolera casa existente e seed pula entradas existentes).
     msg.textContent = "Gravando configuração…";
     const vals = { MIRROR_USER: wst.user };
     if (wst.key) vals.OPENROUTER_API_KEY = wst.key;
@@ -579,11 +588,24 @@ async function onWizNext() {
     msg.textContent = "Criando sua identidade local (memory init)…";
     const ri = await window.mirror.cmd.run("initIdentity", { user: wst.user });
     if (!ri.ok && !/already|exists|existe/i.test(ri.out + ri.err)) {
-      msg.textContent = "init falhou: " + (ri.err || ri.out).slice(0, 280);
+      await window.mirror.config.revertOnboarding();
+      msg.textContent = "init falhou (nada foi marcado como concluído — tente de novo): " + (ri.err || ri.out).slice(0, 240);
       btn.disabled = false; return;
     }
     msg.textContent = "Semeando identidade e personas (memory seed)…";
-    await window.mirror.cmd.run("seed");
+    const rs = await window.mirror.cmd.run("seed");
+    if (!rs.ok) {
+      await window.mirror.config.revertOnboarding();
+      msg.textContent = "seed falhou (nada foi marcado como concluído — tente de novo): " + (rs.err || rs.out).slice(0, 240);
+      btn.disabled = false; return;
+    }
+    // seed com avisos não é sucesso silencioso: criação parcial VÁLIDA segue,
+    // mas os avisos ficam visíveis no resumo final e no diagnóstico do Setup.
+    const errLine = (rs.out.match(/Errors:\s*[1-9]\d*/) ?? [])[0];
+    wst.seedWarnings = errLine ? (rs.out.split(errLine)[1] ?? "").trim().split("\n")[0]?.trim() ?? errLine : null;
+    if (wst.seedWarnings) warmupOut = rs.out.trim();
+    // segredo transitório: limpo assim que persistido — não permanece em estado
+    if (wst.key) { wst.keySaved = true; wst.key = ""; }
     wst.inited = true;
   }
   if (wiz === 5) {
