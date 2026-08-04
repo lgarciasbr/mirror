@@ -290,6 +290,34 @@ does not inspect, compare, synchronize, or mutate personal SQLite Workbench rows
 entry surfaces point to the canonical index rather than rendering SQLite state. An
 unreadable or ambiguous canonical document never causes a silent fallback to SQLite.
 
+When asked to inspect or show file-first Refinement Work, Builder renders a compact
+agent-composed `Refinement Workbench` view from those documents. The view names its
+canonical source, shows current focus, RS status, ordered open CRs, terminal history,
+the next safe action, and a read-only boundary; it also states that SQLite was not
+consulted. When the canonical index assigns a CR, the view also shows its human Driver
+and pull-request or branch Delivery reference; unassigned rows omit those details.
+This is an agent presentation contract, not a runtime Markdown parser or a deterministic
+Ariad surface. Builder preserves canonical ordering and status, reports invalid
+document structure instead of recovering from legacy state, and makes no mutation
+during inspection.
+
+Driver and Delivery are explicit project facts. Builder never infers them from the
+current checkout, latest committer, active journey, conversation, or SQLite. Projects
+may require both fields before `in_progress`, `blocked`, or `validated`; reassignment
+and stale-work disposition remain explicit Navigator decisions. Git and pull requests
+remain authoritative for diffs, collaboration, conflicts, and history.
+
+The project-owned
+[Collaborative Refinement Protocol](docs/project/refinement/rs002-collaborative-refinement-work/collaboration-protocol.md)
+defines the default contributor route: inspect, capture without changing focus, select,
+plan, assign and start, record implementation evidence, validate with the Navigator,
+review, reach a terminal state, and return a compact handoff. Capture allocates the next
+unused project-wide ID from the complete index and requires an explicit RS target under
+the current artifact layout. Git surfaces concurrent ID and semantic edits; Builder
+never silently renumbers, overwrites, merges narratives, or consults SQLite to resolve
+them. The protocol deliberately adds no ID service, lock, watcher, parser,
+synchronization layer, or custom Git command.
+
 Read-only requests remain read-only. During an already-authorized mutable operation,
 Builder may repair and report a structural defect without another confirmation only when
 the repair is deterministic, local, non-destructive, reversible, meaning-preserving, and

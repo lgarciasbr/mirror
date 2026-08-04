@@ -337,9 +337,122 @@ writers or competing authorities.
 
 ### File-first path
 
-When the Navigator asks to inspect or show Refinement Work, read the canonical
-index and relevant linked documents. Read-only intent stays read-only: report a
-structural defect and recommend a concrete correction, but do not mutate files.
+When the Navigator asks to inspect, show, or orient to Refinement Work, read the
+canonical index and the linked documents needed to explain the current focus.
+Render one compact, agent-composed `Refinement Workbench` view with these facts in
+this order:
+
+1. canonical project-relative index path;
+2. focused RS and CR, or explicit `none` values;
+3. every RS with its canonical status;
+4. open CRs in canonical order with ID, RS, title, status, and canonical Driver
+   and Delivery details when assigned;
+5. terminal CR history after open work, preserving canonical Driver and Delivery
+   provenance when present;
+6. the next safe action for the focused item, grounded in its canonical status
+   and linked plan; and
+7. a boundary stating that inspection selected, changed, and executed nothing.
+
+Use `▸` to distinguish focused items. Preserve index ordering exactly. Omit an
+empty section cleanly or label it `none`; do not invent content. The root index
+wins whenever linked narrative disagrees about focus or status. Name the source
+path visibly and state that SQLite was not consulted. A representative shape is:
+
+```text
+Refinement Workbench
+
+source
+<canonical project-relative index path>
+
+CURRENT FOCUS
+<focused RS or none>
+▸ <focused CR or none>
+
+REFINEMENT STORIES
+<RS rows in canonical order>
+
+OPEN CHANGE REQUESTS
+<non-terminal CR rows in canonical order>
+  Driver: <canonical human> · Delivery: <canonical PR or branch>  # only when assigned
+
+TERMINAL HISTORY
+<terminal CR rows after open work, or none>
+  Driver: <canonical human> · Delivery: <canonical PR or branch>  # only when present
+
+NEXT SAFE ACTION
+<one grounded next action>
+
+BOUNDARY
+Read-only inspection. No work was selected, changed, or executed.
+SQLite was not consulted.
+```
+
+This is a presentation contract for the agent reading project documents, not a
+runtime-generated deterministic Ariad surface. Do not wrap it in
+`<<<ARIAD:...>>>`, add a Markdown parser, or call legacy Workbench commands to
+produce it. If the canonical index is unreadable or structurally ambiguous,
+report the practical defect and stop instead of silently falling back to SQLite.
+Read-only intent stays read-only: recommend a concrete correction, but do not
+mutate files.
+
+Treat Driver and Delivery as canonical project facts, not runtime discoveries.
+Show them only when the index row provides values other than its documented empty
+marker. Never infer assignment from the current Git checkout, branch author,
+latest committer, active journey, conversation, or SQLite state. Follow the
+project's collaboration convention when changing status: if it requires Driver
+and Delivery before `in_progress`, `blocked`, or `validated`, stop for the missing
+Navigator decision rather than synthesizing either value. Reassignment and stale
+work disposition are semantic decisions and always remain explicit.
+
+#### Collaborative file-first lifecycle
+
+Read and follow any collaboration protocol linked by the canonical index. When no
+more specific project rule exists, use this route:
+
+- **Inspect before mutation.** Read the complete index and relevant linked
+  documents. Confirm focus, existing IDs, target RS, status, Driver, and Delivery.
+- **Capture without selecting.** Require a concrete title, problem, expected
+  behavior, and explicit RS target. If the layout has no unassigned CR location,
+  stop rather than inventing one. Allocate the next unused project-wide numeric
+  ID from the complete index, preserve three-digit formatting, create one evolving
+  CR document with `Problem`, `Expected Behavior`, `Impact`, `Plan Or Decision`,
+  `Evidence`, and `Outcome`, append a `captured`/unassigned row, and preserve
+  `Current Focus` exactly.
+- **Select explicitly.** Update only `Current Focus`. Selection changes no status
+  and authorizes neither planning nor implementation.
+- **Plan before implementation.** Record scope, affected files, acceptance,
+  validation, exclusions, and authority boundaries. Move `captured` to `planned`
+  only after Navigator approval.
+- **Assign before starting.** Before `in_progress`, obtain explicit human Driver
+  and branch/PR Delivery decisions, then update status and both fields atomically.
+  Replace a branch reference with the PR link after the PR opens.
+- **Evidence is not validation.** Record checks and isolated smoke evidence during
+  implementation, but require an explicit natural Navigator validation route and
+  acceptance before `validated`.
+- **Review before terminal closure.** Record proportionality/debt findings. `done`
+  requires accepted validation and resolved debt action. `blocked`, `parked`,
+  `rejected`, and `promoted` require narrative reasons; `parked` also requires a
+  revisit trigger and `promoted` a Delivery target. Move terminal CRs below open
+  work, preserve Driver/Delivery provenance, and clear focused CR state without
+  selecting the next item implicitly.
+- **Return a handoff.** Report RS/CR, canonical status, Driver, Delivery, changed
+  files, checks, Navigator validation, limitations, unresolved decisions, and the
+  requested next action. A handoff never grants merge, publication, or release.
+- **Let Git expose concurrency.** Refresh against the approved base before final
+  handoff. Never overwrite, silently renumber, merge narratives, delete another
+  contributor's work, or use SQLite to resolve ID/index/focus/status conflicts.
+  Stop for semantic conflict resolution.
+
+When the Navigator asks how to create, work on, or collaborate through
+Refinement Work, answer read-only and explain the complete contributor route. Do
+not stop the explanation at terminal status: include the return handoff and how
+ordinary Git conflicts protect concurrent ID, index, focus, status, assignment,
+and narrative edits. Name the linked project protocol as the durable authority.
+
+Status remains document vocabulary, not an application state machine. Do not add
+ID reservation, locks, watchers, heartbeats, stale-work automation, Markdown
+parsing, projection, synchronization, or custom Git commands without repeated
+operational evidence and separate Navigator approval.
 
 When the Navigator authorizes a mutable operation such as capture, select,
 continue, update, or implement, that request also authorizes structural repairs
