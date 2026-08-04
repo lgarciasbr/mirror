@@ -39,3 +39,37 @@ test("closing an unknown session is a no-op", () => {
   g.sessionClosed("ghost");
   assert.strictEqual(g.canUpdate(), true);
 });
+
+// Todos os PTYs do Frame participam do gate — não só as abas Mirror. Os ids
+// abaixo espelham os quatro tipos que o main process registra via openPty.
+for (const kind of ["login", "shell", "bootstrap"]) {
+  test(`an open ${kind} pty blocks updates like a mirror session does`, () => {
+    const g = new SessionGate();
+    g.sessionOpened(`${kind}-1`);
+    assert.strictEqual(g.canUpdate(), false);
+    g.sessionClosed(`${kind}-1`);
+    assert.strictEqual(g.canUpdate(), true);
+  });
+}
+
+test("an update in progress blocks every pty kind from opening", () => {
+  const g = new SessionGate();
+  g.updateStarted();
+  for (const kind of ["mirror", "login", "shell", "bootstrap"]) {
+    assert.strictEqual(g.canOpenSession(), false, `${kind} deveria estar bloqueado`);
+    g.sessionOpened(`${kind}-1`);
+    assert.strictEqual(g.openSessions, 0, `${kind} não pode entrar durante update`);
+  }
+  g.updateFinished();
+  assert.strictEqual(g.canOpenSession(), true);
+});
+
+test("update is re-blocked when any pty kind reopens", () => {
+  const g = new SessionGate();
+  for (const kind of ["mirror", "login", "shell", "bootstrap"]) {
+    g.sessionOpened(`${kind}-2`);
+    assert.strictEqual(g.canUpdate(), false);
+    g.sessionClosed(`${kind}-2`);
+    assert.strictEqual(g.canUpdate(), true);
+  }
+});

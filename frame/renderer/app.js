@@ -192,7 +192,9 @@ function chk(l, name, detail, btn) {
 
 function renderSetup() {
   const t = CFG.tools, g = CFG.gate;
-  const sess = tabs.filter((x) => x.kind === "mirror" && !x.exited).length;
+  // contagem CANÔNICA do main process: inclui PTYs ocultos (login) e
+  // terminais de sistema, não só as abas Mirror visíveis.
+  const sess = g?.sessions ?? 0;
   const diagState = diagResult === null ? "y" : diagResult ? "g" : "r";
   const diagDetail = diagResult === null ? "não executado — opcional, nunca bloqueia a conversa"
     : diagResult ? "ok (identidade e banco legíveis)" : "falhou — veja a saída abaixo";
@@ -216,7 +218,7 @@ function renderSetup() {
         `<button id="su-uppi" ${g.canUpdate && CFG.piPinnedVersion ? "" : "disabled"}>Atualizar Pi</button>`)}
       ${chk("g", "Terminal do sistema", "PowerShell dentro do frame", `<button id="su-shell">Abrir terminal</button>`)}
     </div>
-    ${sess > 0 ? `<p class="setup-note">⚠ Updates bloqueados: feche as ${sess} sessão(ões) Mirror abertas (regra R2 — backup, migrations e a troca de binários exigem exclusividade).</p>` : ""}
+    ${sess > 0 ? `<p class="setup-note">⚠ Updates bloqueados: há ${sess} PTY(s) aberto(s) — abas, terminais, bootstrap ou login em andamento (regra R2 — a troca de binários exige exclusividade).</p>` : ""}
     <div class="mono-out ${warmupOut ? "" : "hidden"}" id="su-out">${escapeHtml(warmupOut)}</div>`;
   const wire = (id, fn) => { const b = $(id); if (b) b.addEventListener("click", fn); };
   wire("su-warm", runWarmup);

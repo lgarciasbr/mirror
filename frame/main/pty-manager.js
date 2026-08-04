@@ -53,4 +53,14 @@ class PtyManager {
   get count() { return this._procs.size; }
 }
 
-module.exports = { PtyManager };
+// Limites defensivos ANTES do módulo nativo: valores fora de uma faixa
+// razoável (ou não inteiros) são rejeitados em vez de chegarem ao ConPTY.
+function sanitizeResize(cols, rows) {
+  const c = Number(cols);
+  const r = Number(rows);
+  if (!Number.isInteger(c) || !Number.isInteger(r)) return null;
+  if (c < 2 || c > 500 || r < 2 || r > 300) return null;
+  return { cols: c, rows: r };
+}
+
+module.exports = { PtyManager, sanitizeResize };

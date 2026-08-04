@@ -14,7 +14,7 @@ const { sessionEnv } = require("./env-profile.js");
 const { buildCommand } = require("./command-registry.js");
 const { SessionGate } = require("./session-gate.js");
 const { loadEnvFile, saveEnvValues, isFirstRun } = require("./config-store.js");
-const { PtyManager } = require("./pty-manager.js");
+const { PtyManager, sanitizeResize } = require("./pty-manager.js");
 
 const MIRROR_ROOT = resolveMirrorRoot({});
 const gate = new SessionGate();
@@ -183,12 +183,16 @@ ipcMain.handle("cmd:run", async (e, id, opts) => {
   }
   if (UPDATE_COMMANDS.has(id)) {
     if (!gate.canUpdate()) {
-      return { ok: false, code: -1, out: "", err: "update bloqueado: feche as sessões primeiro (regra R2)" };
+      return { ok: false, code: -1, out: "", err: "update bloqueado: feche todas as abas e terminais primeiro (regra R2)" };
     }
     gate.updateStarted(); pushGate();
-    const r = await runCommand(id, safeOpts);
-    gate.updateFinished(); pushGate();
-    return r;
+    try {
+      return await runCommand(id, safeOpts);
+    } finally {
+      // finally: uma exceção no update não pode deixar o Frame preso em
+      // "update em andamento" para sempre.
+      gate.updateFinished(); pushGate();
+    }
   }
   return runCommand(id, safeOpts);
 });
@@ -213,6 +217,7 @@ const LOGIN_PROVIDERS = new Set(["anthropic", "openai-codex"]);
 ipcMain.handle("login:start", (e, slug) => {
   try {
     if (!trusted(e)) return { ok: false, err: "sender não confiável" };
+    if (!gate.canOpenSession()) return { ok: false, err: "um update está em andamento — aguarde concluir" };
     if (!LOGIN_PROVIDERS.has(slug)) return { ok: false, err: `provedor não suportado: ${slug}` };
     if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup" };
     // Pi puro, sem argumentos: mensagem inicial via CLI vira PROMPT pro modelo
@@ -241,13 +246,18 @@ const SYSTEM_SCRIPTS = {
   login: () => ({ file: "cmd.exe", args: ["/c", "pi"], cwd: MIRROR_ROOT ?? process.cwd() }),
 };
 
-function openPty(spec, kind) {
+// Cada PTY do Frame entra no gate — mirror, login, shell E bootstrap: um
+// update nunca pode rodar em concorrência com QUALQUER processo aberto pelo
+// Frame (um /login oculto ou bootstrap ativo travam a troca de binários tanto
+// quanto uma sessão Mirror).
+function openPty(spec, _kind) {
   const id = ptys.open(spec,
     (sid, data) => win?.webContents.send("session:data", sid, data),
     (sid, code) => {
-      if (kind === "mirror") { gate.sessionClosed(sid); pushGate(); }
+      gate.sessionClosed(sid); pushGate();
       win?.webContents.send("session:exit", sid, code);
     });
+  gate.sessionOpened(id); pushGate();
   return id;
 }
 
@@ -269,6 +279,7 @@ ipcMain.handle("session:open", (e) => {
 ipcMain.handle("session:openSystem", (e, script) => {
   try {
     if (!trusted(e)) return { ok: false, err: "sender não confiável" };
+    if (!gate.canOpenSession()) return { ok: false, err: "um update está em andamento — aguarde concluir" };
     const mk = SYSTEM_SCRIPTS[script];
     if (!mk) return { ok: false, err: `script desconhecido: ${script}` };
     const spec = mk();
@@ -290,7 +301,8 @@ ipcMain.on("session:input", (e, id, data) => {
 });
 ipcMain.on("session:resize", (e, id, cols, rows) => {
   if (!trusted(e) || !ptys.has(id)) return;
-  ptys.resize(id, Number(cols) || 80, Number(rows) || 24);
+  const size = sanitizeResize(cols, rows);
+  if (size) ptys.resize(id, size.cols, size.rows);
 });
 ipcMain.handle("session:close", async (e, id) => {
   if (!trusted(e)) return { ok: false, err: "sender não confiável" };
