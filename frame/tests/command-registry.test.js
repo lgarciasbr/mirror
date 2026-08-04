@@ -38,9 +38,8 @@ test("detectPersona requires a non-empty query and caps its size", () => {
   assert.throws(() => buildCommand("detectPersona", { query: "a".repeat(2001) }), /query/i);
 });
 
-test("updateMirror accepts no extra arguments at all", () => {
-  const c = buildCommand("updateMirror", { query: "ignored" });
-  assert.deepStrictEqual(c.args, ["run", "python", "-m", "memory", "runtime", "update"]);
+test("updateMirror is not a registered command (first-release decision)", () => {
+  assert.throws(() => buildCommand("updateMirror", {}), /unknown command/i);
 });
 
 test("updatePi installs exactly the pinned version — never @latest", () => {
@@ -61,7 +60,8 @@ test("every registered command declares cwd policy", () => {
   }
 });
 
-test("BOTH updaters are marked gated — and only them", () => {
+test("updatePi is the only gated command — updateMirror does not exist (first-release decision)", () => {
   const gated = Object.entries(COMMANDS).filter(([, s]) => s.gated).map(([id]) => id).sort();
-  assert.deepStrictEqual(gated, ["updateMirror", "updatePi"]);
+  assert.deepStrictEqual(gated, ["updatePi"]);
+  assert.strictEqual(COMMANDS.updateMirror, undefined);
 });

@@ -209,8 +209,8 @@ function renderSetup() {
       ${chk(t.git ? "g" : "r", "Git", t.git ?? "ausente")}
       ${chk(diagState, "Diagnóstico do Mirror", diagDetail,
         `<button id="su-warm">Rodar diagnóstico</button>`)}
-      ${chk("g", "Update do Mirror", "git fast-forward + backup + migrations, sem reinstalar",
-        `<button id="su-upmirror" ${g.canUpdate ? "" : "disabled"}>Atualizar Mirror</button>`)}
+      ${chk("g", "Update do Mirror",
+        "chega junto com um novo installer (Frame + Mirror na mesma versão); manutenção manual consciente segue disponível pelo atalho Terminal")}
       ${chk(CFG.piPinnedVersion ? "g" : "y", "Update do Pi",
         CFG.piPinnedVersion ? `versão homologada: ${CFG.piPinnedVersion}` : "desabilitado — pin homologado indisponível",
         `<button id="su-uppi" ${g.canUpdate && CFG.piPinnedVersion ? "" : "disabled"}>Atualizar Pi</button>`)}
@@ -227,13 +227,6 @@ function renderSetup() {
     e.target.disabled = true; e.target.textContent = "atualizando…";
     const r = await window.mirror.cmd.run("updatePi");
     warmupOut = (r.out + "\n" + r.err).trim(); renderSetup();
-  });
-  wire("su-upmirror", async (e) => {
-    e.target.disabled = true; e.target.textContent = "atualizando…";
-    const r = await window.mirror.cmd.run("updateMirror");
-    warmupOut = (r.out + "\n" + r.err).trim();
-    CFG = await window.mirror.config.get();
-    renderSetup();
   });
 }
 

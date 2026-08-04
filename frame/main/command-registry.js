@@ -41,12 +41,15 @@ const COMMANDS = {
     file: "uv", args: ["run", "python", "-m", "memory", "detect-persona"],
     cwd: "root", timeoutMs: 60000, acceptsQuery: true,
   },
-  // `gated: true` = só roda com o SessionGate liberado (zero sessões abertas,
+  // `gated: true` = só roda com o SessionGate liberado (zero PTYs abertos,
   // nenhum update em andamento). A autoridade é o main process.
-  updateMirror: {
-    file: "uv", args: ["run", "python", "-m", "memory", "runtime", "update"],
-    cwd: "root", timeoutMs: 600000, gated: true,
-  },
+  //
+  // Não existe updateMirror: por decisão dos mantenedores, o primeiro release
+  // do Frame NÃO atualiza o core Mirror automaticamente — o Frame acompanha a
+  // versão do Mirror, e `memory runtime update` atualizaria só o clone,
+  // deixando o executável instalado operando contra uma minor futura sem
+  // contrato de compatibilidade. Updates completos chegam por um novo
+  // installer; manutenção manual consciente continua possível pelo Terminal.
   // updatePi instala SEMPRE a versão homologada (pin), nunca @latest — a
   // automação do /login depende de superfícies observadas de uma versão
   // específica do Pi. A versão vem da cópia instalada de pi-version.txt e é
