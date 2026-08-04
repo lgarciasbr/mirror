@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: [RS001 — Ariad Runtime Trust](rs001-ariad-runtime-trust/index.md)
-- Change Request: [CR001 — Make Scope Confirmation An Honest Checkpoint](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md)
+- Refinement Story: none
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -19,17 +19,21 @@ executes work.
 | Order | ID | Story | Status |
 |------:|----|-------|--------|
 | 1 | [RS001](rs001-ariad-runtime-trust/index.md) | Ariad Runtime Trust | active |
+| 2 | [RS002](rs002-collaborative-refinement-work/index.md) | Collaborative Refinement Work | closed |
 
 ## Change Requests
 
 Open work is ordered intentionally. Terminal history follows open work.
 
-| Order | ID | RS | Change | Status |
-|------:|----|----|--------|--------|
-| 1 | [CR001](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md) | RS001 | Make scope confirmation an honest checkpoint | planned |
-| 2 | [CR002](rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md) | RS001 | Refuse ambiguous roadmap selection during cursor sync | captured |
-| 3 | [CR004](rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md) | RS001 | Preserve authored story index during Plan materialization | captured |
-| — | [CR003](rs001-ariad-runtime-trust/cr003-surface-materialization-truth.md) | RS001 | Make artifact materialization surfaces truthful | done |
+| Order | ID | RS | Change | Status | Driver | Delivery |
+|------:|----|----|--------|--------|--------|----------|
+| 1 | [CR001](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md) | RS001 | Make scope confirmation an honest checkpoint | planned | — | — |
+| 2 | [CR002](rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md) | RS001 | Refuse ambiguous roadmap selection during cursor sync | captured | — | — |
+| 3 | [CR004](rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md) | RS001 | Preserve authored story index during Plan materialization | captured | — | — |
+| — | [CR007](rs002-collaborative-refinement-work/cr007-collaborative-capture-and-handoff-protocol.md) | RS002 | Define the collaborative capture and handoff protocol | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
+| — | [CR006](rs002-collaborative-refinement-work/cr006-record-active-driver-and-delivery-link.md) | RS002 | Record the active Driver and delivery link | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
+| — | [CR005](rs002-collaborative-refinement-work/cr005-present-canonical-workbench-clearly.md) | RS002 | Present the canonical Workbench clearly | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
+| — | [CR003](rs001-ariad-runtime-trust/cr003-surface-materialization-truth.md) | RS001 | Make artifact materialization surfaces truthful | done | — | — |
 
 ## Status Vocabulary
 
@@ -47,6 +51,24 @@ captured | planned | in_progress | blocked | validated | done | parked | rejecte
 
 Detailed phase history belongs in the CR document. The index records only the current
 canonical status.
+
+## Collaboration Convention
+
+The full contributor route is the
+[Collaborative Refinement Protocol](rs002-collaborative-refinement-work/collaboration-protocol.md).
+
+- `Driver` names one accountable human contributor, preferably by GitHub handle. It
+  never names a Mirror persona, journey, runtime session, or database identity.
+- `Delivery` is a pull request link when one exists, otherwise a backticked Git branch.
+  It never contains an absolute path, local worktree, conversation ID, or journey UUID.
+- The canonical empty value is `—`. A `captured` or `planned` CR may be unassigned.
+- An `in_progress`, `blocked`, or `validated` CR must record both Driver and Delivery.
+- Assignment and reassignment are explicit Navigator decisions. Mirror never infers
+  ownership from the current checkout, latest committer, or private runtime state.
+- When a pull request opens, replace the branch reference with its PR link.
+- Terminal history keeps Driver and Delivery as provenance. Stale work is never
+  reassigned automatically; the Navigator decides whether to keep, reassign, block, or
+  park it.
 
 ## Artifact Convention
 
