@@ -740,9 +740,7 @@ class TestUpdateAvailabilityTrustsTheRemote:
         calls: list[tuple[tuple[str, ...], float | None]] = []
         monkeypatch.setattr(
             "memory.cli.runtime._run_git",
-            self._fake_git(
-                counts="0 0", remote_sha="a" * 40, head_sha="a" * 40, calls=calls
-            ),
+            self._fake_git(counts="0 0", remote_sha="a" * 40, head_sha="a" * 40, calls=calls),
         )
         monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
 
@@ -1642,9 +1640,7 @@ def test_runtime_update_falls_back_to_repair_when_status_crashes(monkeypatch, tm
     monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
     backup_path = tmp_path / "backup.zip"
     monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda: tmp_path)
-    monkeypatch.setattr(
-        "memory.cli.runtime.db_path_for_home", lambda home: tmp_path / "memory.db"
-    )
+    monkeypatch.setattr("memory.cli.runtime.db_path_for_home", lambda home: tmp_path / "memory.db")
     (tmp_path / "memory.db").write_text("db", encoding="utf-8")
     monkeypatch.setattr("memory.cli.runtime.create_backup", lambda silent, mirror_home: backup_path)
     monkeypatch.setattr(
@@ -1703,9 +1699,7 @@ def test_runtime_update_repair_allows_code_only_without_database(monkeypatch, tm
     )
     monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
     monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda: tmp_path)
-    monkeypatch.setattr(
-        "memory.cli.runtime.db_path_for_home", lambda home: tmp_path / "missing.db"
-    )
+    monkeypatch.setattr("memory.cli.runtime.db_path_for_home", lambda home: tmp_path / "missing.db")
     monkeypatch.setattr("memory.cli.runtime._git_fast_forward", lambda upstream, cwd: (True, ""))
     monkeypatch.setattr(
         "memory.cli.runtime._run_git",

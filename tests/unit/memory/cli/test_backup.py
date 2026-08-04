@@ -18,9 +18,7 @@ class TestEnvironmentAwareSource:
     nothing.
     """
 
-    def test_development_environment_backs_up_the_development_database(
-        self, tmp_path, monkeypatch
-    ):
+    def test_development_environment_backs_up_the_development_database(self, tmp_path, monkeypatch):
         monkeypatch.setattr("memory.config.MEMORY_ENV", "development")
         home = tmp_path / "home"
         home.mkdir()
