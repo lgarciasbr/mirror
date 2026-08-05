@@ -22,6 +22,36 @@ const TERM_THEME = {
   white: "#c9cdd9", brightWhite: "#eceef4",
 };
 
+// Clipboard na convenção do Windows Terminal, aplicada a todo terminal do
+// Frame: Ctrl+V / Ctrl+Shift+V colam; Ctrl+Shift+C copia a seleção; clique
+// direito copia se houver seleção, senão cola. (xterm.js não traz nada disso
+// por padrão — sem isto, "colar" simplesmente não existia na sessão.)
+function wireClipboard(term, sid, container) {
+  term.attachCustomKeyEventHandler((ev) => {
+    if (ev.type !== "keydown") return true;
+    const ctrl = ev.ctrlKey && !ev.altKey;
+    if (ctrl && ev.shiftKey && ev.code === "KeyC" && term.hasSelection()) {
+      navigator.clipboard.writeText(term.getSelection()).catch(() => {});
+      return false;
+    }
+    if (ctrl && ev.code === "KeyV") {
+      navigator.clipboard.readText().then((t) => { if (t) term.paste(t); }).catch(() => {});
+      return false;
+    }
+    return true;
+  });
+  container.addEventListener("contextmenu", (ev) => {
+    ev.preventDefault();
+    if (term.hasSelection()) {
+      navigator.clipboard.writeText(term.getSelection()).catch(() => {});
+      term.clearSelection();
+    } else {
+      navigator.clipboard.readText().then((t) => { if (t) term.paste(t); }).catch(() => {});
+    }
+    term.focus();
+  });
+}
+
 function makeTab(sid, title, kind) {
   const slot = document.createElement("div");
   slot.className = "term-slot";
@@ -35,6 +65,7 @@ function makeTab(sid, title, kind) {
   term.open(slot);
   term.onData((d) => window.mirror.session.input(sid, d));
   term.onResize(({ cols, rows }) => window.mirror.session.resize(sid, cols, rows));
+  wireClipboard(term, sid, slot);
   const t = { sid, title, kind, term, fit, slot, exited: false };
   tabs.push(t);
   activeTab = tabs.length - 1;
@@ -345,6 +376,8 @@ async function startWizLogin(slug) {
   term.open($("w-login-term"));
   term.onData((d) => window.mirror.session.input(r.id, d));
   term.onResize(({ cols, rows }) => window.mirror.session.resize(r.id, cols, rows));
+  // fallback de colar código OAuth exige clipboard funcionando aqui também
+  wireClipboard(term, r.id, $("w-login-term"));
   // rede de segurança: prontidão nunca anunciada em 12s → tenta mesmo assim;
   // aos 30s sem navegador/menu → revela o terminal para conclusão manual.
   const fallback = setTimeout(() => {

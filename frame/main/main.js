@@ -357,6 +357,20 @@ app.on("web-contents-created", (_ev, contents) => {
   contents.setWindowOpenHandler(() => ({ action: "deny" }));
 });
 
+// Clipboard no terminal (convenção Windows Terminal): o renderer usa as APIs
+// web padrão (navigator.clipboard) sob gesto explícito do usuário; aqui só é
+// CONCEDIDA a permissão — nenhum canal IPC novo — e somente para a janela
+// principal. Qualquer outra permissão continua negada.
+const CLIPBOARD_PERMISSIONS = new Set(["clipboard-read", "clipboard-sanitized-write"]);
+function allowClipboard(webContents, permission) {
+  return CLIPBOARD_PERMISSIONS.has(permission) && win !== null && webContents === win.webContents;
+}
+app.whenReady().then(() => {
+  const ses = require("electron").session.defaultSession;
+  ses.setPermissionRequestHandler((wc, permission, cb) => cb(allowClipboard(wc, permission)));
+  ses.setPermissionCheckHandler((wc, permission) => allowClipboard(wc, permission));
+});
+
 // Self-test mínimo (smoke Electron/ConPTY do CI): valida o binário nativo do
 // node-pty sob o Node DO ELECTRON, no layout empacotado. Ativado somente pela
 // variável de ambiente; sem janela, sem IPC novo, sem input externo — abre um
