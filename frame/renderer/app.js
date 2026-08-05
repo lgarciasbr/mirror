@@ -31,10 +31,15 @@ function wireClipboard(term, sid, container) {
     if (ev.type !== "keydown") return true;
     const ctrl = ev.ctrlKey && !ev.altKey;
     if (ctrl && ev.shiftKey && ev.code === "KeyC" && term.hasSelection()) {
+      ev.preventDefault();
       navigator.clipboard.writeText(term.getSelection()).catch(() => {});
       return false;
     }
-    if (ctrl && ev.code === "KeyV") {
+    // Ctrl+V PURO fica com o caminho NATIVO do navegador (paste event na
+    // textarea do xterm) — colar manualmente aqui duplicava a inserção
+    // (bug pego na homologação: comando colado 2x concatenado).
+    if (ctrl && ev.shiftKey && ev.code === "KeyV") {
+      ev.preventDefault();
       navigator.clipboard.readText().then((t) => { if (t) term.paste(t); }).catch(() => {});
       return false;
     }
