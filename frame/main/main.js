@@ -18,7 +18,11 @@ const { PtyManager, sanitizeResize } = require("./pty-manager.js");
 const { resolveInstallerFile, readPinnedPiVersion } = require("./install-paths.js");
 const { parseSeedReport } = require("./seed-report.js");
 
-const MIRROR_ROOT = resolveMirrorRoot({});
+// Empacotado: resolve o clone relativo ao exe instalado, para funcionar em
+// qualquer pasta de destino (inclusive com espaços). Dev: walk-up do checkout.
+const MIRROR_ROOT = resolveMirrorRoot({
+  exeDir: app.isPackaged ? path.dirname(app.getPath("exe")) : null,
+});
 const gate = new SessionGate();
 const ptys = new PtyManager();
 let win = null;

@@ -4,7 +4,9 @@ const assert = require("node:assert");
 const path = require("node:path");
 const { resolveInstallerFile, readPinnedPiVersion } = require("../main/install-paths.js");
 
-const EXE_DIR = "C:\\Users\\x\\AppData\\Local\\Programs\\MirrorMind\\frame";
+// Caminho de instalação COM ESPAÇO (regressão do cenário 9): a mesma classe de
+// bug de resolução relativa ao exe que quebrou o MIRROR_ROOT.
+const EXE_DIR = "C:\\Users\\WDAGUtilityAccount\\Desktop\\Mirror Space Test\\frame";
 const MODULE_DIR = "C:\\src\\mirror\\frame\\main";
 const INSTALLED = path.join(EXE_DIR, "..", "bin", "bootstrap.ps1");
 const CHECKOUT = path.join(MODULE_DIR, "..", "..", "installer", "bootstrap.ps1");
