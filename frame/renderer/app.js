@@ -594,15 +594,18 @@ async function onWizNext() {
     }
     msg.textContent = "Semeando identidade e personas (memory seed)…";
     const rs = await window.mirror.cmd.run("seed");
-    if (!rs.ok) {
+    // Falha DURA = sem relatório de criação (crash real). O seed sai com
+    // exit != 0 diante de qualquer aviso — inclusive o conhecido
+    // 'ego/constraints: empty content' — mesmo criando todas as entradas:
+    // criação parcial válida SEGUE, com os avisos visíveis (nunca silenciados).
+    if (!rs.report) {
       await window.mirror.config.revertOnboarding();
       msg.textContent = "seed falhou (nada foi marcado como concluído — tente de novo): " + (rs.err || rs.out).slice(0, 240);
       btn.disabled = false; return;
     }
-    // seed com avisos não é sucesso silencioso: criação parcial VÁLIDA segue,
-    // mas os avisos ficam visíveis no resumo final e no diagnóstico do Setup.
-    const errLine = (rs.out.match(/Errors:\s*[1-9]\d*/) ?? [])[0];
-    wst.seedWarnings = errLine ? (rs.out.split(errLine)[1] ?? "").trim().split("\n")[0]?.trim() ?? errLine : null;
+    wst.seedWarnings = rs.report.errors > 0
+      ? (rs.report.firstError ?? `${rs.report.errors} aviso(s) do seed`)
+      : null;
     if (wst.seedWarnings) warmupOut = rs.out.trim();
     // segredo transitório: limpo assim que persistido — não permanece em estado
     if (wst.key) { wst.keySaved = true; wst.key = ""; }

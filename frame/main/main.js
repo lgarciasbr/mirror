@@ -16,6 +16,7 @@ const { SessionGate } = require("./session-gate.js");
 const { loadEnvFile, saveEnvValues, removeEnvKeys, isFirstRun } = require("./config-store.js");
 const { PtyManager, sanitizeResize } = require("./pty-manager.js");
 const { resolveInstallerFile, readPinnedPiVersion } = require("./install-paths.js");
+const { parseSeedReport } = require("./seed-report.js");
 
 const MIRROR_ROOT = resolveMirrorRoot({});
 const gate = new SessionGate();
@@ -198,7 +199,11 @@ ipcMain.handle("cmd:run", async (e, id, opts) => {
       gate.updateFinished(); pushGate();
     }
   }
-  return runCommand(id, safeOpts);
+  const r = await runCommand(id, safeOpts);
+  // seed sai com exit != 0 diante de QUALQUER aviso, mesmo criando tudo — o
+  // renderer decide pelo relatório estruturado, não pelo exit code cru.
+  if (id === "seed") r.report = parseSeedReport(r.out);
+  return r;
 });
 
 /* ---------- IPC: assinaturas do Pi (auth.json é a fonte da verdade) ---------- */
