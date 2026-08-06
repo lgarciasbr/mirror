@@ -98,6 +98,20 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File frame/scripts/smoke-electron.ps1
 
+      # Perfil Windows REAL com nome não-ASCII (usuário local criado no runner,
+      # perfil carregado de verdade, asserções dentro do processo daquele
+      # usuário). Consome o payload já verificado do mesmo workspace — sem
+      # segunda autoridade de packaging. Senha temporária nunca é logada;
+      # usuário/perfil/credencial são removidos em finally.
+      - name: Smoke — real non-ASCII USERPROFILE
+        shell: pwsh
+        run: >-
+          pwsh -NoProfile -ExecutionPolicy Bypass
+          -File scripts/ci-nonascii-profile-smoke.ps1
+          -RepoRoot "$env:GITHUB_WORKSPACE"
+          -FramePayload "$env:GITHUB_WORKSPACE\frame\out\MirrorFrame-win32-x64"
+
+      # Upload SOMENTE depois de TODOS os smokes verdes (ConPTY + não-ASCII).
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
