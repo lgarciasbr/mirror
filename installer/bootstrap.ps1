@@ -285,52 +285,46 @@ function Get-InstalledPiVersion {
 }
 
 function Ensure-Pi {
-    # Exact-pin convergence: the /login automation is homologated against ONE
-    # Pi version. Absent, older or NEWER installs all converge to the pin.
+    # Thin wrapper over the tested Invoke-PiConvergence: absent, older OR newer
+    # installs all converge to the exact pin; console output only.
     $pinned = Get-PinnedPiVersion
-    $installed = Get-InstalledPiVersion
-    $decision = Get-PiPinDecision -InstalledVersion $installed -PinnedVersion $pinned
 
-    if ($decision -eq 'ok') {
-        Write-Host ("  [ok]      {0,-14} pinned version {1} installed" -f 'Pi', $pinned)
-        return
-    }
-    if ($DetectOnly) {
-        if ($decision -eq 'missing') {
-            Write-Host ("  [missing] {0,-14} not installed (pinned: {1})" -f 'Pi', $pinned) -ForegroundColor Yellow
-        } else {
-            Write-Host ("  [version mismatch] {0,-6} installed {1}, pinned {2}" -f 'Pi', (ConvertTo-VersionString $installed), $pinned) -ForegroundColor Yellow
+    $installer = {
+        Write-Host ("  [install] {0,-14} converging to pinned {1}" -f 'Pi', $pinned) -ForegroundColor Cyan
+        Invoke-MirrorStep -Name 'install Pi (npm global, pinned)' -Action {
+            # npm on Windows is a shim (npm.cmd / extensionless script), not an
+            # .exe: Start-Process -FilePath 'npm' fails with "%1 is not a valid
+            # Win32 application". Run it through cmd.exe so PATHEXT resolves
+            # npm.cmd, while still capturing the real exit code.
+            # --ignore-scripts avoids native postinstall/build steps that are
+            # unreliable on a fresh Windows; npm still creates the `pi` bin shim.
+            $npmArgs = @('/c', 'npm', 'install', '-g', '--ignore-scripts', $script:PiPackage)
+            $p = Start-Process -FilePath $env:ComSpec -ArgumentList $npmArgs -Wait -PassThru -NoNewWindow
+            if ($p.ExitCode -ne 0) { throw "npm install -g $($script:PiPackage) failed ($($p.ExitCode))" }
+            Update-SessionPath
+        } -OnErrorFriendly {
+            param($ex)
+            New-FriendlyError -Code 'PI_INSTALL_FAILED' `
+                -Message 'Could not install the pinned Pi version (the homologated Mirror harness).' `
+                -Cause $ex.Exception.Message `
+                -Action 'Confirm Node.js/npm are installed and you are online, then re-run the installer.'
         }
-        return
     }
 
-    $why = if ($decision -eq 'missing') { 'not installed' } else { "installed $(ConvertTo-VersionString $installed) != pinned $pinned" }
-    Write-Host ("  [install] {0,-14} installing pinned {1} ({2})" -f 'Pi', $pinned, $why) -ForegroundColor Cyan
-    Invoke-MirrorStep -Name 'install Pi (npm global, pinned)' -Action {
-        # npm on Windows is a shim (npm.cmd / extensionless script), not an .exe:
-        # Start-Process -FilePath 'npm' fails with "%1 is not a valid Win32
-        # application". Run it through cmd.exe so PATHEXT resolves npm.cmd, while
-        # still capturing the real exit code.
-        # --ignore-scripts avoids native postinstall/build steps that are
-        # unreliable on a fresh Windows; npm still creates the `pi` bin shim.
-        $npmArgs = @('/c', 'npm', 'install', '-g', '--ignore-scripts', $script:PiPackage)
-        $p = Start-Process -FilePath $env:ComSpec -ArgumentList $npmArgs -Wait -PassThru -NoNewWindow
-        if ($p.ExitCode -ne 0) { throw "npm install -g $($script:PiPackage) failed ($($p.ExitCode))" }
-        Update-SessionPath
-    } -OnErrorFriendly {
-        param($ex)
-        New-FriendlyError -Code 'PI_INSTALL_FAILED' `
-            -Message 'Could not install the pinned Pi version (the homologated Mirror harness).' `
-            -Cause $ex.Exception.Message `
-            -Action 'Confirm Node.js/npm are installed and you are online, then re-run the installer.'
-    }
+    $result = Invoke-PiConvergence -GetInstalled { Get-InstalledPiVersion } `
+        -PinnedVersion $pinned -InstallPinned $installer -DetectOnly:$DetectOnly
 
-    # Post-install re-verification: exact equality or explicit failure.
-    $after = Get-InstalledPiVersion
-    if ((Get-PiPinDecision -InstalledVersion $after -PinnedVersion $pinned) -ne 'ok') {
-        throw "Pi still does not match the pin after install (installed: '$after', pinned: $pinned)."
+    switch ($result.Action) {
+        'none'      { Write-Host ("  [ok]      {0,-14} pinned version {1} installed" -f 'Pi', $pinned) }
+        'installed' { Write-Host ("  [ok]      {0,-14} pinned version {1} verified after install" -f 'Pi', $pinned) }
+        'detect'    {
+            if ($result.Decision -eq 'missing') {
+                Write-Host ("  [missing] {0,-14} not installed (pinned: {1})" -f 'Pi', $pinned) -ForegroundColor Yellow
+            } else {
+                Write-Host ("  [version mismatch] {0,-6} installed {1}, pinned {2}" -f 'Pi', (ConvertTo-VersionString $result.Installed), $pinned) -ForegroundColor Yellow
+            }
+        }
     }
-    Write-Host ("  [ok]      {0,-14} pinned version {1} verified after install" -f 'Pi', $pinned)
 }
 
 function Sync-MirrorRepo {
