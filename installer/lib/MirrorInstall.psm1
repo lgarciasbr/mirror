@@ -556,6 +556,7 @@ function Invoke-PiConvergence {
     param(
         [Parameter(Mandatory)][scriptblock]$GetInstalled,
         [Parameter(Mandatory)][AllowEmptyString()][string]$PinnedVersion,
+        [string]$PackageName = '@earendil-works/pi-coding-agent',
         [scriptblock]$InstallPinned,
         [switch]$DetectOnly
     )
@@ -563,27 +564,31 @@ function Invoke-PiConvergence {
     if ($PinnedVersion -notmatch '^\d+\.\d+\.\d+$') {
         throw "Invalid or missing pinned Pi version ('$PinnedVersion'); refusing to install."
     }
+    # O spec exato instalável é construído AQUI e passado como ARGUMENTO ao
+    # callback — o instalador jamais depende de $script:/escopo dinâmico do
+    # caller para decidir o pacote.
+    $packageSpec = "$PackageName@$PinnedVersion"
 
     $installed = & $GetInstalled
     $decision = Get-PiPinDecision -InstalledVersion $installed -PinnedVersion $PinnedVersion
 
     if ($decision -eq 'ok') {
-        return [pscustomobject]@{ Action = 'none'; Decision = 'ok'; Installed = $installed; Pinned = $PinnedVersion }
+        return [pscustomobject]@{ Action = 'none'; Decision = 'ok'; Installed = $installed; Pinned = $PinnedVersion; PackageSpec = $packageSpec }
     }
     if ($DetectOnly) {
-        return [pscustomobject]@{ Action = 'detect'; Decision = $decision; Installed = $installed; Pinned = $PinnedVersion }
+        return [pscustomobject]@{ Action = 'detect'; Decision = $decision; Installed = $installed; Pinned = $PinnedVersion; PackageSpec = $packageSpec }
     }
     if (-not $InstallPinned) {
         throw "InstallPinned action is required to converge Pi to the pin."
     }
 
-    & $InstallPinned  # throws on npm failure → propagates
+    & $InstallPinned $packageSpec  # recebe o spec exato; throws propagam
 
     $after = & $GetInstalled
     if ((Get-PiPinDecision -InstalledVersion $after -PinnedVersion $PinnedVersion) -ne 'ok') {
         throw "Pi still does not match the pin after install (installed: '$after', pinned: $PinnedVersion)."
     }
-    return [pscustomobject]@{ Action = 'installed'; Decision = $decision; Installed = $after; Pinned = $PinnedVersion }
+    return [pscustomobject]@{ Action = 'installed'; Decision = $decision; Installed = $after; Pinned = $PinnedVersion; PackageSpec = $packageSpec }
 }
 
 Export-ModuleMember -Function `

@@ -152,15 +152,19 @@ Describe 'Get-PiPinDecision (exact Pi pin convergence)' {
 Describe 'Invoke-PiConvergence (operational pin convergence, with fakes)' {
     BeforeEach {
         $script:installCalls = 0
-        $script:installer = { $script:installCalls++ }
-        $script:installerThatFails = { $script:installCalls++; throw 'npm exploded' }
+        $script:receivedSpec = $null
+        $script:installer = { param($PackageSpec) $script:installCalls++; $script:receivedSpec = $PackageSpec }
+        $script:installerThatFails = { param($PackageSpec) $script:installCalls++; throw 'npm exploded' }
     }
 
-    It '1. absent -> installs the pin, verifies' {
+    It '1. absent -> installs the pin, verifies, and the callback receives the EXACT spec' {
         $script:seq = @($null, '0.83.0'); $script:i = 0
         $fake = { $v = $script:seq[$script:i]; $script:i++; $v }
         $r = Invoke-PiConvergence -GetInstalled $fake -PinnedVersion '0.83.0' -InstallPinned $installer
         $r.Action | Should -Be 'installed'; $script:installCalls | Should -Be 1
+        # Critério do review: o valor entregue ao instalador é inequívoco —
+        # construído de PackageName+pin, sem escopo dinâmico.
+        $script:receivedSpec | Should -Be '@earendil-works/pi-coding-agent@0.83.0'
     }
     It '2. older -> installs the pin' {
         $script:seq = @('0.82.0', '0.83.0'); $script:i = 0

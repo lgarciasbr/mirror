@@ -39,10 +39,15 @@ function parseSeedReport(stdout) {
 
 function classifySeed(report) {
   if (!report) return { status: "fail", reason: "sem relatório de criação (crash)" };
-  const { created, errors, errorLines } = report;
+  const { created, updated, skipped, errors, errorLines } = report;
+
+  // Seed é idempotente: num rebind/retry válido TODAS as entradas podem vir
+  // como skipped (0 created). O que importa é o total processado — zero total
+  // é que indica relatório inconsistente.
+  const total = created + updated + skipped;
 
   if (errors === 0) {
-    if (created <= 0) return { status: "fail", reason: "relatório sem entradas criadas" };
+    if (total <= 0) return { status: "fail", reason: "relatório sem entradas processadas" };
     return { status: "ok", warning: null };
   }
 
@@ -51,7 +56,7 @@ function classifySeed(report) {
   // de uma linha (não-conhecida) = falha.
   const listed = errorLines.length;
   const allKnown = listed > 0 && errorLines.every((e) => KNOWN_WARNINGS.some((re) => re.test(e)));
-  if (listed === errors && allKnown && created > 0) {
+  if (listed === errors && allKnown && total > 0) {
     return { status: "ok-warning", warning: errorLines[0] };
   }
   return {

@@ -33,7 +33,18 @@ test("error count without matching listed lines → fail", () => {
   assert.strictEqual(cls(out), "fail");
 });
 
-test("inconsistent report — zero created → fail", () => {
+test("idempotent rebind — all skipped, clean → ok (created+updated+skipped > 0)", () => {
+  assert.strictEqual(cls("Result: 0 created, 0 updated, 19 skipped\n"), "ok");
+});
+
+test("idempotent rebind — all skipped with the known warning → ok-warning", () => {
+  const out = "Result: 0 created, 0 updated, 19 skipped\nErrors: 1\n  - ego/constraints: empty content\n";
+  const c = classifySeed(parseSeedReport(out));
+  assert.strictEqual(c.status, "ok-warning");
+  assert.strictEqual(c.warning, "ego/constraints: empty content");
+});
+
+test("completely zero totals → fail (inconsistent report)", () => {
   assert.strictEqual(cls("Result: 0 created, 0 updated, 0 skipped\n"), "fail");
 });
 

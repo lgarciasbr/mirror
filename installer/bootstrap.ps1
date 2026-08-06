@@ -135,7 +135,8 @@ function Get-PinnedPiVersion {
     return $v
 }
 
-$script:PiPackage = "$($script:PiPackageName)@$(Get-PinnedPiVersion)"
+# O spec instalavel e construido por Invoke-PiConvergence (PackageName + pin)
+# e entregue ao callback como parametro - sem variavel de escopo dinamico aqui.
 
 # ---------------------------------------------------------------------------
 # Install helpers
@@ -289,20 +290,24 @@ function Ensure-Pi {
     # installs all converge to the exact pin; console output only.
     $pinned = Get-PinnedPiVersion
 
+    # O spec exato ("nome@versão") chega como PARÂMETRO do callback — construído
+    # por Invoke-PiConvergence a partir de PackageName+PinnedVersion; nenhuma
+    # dependência de $script:/escopo dinâmico decide o pacote instalado.
     $installer = {
-        Write-Host ("  [install] {0,-14} converging to pinned {1}" -f 'Pi', $pinned) -ForegroundColor Cyan
-        Invoke-MirrorStep -Name 'install Pi (npm global, pinned)' -Action {
+        param([Parameter(Mandatory)][string]$PackageSpec)
+        Write-Host ("  [install] {0,-14} converging to {1}" -f 'Pi', $PackageSpec) -ForegroundColor Cyan
+        Invoke-MirrorStep -Name "install Pi (npm global, $PackageSpec)" -Action {
             # npm on Windows is a shim (npm.cmd / extensionless script), not an
             # .exe: Start-Process -FilePath 'npm' fails with "%1 is not a valid
             # Win32 application". Run it through cmd.exe so PATHEXT resolves
             # npm.cmd, while still capturing the real exit code.
             # --ignore-scripts avoids native postinstall/build steps that are
             # unreliable on a fresh Windows; npm still creates the `pi` bin shim.
-            $npmArgs = @('/c', 'npm', 'install', '-g', '--ignore-scripts', $script:PiPackage)
+            $npmArgs = @('/c', 'npm', 'install', '-g', '--ignore-scripts', $PackageSpec)
             $p = Start-Process -FilePath $env:ComSpec -ArgumentList $npmArgs -Wait -PassThru -NoNewWindow
-            if ($p.ExitCode -ne 0) { throw "npm install -g $($script:PiPackage) failed ($($p.ExitCode))" }
+            if ($p.ExitCode -ne 0) { throw "npm install -g $PackageSpec failed ($($p.ExitCode))" }
             Update-SessionPath
-        } -OnErrorFriendly {
+        }.GetNewClosure() -OnErrorFriendly {
             param($ex)
             New-FriendlyError -Code 'PI_INSTALL_FAILED' `
                 -Message 'Could not install the pinned Pi version (the homologated Mirror harness).' `
@@ -312,7 +317,8 @@ function Ensure-Pi {
     }
 
     $result = Invoke-PiConvergence -GetInstalled { Get-InstalledPiVersion } `
-        -PinnedVersion $pinned -InstallPinned $installer -DetectOnly:$DetectOnly
+        -PinnedVersion $pinned -PackageName $script:PiPackageName `
+        -InstallPinned $installer -DetectOnly:$DetectOnly
 
     switch ($result.Action) {
         'none'      { Write-Host ("  [ok]      {0,-14} pinned version {1} installed" -f 'Pi', $pinned) }
