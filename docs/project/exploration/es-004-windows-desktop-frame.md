@@ -165,9 +165,12 @@ recorded without erasing the history above:
   `installer/pi-version.txt` (0.83.0 at homologation), consumed from the
   installed copy by bootstrap and the packaged Frame; a missing/invalid pin
   disables the auto-update. `@latest` is never used.
-- **Electron 33 — superseded.** Out of official support at review time;
-  upgraded to the supported 42.x line after full regression (see PR #32
-  evidence for the official support source and the 42-over-41 rationale).
+- **Electron 33 — superseded.** Out of official support at review time.
+  Per the official schedule (https://releases.electronjs.org/schedule) at the
+  review date, Electron 42, 43 and 44 are the supported stable lines, 45 is
+  still nightly, and 42 reaches EOL on 20 Oct 2026. Upgraded to **42.8.0** —
+  the most conservative supported stable line — after full regression (tests +
+  simulator + package + Electron/ConPTY smoke).
 - **Automatic Mirror core update in the Frame — withdrawn from the first
   release** (maintainer decision): the Frame follows the Mirror version, and
   `memory runtime update` advances only the clone, which would leave the

@@ -22,6 +22,12 @@ Mirror release version** (maintainer decision, PR #32 review). `package.json`
 version always equals the Mirror version in `pyproject.toml`. The Frame has no
 independent release line.
 
+**Electron:** pinned to **42.8.0**. Per the official schedule
+(https://releases.electronjs.org/schedule), the supported stable lines are 42,
+43 and 44 (45 is still nightly); 42 reaches EOL on 20 Oct 2026. 42.x is chosen
+as the most conservative supported line and re-validated on any bump with the
+full regression (tests + simulator + package + Electron/ConPTY smoke).
+
 ## Controlled Pi version (never `@latest`)
 
 The `/login` automation depends on observed surfaces of a specific Pi version
