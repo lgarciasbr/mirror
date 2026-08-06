@@ -1,33 +1,49 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { parseSeedReport } = require("../main/seed-report.js");
+const { parseSeedReport, classifySeed } = require("../main/seed-report.js");
 
-const REAL_OUTPUT = `Seeding identity into [production]...
-Mirror home: C:\\Users\\x\\.mirror-minds\\Rodrigo
-  → self/soul (skipped — use 'memory identity edit self soul')
-Result: 19 created, 0 updated, 0 skipped
-Errors: 1
-  - ego/constraints: empty content
-`;
+const cls = (out) => classifySeed(parseSeedReport(out)).status;
 
-test("valid partial creation with the known warning parses as a report, not a hard failure", () => {
-  const r = parseSeedReport(REAL_OUTPUT);
-  assert.deepStrictEqual(
-    { created: r.created, updated: r.updated, skipped: r.skipped, errors: r.errors },
-    { created: 19, updated: 0, skipped: 0, errors: 1 },
-  );
-  assert.strictEqual(r.firstError, "ego/constraints: empty content");
+test("clean seed → ok", () => {
+  assert.strictEqual(cls("Result: 20 created, 0 updated, 0 skipped\n"), "ok");
 });
 
-test("clean run parses with zero errors", () => {
-  const r = parseSeedReport("Result: 20 created, 0 updated, 0 skipped\n");
-  assert.strictEqual(r.errors, 0);
-  assert.strictEqual(r.firstError, null);
+test("exactly the known warning → ok-warning, surfaced", () => {
+  const out = "Result: 19 created, 0 updated, 0 skipped\nErrors: 1\n  - ego/constraints: empty content\n";
+  const c = classifySeed(parseSeedReport(out));
+  assert.strictEqual(c.status, "ok-warning");
+  assert.strictEqual(c.warning, "ego/constraints: empty content");
 });
 
-test("a crash with no Result summary yields null — that IS a hard failure", () => {
-  assert.strictEqual(parseSeedReport("Traceback (most recent call last): ..."), null);
-  assert.strictEqual(parseSeedReport(""), null);
-  assert.strictEqual(parseSeedReport(null), null);
+test("an UNKNOWN warning → fail (never a silent partial success)", () => {
+  const out = "Result: 19 created, 0 updated, 0 skipped\nErrors: 1\n  - user/identity: parse error\n";
+  const c = classifySeed(parseSeedReport(out));
+  assert.strictEqual(c.status, "fail");
+  assert.match(c.reason, /não reconhecido/);
+});
+
+test("more than one error (even if one is the known warning) → fail", () => {
+  const out = "Result: 18 created, 0 updated, 0 skipped\nErrors: 2\n  - ego/constraints: empty content\n  - persona/coach: bad yaml\n";
+  assert.strictEqual(cls(out), "fail");
+});
+
+test("error count without matching listed lines → fail", () => {
+  const out = "Result: 19 created, 0 updated, 0 skipped\nErrors: 3\n";
+  assert.strictEqual(cls(out), "fail");
+});
+
+test("inconsistent report — zero created → fail", () => {
+  assert.strictEqual(cls("Result: 0 created, 0 updated, 0 skipped\n"), "fail");
+});
+
+test("crash with no Result summary → fail", () => {
+  assert.strictEqual(classifySeed(parseSeedReport("Traceback ...")).status, "fail");
+  assert.strictEqual(classifySeed(parseSeedReport("")).status, "fail");
+  assert.strictEqual(classifySeed(null).status, "fail");
+});
+
+test("does not rely on an absolute identity count alone — 19 vs 20 both ok when clean", () => {
+  assert.strictEqual(cls("Result: 19 created, 0 updated, 0 skipped\n"), "ok");
+  assert.strictEqual(cls("Result: 20 created, 0 updated, 0 skipped\n"), "ok");
 });

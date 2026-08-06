@@ -2,6 +2,7 @@
 /* Mirror Frame — renderer. Conversa com o main só pela API window.mirror. */
 
 const $ = (id) => document.getElementById(id);
+const { planKeyPersist, initialKeySaved } = window.MirrorOnboarding;
 let CFG = null;                 // config:get
 let tabs = [];                  // {sid, title, kind:'mirror'|'system', term, fit, slot, exited}
 let activeTab = -1;             // índice em tabs
@@ -511,6 +512,8 @@ function renderWizard() {
       <h1>Sua identidade local</h1>
       <p class="sub">Esse nome define <b>sua casa no Mirror</b> — a pasta local onde vivem sua
       memória e identidade (<code>~\\.mirror-minds\\&lt;nome&gt;</code>). Sem espaços ou acentos.</p>
+      <p class="hint">Já usou o Mirror antes nesta máquina? Informe o <b>mesmo nome</b> — sua
+      identidade e memória preservadas são reconectadas (nada é recriado).</p>
       <div class="field"><label for="w-user">Seu nome</label>
         <input id="w-user" value="${escapeHtml(wst.user)}" placeholder="ex.: Rodrigo"></div>
       <p class="hint" id="w-user-hint">${wst.user ? "Casa: ~\\.mirror-minds\\" + escapeHtml(wst.user) : ""}</p>
@@ -612,7 +615,9 @@ async function onWizNext() {
   if (wLogin) finishWizLogin(false);
   const msg = $("w-msg"), btn = $("w-next");
   if (wiz === 2) {
-    if (wst.key && !wst.key.startsWith("sk-or-")) { msg.textContent = "A chave OpenRouter começa com sk-or-…"; return; }
+    // Chave: vazio preserva a existente; nova só após validação (lógica pura).
+    const plan = planKeyPersist({ existingHasKey: wst.keySaved, typedKey: wst.key });
+    if (plan.action === "invalid") { msg.textContent = plan.error; return; }
     btn.disabled = true;
     // Transação mínima do onboarding: o marcador (MIRROR_USER) só permanece se
     // init E seed concluírem — falha em qualquer etapa reverte o marcador, e o
@@ -620,7 +625,7 @@ async function onWizNext() {
     // idempotente: init tolera casa existente e seed pula entradas existentes).
     msg.textContent = "Gravando configuração…";
     const vals = { MIRROR_USER: wst.user };
-    if (wst.key) vals.OPENROUTER_API_KEY = wst.key;
+    if (plan.action === "save") vals.OPENROUTER_API_KEY = plan.value; // vazio NÃO sobrescreve
     const r = await window.mirror.config.save(vals);
     if (!r.ok) { msg.textContent = r.err; btn.disabled = false; return; }
     msg.textContent = "Criando sua identidade local (memory init)…";
@@ -632,21 +637,19 @@ async function onWizNext() {
     }
     msg.textContent = "Semeando identidade e personas (memory seed)…";
     const rs = await window.mirror.cmd.run("seed");
-    // Falha DURA = sem relatório de criação (crash real). O seed sai com
-    // exit != 0 diante de qualquer aviso — inclusive o conhecido
-    // 'ego/constraints: empty content' — mesmo criando todas as entradas:
-    // criação parcial válida SEGUE, com os avisos visíveis (nunca silenciados).
-    if (!rs.report) {
+    // Classificação estrita (item 1): só o aviso conhecido é tolerado; qualquer
+    // outro erro é falha de onboarding — reverte o marcador e volta ao wizard.
+    const seed = rs.seed ?? { status: "fail", reason: rs.err || rs.out };
+    if (seed.status === "fail") {
       await window.mirror.config.revertOnboarding();
-      msg.textContent = "seed falhou (nada foi marcado como concluído — tente de novo): " + (rs.err || rs.out).slice(0, 240);
+      msg.textContent = "seed falhou (nada foi marcado como concluído — tente de novo): " + String(seed.reason || rs.err || rs.out).slice(0, 240);
       btn.disabled = false; return;
     }
-    wst.seedWarnings = rs.report.errors > 0
-      ? (rs.report.firstError ?? `${rs.report.errors} aviso(s) do seed`)
-      : null;
+    wst.seedWarnings = seed.status === "ok-warning" ? seed.warning : null;
     if (wst.seedWarnings) warmupOut = rs.out.trim();
-    // segredo transitório: limpo assim que persistido — não permanece em estado
-    if (wst.key) { wst.keySaved = true; wst.key = ""; }
+    // segredo transitório: limpo assim que persistido; keySaved reflete o real
+    wst.keySaved = plan.keySaved;
+    wst.key = "";
     wst.inited = true;
   }
   if (wiz === 5) {
@@ -665,6 +668,9 @@ async function boot() {
   CFG = await window.mirror.config.get();
   try { wizConnected = await window.mirror.login.providers(); } catch { wizConnected = []; }
   if (CFG.firstRun && CFG.mirrorRoot) {
+    // keySaved reflete o .env real já no boot: num retry/restart após falha, a
+    // chave preservada mantém o passo marcado como configurado.
+    wst.keySaved = initialKeySaved(CFG.hasKey);
     $("view-wizard").classList.remove("hidden");
     wiz = 0;
     renderWizard();

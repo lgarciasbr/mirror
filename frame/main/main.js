@@ -16,7 +16,7 @@ const { SessionGate } = require("./session-gate.js");
 const { loadEnvFile, saveEnvValues, removeEnvKeys, isFirstRun } = require("./config-store.js");
 const { PtyManager, sanitizeResize } = require("./pty-manager.js");
 const { resolveInstallerFile, readPinnedPiVersion } = require("./install-paths.js");
-const { parseSeedReport } = require("./seed-report.js");
+const { parseSeedReport, classifySeed } = require("./seed-report.js");
 
 // Empacotado: resolve o clone relativo ao exe instalado, para funcionar em
 // qualquer pasta de destino (inclusive com espaços). Dev: walk-up do checkout.
@@ -170,9 +170,9 @@ ipcMain.handle("config:revertOnboarding", (e) => {
 
 /* ---------- IPC: comandos allowlisted ---------- */
 // A autoridade do gate de update é o main process — o estado dos botões do
-// renderer é só reflexo. Os DOIS updaters passam pelo mesmo SessionGate
-// (review do PR #32: updatePi escapava do gate e podia rodar npm install -g
-// com sessões Pi abertas). O conjunto vem do metadado `gated` do registry.
+// renderer é só reflexo. No primeiro release, `updatePi` é o ÚNICO comando de
+// update do Frame (o update automático do core foi removido); ele passa pelo
+// SessionGate. O conjunto vem do metadado `gated` do registry (hoje: updatePi).
 const { COMMANDS } = require("./command-registry.js");
 const UPDATE_COMMANDS = new Set(
   Object.entries(COMMANDS).filter(([, spec]) => spec.gated).map(([id]) => id),
@@ -205,8 +205,11 @@ ipcMain.handle("cmd:run", async (e, id, opts) => {
   }
   const r = await runCommand(id, safeOpts);
   // seed sai com exit != 0 diante de QUALQUER aviso, mesmo criando tudo — o
-  // renderer decide pelo relatório estruturado, não pelo exit code cru.
-  if (id === "seed") r.report = parseSeedReport(r.out);
+  // renderer decide pela CLASSIFICAÇÃO do relatório, não pelo exit code cru.
+  if (id === "seed") {
+    const report = parseSeedReport(r.out);
+    r.seed = { ...classifySeed(report), report };
+  }
   return r;
 });
 
@@ -291,10 +294,10 @@ ipcMain.handle("session:open", (e) => {
     if (!trusted(e)) return { ok: false, err: "sender não confiável" };
     if (!gate.canOpenSession()) return { ok: false, err: "um update está em andamento — aguarde concluir para abrir sessões" };
     if (!TOOLS().pi) return { ok: false, err: "Pi não encontrado no PATH — rode o bootstrap no Setup e reabra o app" };
+    // openPty() já registra todo PTY no gate — sem sessionOpened redundante aqui.
     const id = openPty({
       file: "cmd.exe", args: ["/c", "pi"], cwd: MIRROR_ROOT, env: frameEnv(),
     }, "mirror");
-    gate.sessionOpened(id); pushGate();
     return { ok: true, id };
   } catch (e) {
     return { ok: false, err: `falha ao abrir sessão: ${e.message}` };

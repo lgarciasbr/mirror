@@ -1,23 +1,65 @@
 "use strict";
-// Classifica o resultado do `memory seed` a partir do relatório impresso.
-// Motivação (homologação, cenário 1): o seed sai com exit code 1 quando há
-// QUALQUER aviso — inclusive o conhecido 'ego/constraints: empty content' do
-// template vazio no main — mesmo tendo criado todas as entradas. Criação
-// parcial VÁLIDA (há linha "Result: N created...") não pode virar falha dura
-// do onboarding; avisos são exibidos, nunca silenciados (blocker 4, item 7).
+// Classifica o resultado do `memory seed`.
+// Política (review do PR #32, item 1): o seed sai com exit code != 0 diante de
+// QUALQUER aviso, então o exit code não decide. Decidimos pelo relatório:
+//   - ok            → errors === 0 e há um "Result:" coerente;
+//   - ok-warning    → há erros, mas TODOS são exatamente o aviso conhecido e
+//                     preexistente `ego/constraints: empty content` (allowlist);
+//   - fail          → qualquer outro erro, combinação de erros, "Result:"
+//                     inconsistente/ausente, ou crash sem relatório.
+// Falha de onboarding remove o marcador e volta ao wizard; erro desconhecido
+// NUNCA vira sucesso parcial silencioso.
+
+// Allowlist explícita do único aviso conhecido e tolerado.
+const KNOWN_WARNINGS = [/^ego\/constraints:\s*empty content$/i];
+
 function parseSeedReport(stdout) {
   const text = String(stdout ?? "");
   const m = /Result:\s*(\d+)\s*created,\s*(\d+)\s*updated,\s*(\d+)\s*skipped/.exec(text);
-  if (!m) return null;
-  const e = /Errors:\s*(\d+)/.exec(text);
-  const firstError = (/Errors:\s*\d+\s*\n\s*-\s*(.+)/.exec(text) ?? [])[1]?.trim() ?? null;
+  if (!m) return null; // sem relatório coerente = crash real
+  const created = Number(m[1]);
+  const updated = Number(m[2]);
+  const skipped = Number(m[3]);
+
+  const errCount = (/Errors:\s*(\d+)/.exec(text) ?? [])[1];
+  const errors = errCount !== undefined ? Number(errCount) : 0;
+
+  // coleta as linhas de erro listadas após "Errors: N" ("  - <id>: <msg>")
+  const errorLines = [];
+  const errBlock = /Errors:\s*\d+\s*\n([\s\S]*)$/.exec(text);
+  if (errBlock) {
+    for (const raw of errBlock[1].split("\n")) {
+      const line = raw.trim();
+      if (line.startsWith("- ")) errorLines.push(line.slice(2).trim());
+      else if (line && !/^Result:/i.test(line)) continue;
+    }
+  }
+  return { created, updated, skipped, errors, errorLines };
+}
+
+function classifySeed(report) {
+  if (!report) return { status: "fail", reason: "sem relatório de criação (crash)" };
+  const { created, errors, errorLines } = report;
+
+  if (errors === 0) {
+    if (created <= 0) return { status: "fail", reason: "relatório sem entradas criadas" };
+    return { status: "ok", warning: null };
+  }
+
+  // Só é warning tolerado se a contagem bate com as linhas listadas E todas as
+  // linhas estão na allowlist. Contagem sem linhas, linha desconhecida, ou mais
+  // de uma linha (não-conhecida) = falha.
+  const listed = errorLines.length;
+  const allKnown = listed > 0 && errorLines.every((e) => KNOWN_WARNINGS.some((re) => re.test(e)));
+  if (listed === errors && allKnown && created > 0) {
+    return { status: "ok-warning", warning: errorLines[0] };
+  }
   return {
-    created: Number(m[1]),
-    updated: Number(m[2]),
-    skipped: Number(m[3]),
-    errors: e ? Number(e[1]) : 0,
-    firstError,
+    status: "fail",
+    reason: listed
+      ? `erro(s) de seed não reconhecido(s): ${errorLines.join("; ")}`
+      : `${errors} erro(s) de seed sem detalhamento reconhecível`,
   };
 }
 
-module.exports = { parseSeedReport };
+module.exports = { parseSeedReport, classifySeed };
