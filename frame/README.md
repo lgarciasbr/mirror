@@ -61,7 +61,10 @@ npm ci → npm test → npm run sim
 ```
 
 - `scripts/package.ps1` — deterministic portable assembly (Electron dist +
-  `resources/app` with runtime deps only). Produces; does not validate.
+  `resources/app` with runtime deps only). After `npm ci`, Electron 42's
+  official installer materializes the exact pinned binary with checksum when
+  `dist/` is absent; this is part of the canonical build, not a CI-only step.
+  Produces; does not validate.
 - `scripts/verify-payload.ps1` — the **single source of payload asserts**
   (exe, ConPTY native binary, preload, main, renderer, assets, xterm).
 - `scripts/smoke-electron.ps1` — starts the packaged `MirrorFrame.exe` with

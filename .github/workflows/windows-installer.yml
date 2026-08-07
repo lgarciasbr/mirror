@@ -7,12 +7,14 @@ on:
     paths:
       - "installer/**"
       - "frame/**"
+      - "scripts/ci-nonascii-profile-smoke.ps1"
       - ".github/workflows/windows-installer.yml"
   pull_request:
     branches: [main]
     paths:
       - "installer/**"
       - "frame/**"
+      - "scripts/ci-nonascii-profile-smoke.ps1"
       - ".github/workflows/windows-installer.yml"
 
 jobs:
@@ -75,15 +77,6 @@ jobs:
         shell: pwsh
         working-directory: frame
         run: npm ci
-
-      # Electron >= 42 não tem postinstall: o binário é materializado pelo bin
-      # explícito install-electron (download com checksum via @electron/get,
-      # idempotente). Sem este passo, node_modules/electron/dist não existe e o
-      # packaging falha fail-closed.
-      - name: Frame — materialize Electron binary (install-electron)
-        shell: pwsh
-        working-directory: frame
-        run: node node_modules/electron/install.js
 
       - name: Frame — unit tests
         shell: pwsh

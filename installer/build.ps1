@@ -58,7 +58,7 @@ function Get-InstallerVersion {
         $v = (Get-Content -LiteralPath $vf -Raw).Trim()
         if ($v) { return $v }
     }
-    return '0.30.0'
+    return '0.31.0'
 }
 
 if (-not $Version) { $Version = Get-InstallerVersion }

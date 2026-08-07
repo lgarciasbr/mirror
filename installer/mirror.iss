@@ -25,7 +25,7 @@
 ; version). Bump installer/VERSION when the installer changes; build.ps1 passes
 ; it as AppVersion. This fallback is only used for a bare 'iscc mirror.iss'.
 #ifndef AppVersion
-  #define AppVersion "0.30.0"
+  #define AppVersion "0.31.0"
 #endif
 #ifndef RepoUrl
   #define RepoUrl "https://github.com/mirror-mind-ai/mirror.git"

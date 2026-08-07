@@ -11,8 +11,31 @@ $ErrorActionPreference = 'Stop'
 $frame = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $out = Join-Path $frame 'out\MirrorFrame-win32-x64'
 $dist = Join-Path $frame 'node_modules\electron\dist'
-if (-not (Test-Path (Join-Path $dist 'electron.exe'))) {
-    throw "Electron dist ausente em $dist - rode npm install e valide o binário."
+$electronExe = Join-Path $dist 'electron.exe'
+
+# Electron >= 42 não possui postinstall: `npm ci` instala o pacote JS, mas não
+# materializa automaticamente o binário em dist/. O package é a autoridade
+# canônica para preparar o payload, então resolve essa pré-condição em qualquer
+# ambiente (local ou CI) usando o instalador oficial da versão pinada, que baixa
+# com checksum via @electron/get. Nenhum passo especial de CI é necessário.
+if (-not (Test-Path -LiteralPath $electronExe)) {
+    $materializer = Join-Path $frame 'node_modules\electron\install.js'
+    if (-not (Test-Path -LiteralPath $materializer)) {
+        throw "Pacote Electron ausente em $materializer - rode npm ci em $frame."
+    }
+    Write-Host "Materializando binário Electron da versão pinada..." -ForegroundColor Cyan
+    Push-Location $frame
+    try {
+        & node $materializer
+        if ($LASTEXITCODE -ne 0) {
+            throw "Materialização do Electron falhou ($LASTEXITCODE)."
+        }
+    } finally {
+        Pop-Location
+    }
+}
+if (-not (Test-Path -LiteralPath $electronExe)) {
+    throw "Electron dist ausente após materialização: $electronExe"
 }
 
 Write-Host "Base Electron..." -ForegroundColor Cyan
