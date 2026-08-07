@@ -79,22 +79,25 @@ Step 'profile-matches-os-registration' {
         throw "USERPROFILE ($env:USERPROFILE) difere do perfil registrado pelo Windows ($($reg.ProfileImagePath))"
     }
 }
+# Nativos via cmd /c com redirecao no proprio cmd: uv escreve progresso em
+# stderr e, com ErrorActionPreference=Stop, 2>&1 no PowerShell viraria erro
+# terminante mesmo com exit 0 (comportamento conhecido do PS).
 Step 'memory-init-mirror-minds' {
     $env:PATH = "$UvDir;$env:PATH"
     $env:UV_PROJECT_ENVIRONMENT = Join-Path $env:USERPROFILE '.mirror-venv'
     Set-Location $RepoRoot
-    & uv run python -m memory init smokeuser 2>&1 | Out-Null
+    cmd /c "uv run python -m memory init smokeuser > nul 2>&1"
     if ($LASTEXITCODE -ne 0) { throw "memory init falhou ($LASTEXITCODE)" }
     $home_ = Join-Path $env:USERPROFILE '.mirror-minds\smokeuser'
     if (-not (Test-Path $home_)) { throw ".mirror-minds nao criado sob o perfil acentuado" }
 }
 Step 'memory-seed' {
     $env:MIRROR_USER = 'smokeuser'
-    & uv run python -m memory seed 2>&1 | Out-Null
+    cmd /c "uv run python -m memory seed > nul 2>&1"
     # seed sai != 0 com o warning conhecido; o criterio aqui e o estado gravado (abaixo)
 }
 Step 'mirror-state-write-read' {
-    $out = (& uv run python -m memory identity list 2>&1 | Out-String)
+    $out = (cmd /c "uv run python -m memory identity list 2>nul" | Out-String)
     if ($LASTEXITCODE -ne 0) { throw "identity list falhou ($LASTEXITCODE)" }
     if ($out -notmatch 'ego') { throw 'estado do Mirror nao legivel (identity list sem ego)' }
 }
