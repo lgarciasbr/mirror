@@ -69,6 +69,16 @@ Step 'profile-is-non-ascii' {
 Step 'profile-is-not-the-runner-profile' {
     if ($env:USERPROFILE -eq $RunnerProfile) { throw 'worker esta usando o perfil original do runner' }
 }
+Step 'profile-matches-os-registration' {
+    # O USERPROFILE do ambiente tem de ser o perfil que o WINDOWS registrou
+    # para o SID deste processo (ProfileList) - prova que o perfil e real e
+    # carregado, nao uma variavel sobrescrita.
+    $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $reg = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\$sid" -ErrorAction Stop
+    if ($env:USERPROFILE -ne $reg.ProfileImagePath) {
+        throw "USERPROFILE ($env:USERPROFILE) difere do perfil registrado pelo Windows ($($reg.ProfileImagePath))"
+    }
+}
 Step 'memory-init-mirror-minds' {
     $env:PATH = "$UvDir;$env:PATH"
     $env:UV_PROJECT_ENVIRONMENT = Join-Path $env:USERPROFILE '.mirror-venv'
@@ -117,7 +127,7 @@ Write-Host "[worker] concluido sob perfil: $($env:USERPROFILE)"
     $proc = Start-Process -FilePath 'powershell.exe' `
         -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $workerPath,
             $RepoRoot, $FramePayload, $runnerProfile, $uvDir, $statusFile) `
-        -Credential $cred -LoadUserProfile -PassThru -Wait -WorkingDirectory $workDir `
+        -Credential $cred -LoadUserProfile -UseNewEnvironment -PassThru -Wait -WorkingDirectory $workDir `
         -RedirectStandardOutput $outLog -RedirectStandardError $errLog
 
     Get-Content $outLog -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ }
@@ -127,8 +137,9 @@ Write-Host "[worker] concluido sob perfil: $($env:USERPROFILE)"
     if (-not (Test-Path $statusFile)) { throw 'worker nao gravou o arquivo de status' }
     $status = Get-Content $statusFile -Raw | ConvertFrom-Json
     if ($status.profile -notmatch '[^\x00-\x7F]') { throw "status reporta perfil ASCII: $($status.profile)" }
-    $required = @('profile-is-non-ascii','profile-is-not-the-runner-profile','memory-init-mirror-minds',
-                  'memory-seed','mirror-state-write-read','pi-agent-dir-resolution','frame-conpty-selftest')
+    $required = @('profile-is-non-ascii','profile-is-not-the-runner-profile','profile-matches-os-registration',
+                  'memory-init-mirror-minds','memory-seed','mirror-state-write-read',
+                  'pi-agent-dir-resolution','frame-conpty-selftest')
     foreach ($step in $required) {
         $prop = $status.steps.PSObject.Properties[$step]
         if (-not $prop -or $prop.Value -ne 'ok') { throw "etapa obrigatoria ausente/falha: $step" }
