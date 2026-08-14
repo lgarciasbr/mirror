@@ -119,6 +119,9 @@ Two aggravating details from this occurrence:
   was reporting phantom writes. The defect masqueraded as a CR003 regression for the
   remainder of the session. See CR009.
 
+2026-08-14 — Re-verified against `origin/main` @ `688271f`: no commit since 12 Aug touches
+`src/memory/cli/build.py` or `src/memory/builder/`; journey resolution is unchanged. Still valid.
+
 ## Outcome
 
 Pending.

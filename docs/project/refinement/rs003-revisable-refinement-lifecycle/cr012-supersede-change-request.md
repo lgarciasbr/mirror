@@ -81,6 +81,9 @@ decision was reversed under the constraint that no other verb was reachable.
 
 Referenced records: `kia-desktop` CR087 (`c55a8104`), CR079 (`fe210d5c`), commit `3360853`.
 
+2026-08-14 — Re-verified against `origin/main` @ `688271f`: no supersede verb exists
+anywhere in `src/memory/`. Still valid.
+
 ## Outcome
 
 Pending.

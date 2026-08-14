@@ -127,6 +127,9 @@ it was written.
 Guard line numbers and the `_require_confirmed_cr` body above were re-verified against
 `src/memory/builder/workbench.py` at transcription time and still hold.
 
+2026-08-14 — Re-verified against `origin/main` @ `688271f`: no resume, unpark, or reopen
+verb exists for Change Requests in `src/memory/`. Still valid.
+
 ## Outcome
 
 Pending.

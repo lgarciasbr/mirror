@@ -66,6 +66,10 @@ Cost of the ambiguity in that session: a full working session operated on the be
 that Ariad reported phantom artifacts, and the belief was recorded three separate
 times in Navigator-facing summaries before the filesystem sweep disproved it.
 
+2026-08-14 — Re-verified against `origin/main` @ `688271f`: the `ARTIFACTS_MATERIALIZED`
+surface still reports bare project-relative paths; no journey/project/root line exists in
+the surface code. Still valid.
+
 ## Outcome
 
 Pending.

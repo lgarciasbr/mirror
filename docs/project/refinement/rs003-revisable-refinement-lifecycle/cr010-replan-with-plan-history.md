@@ -181,6 +181,9 @@ Builder skill.
 Guard line numbers and the `outcome_notes` write sites above were re-verified against
 `src/memory/builder/workbench.py` at transcription time and still hold.
 
+2026-08-14 — Re-verified against `origin/main` @ `688271f`: no replan verb exists anywhere
+in `src/memory/`. Still valid.
+
 ## Outcome
 
 Pending.

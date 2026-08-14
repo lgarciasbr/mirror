@@ -76,6 +76,9 @@ wrong tool, since it erases the analysis. The narrowing survived only in the `pl
 Both instances arose from dogfooding the Workbench on the `kia-backend` journey, in the same
 session that produced [CR011](cr011-resume-stranded-change-request.md).
 
+2026-08-14 — Re-verified against `origin/main` @ `688271f`: no amend verb exists anywhere
+in `src/memory/`. Still valid.
+
 ## Outcome
 
 Pending.
