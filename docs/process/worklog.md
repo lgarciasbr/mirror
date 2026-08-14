@@ -12,6 +12,32 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-13 — Recursive journey hierarchy and moving-target TS contract (CV15.DS3)
+
+Extended the existing organizational `parent_journey` relation from one level to
+arbitrary depth without changing the schema or introducing inherited context.
+Parent writes now walk the complete ancestor chain, reject direct/indirect cycles
+and malformed cyclic ancestry, and preserve identity plus `project_path` when a
+subtree moves. Journey removal is deliberately conservative and transactional:
+parents with children and leaves with any associated records are refused; only
+empty leaves can be removed, with no cascade or public removal UI.
+
+CLI, Workspace navigation, Current Scene, All Journeys, and journey selectors now
+render recursively. Focused Scene exposes complete lineage and immediate siblings
+while movement signals remain exact-journey data. Navigator homologation through
+normal Mirror conversation created a third-level journey under
+`mirror-mind-development → builder-mode-evolution`; it exposed Markdown treating
+deep leading-space indentation as a code block, so textual trees now use
+column-zero `│` connectors with regression coverage.
+
+The delivery also superseded CV22's strict Python feature freeze. Python may keep
+evolving while it remains authority for an unported command; each change creates
+explicit TS parity scope, and authority transfers command by command. Recursive
+journey reads are assigned to CV22.E2.S5 and writes/removal to CV22.E4. Validation:
+2,424 unit/integration tests, focused mypy, Ruff, formatting, JavaScript syntax,
+docs/link/heading checks, isolated CLI/web smoke, browser inspection, and
+Navigator homologation.
+
 ### 2026-07-23 — Ariad Expand path-divergence fix (CR048 second occurrence, CV22.DS7)
 
 Fixed a recurring defect class: Ariad Expand *derived* a Delivery Story's doc

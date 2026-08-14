@@ -131,12 +131,13 @@ write capability lands, eventually writing — the **same** `memory.db` file,
 proven at read parity over real data
 ([CV22.E1](../project/roadmap/cv22-typescript-core-port/cv22-e1-hybrid-search-parity-spike/index.md):
 480 memories, 1536-dim embeddings, hybrid-ranker parity within a margin far
-past the near-tie risk). New feature work lands in TS; the Python core is
-frozen to maintenance at the
-[CV21.E2.S2](../project/roadmap/cv21-runtime-expansion-ii/cv21-e2-mirror-plugin-mcp-foundation/cv21-e2-s2-mirror-mcp-server/index.md)
-baseline. Schema, migrations, and the connection-pragma contract have **one
-owner** — see [§6](#6-data--persistence). The database is not an
-implementation detail of one core; it is the contract between both.
+past the near-tie risk). Authority transfers command by command. Until a
+command is strangled, Python remains its product authority and may evolve;
+each behavior change creates explicit TS parity scope. Once TS owns a command,
+new behavior for that command lands in TS and Python becomes compatibility-only.
+Schema, migrations, and the connection-pragma contract have **one owner** — see
+[§6](#6-data--persistence). The database is not an implementation detail of one
+core; it is the contract between both.
 
 **Never chain on a freshly constructed `MemoryClient`.** `get_connection()`
 opens a new connection per call, and `MemoryClient.__del__` closes it (the

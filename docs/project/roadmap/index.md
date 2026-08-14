@@ -110,9 +110,10 @@ surface once (plugin + MCP) and propagated it across runtimes, CV22 unifies the
 TypeScript. The motivation is convergence — npm distribution, one language across
 core and the already-TypeScript runtimes, a wider contributor pool, and MCP/plugin
 alignment. The approach is a **database-seam strangler**, never a big-bang
-rewrite: a TS front door over a shared `memory.db`, with the Python core
-dissolving one observable command at a time, governed by a rule that new feature
-work lands in TS (Python froze to maintenance-only at the CV21.E2.S2 baseline).
+rewrite: a TS front door over a shared `memory.db`, with authority transferring
+one observable command at a time. Python may keep evolving while it remains the
+runtime authority for an unported command; each change becomes explicit TS parity
+scope instead of freezing product work for the duration of the migration.
 The first epic, CV22.E1, validated the riskiest assumption — hybrid-ranker parity
 between TS and Python over the same SQLite file, proven on 480 real memories with
 1536-dim embeddings and a ~1,700× margin over the near-tie risk. The strategy is
@@ -193,11 +194,12 @@ the [CV8 index](cv8-runtime-expansion/index.md).
 
 ## CV15 — Cognitive Location
 
-Done. CV15 turns hierarchical journeys into a cognitive-location surface. It
-shipped in two releases: v0.20.0 added one-level journey hierarchy and
-hierarchical journey rendering across web and textual surfaces; v0.21.0 added
-Current Scene as the Workspace home with grounded persisted orientation over a
-bounded read model. See the [CV15 index](cv15-cognitive-location/index.md).
+Done. CV15 turned hierarchical journeys into a cognitive-location surface
+through v0.20.0's one-level hierarchy and v0.21.0's Current Scene. DS3 completed
+the structural evolution to arbitrary-depth organizational trees with recursive
+web/text rendering, complete lineage, cycle prevention, stable ids and paths,
+and no inherited context. Its release boundary remains to be packaged. See the
+[CV15 index](cv15-cognitive-location/index.md).
 
 ## Radar
 

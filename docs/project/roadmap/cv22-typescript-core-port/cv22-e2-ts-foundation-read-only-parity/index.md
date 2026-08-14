@@ -55,7 +55,7 @@ Recorded in [Decisions — CV22 TypeScript core scaffolding](../../../decisions.
 | CV22.E2.S2 | Golden-Corpus Contract & Frozen-`now` Harness | The language-agnostic oracle mechanism: a Python generator drives the real ranker with frozen `now` + frozen embeddings into committed synthetic goldens; TS verifier + BLOB/embedding decode consume them | ⚪ Provisional |
 | CV22.E2.S3 | `search` Command Parity | The hybrid ranker, promoted from the spike into a tested TS module, reaches ordered parity on synthetic goldens (CI) and a real-DB copy (manual) | ⚪ Provisional |
 | CV22.E2.S4 | `detect-persona` Parity | TS `detect-persona` reproduces the Python routing score/threshold decision on the golden corpus | ⚪ Provisional |
-| CV22.E2.S5 | Journeys & Memory Listing Parity | TS read of journeys and memory listing reproduces Python's ordered/behavioral output on the golden corpus | ⚪ Provisional |
+| CV22.E2.S5 | Journeys & Memory Listing Parity | TS reads reproduce Python's current ordered/behavioral output, including recursive journey depth, lineage, unknown-parent handling, and bounded cyclic-metadata behavior | ⚪ Provisional |
 
 Only **S1 is fully specified** below. S2–S5 are a provisional decomposition of the
 remaining E2 done condition, risk-ordered (contract before the commands that
@@ -88,7 +88,9 @@ breakdown may change as S1 lands.
 - No schema or semantic change; FTS5/tokenizer behavior is inherited from the
   shared file.
 - No npm build/publish pipeline or package rename (CV22.E6).
-- No new Python features — Python is maintenance-only from the CV21.E2.S2 baseline.
+- No product redesign inside parity stories. Python may evolve while it remains
+  authoritative for an unported command; E2 absorbs the current observable
+  contract before claiming that command as ported.
 
 ---
 

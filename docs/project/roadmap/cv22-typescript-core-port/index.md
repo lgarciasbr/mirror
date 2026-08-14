@@ -24,12 +24,14 @@ validated the approach.
 
 The spine, in one breath: a **TS front door over a shared database**, with the
 Python core dissolving one observable **command** at a time, governed by a rule
-that **new feature work lands in TS** (Python freezes to maintenance-only as of
-the [last Python baseline commit](../../../process/worklog.md), CV21.E2.S2). The
-**database is the seam** — two cores, one `memory.db`, one schema and FTS5 config,
-no in-process language bridge. The hard part was never the language; it is the
-**convergence discipline** that keeps two cores from both growing while one is
-supposed to be dying.
+that transfers authority to TS one observable command at a time. Until a command
+is strangled, Python remains its product authority and may continue evolving;
+that evolution creates explicit parity obligations for the TS port rather than
+freezing product work for the duration of the migration. The **database is the
+seam** — two cores, one `memory.db`, one schema and FTS5 config, no in-process
+language bridge. The hard part was never the language; it is the **convergence
+discipline** that makes a moving target visible and transfers ownership without
+creating two permanent implementations.
 
 ---
 
@@ -76,7 +78,7 @@ per row).
   observable as `command + args → stdout`. Progress is a visible burn-down:
   *commands-on-TS / total*. Done when the Python core has zero commands and is
   deleted.
-- **Front door — Pi.** The first TS surface wraps the frozen Python engine and is
+- **Front door — Pi.** The first TS surface wraps the Python engine and is
   strangled command-by-command behind it, dogfooded daily in the runtime both
   authors use.
 - **Parity oracle — the Python test suite.** Converted into a language-agnostic
@@ -94,7 +96,7 @@ per row).
 |------|------|----------------|--------|
 | [CV22.E1](cv22-e1-hybrid-search-parity-spike/index.md) | Hybrid-Search Parity Spike | A TS reimplementation of the hybrid ranker, reading the same SQLite file, reproduces Python's ordered results on synthetic data and on a real-DB snapshot; near-tie risk quantified | ✅ Done |
 | [CV22.E2](cv22-e2-ts-foundation-read-only-parity/index.md) | TS Foundation & Read-Only Command Parity | Stand up the TS core (`node:sqlite`, BLOB/embedding read, frozen-`now` golden contract); reach ordered/behavioral parity for read-only deterministic commands (`search`, `detect-persona`, journeys, memory listing) on real-DB copies | 🟢 In Progress · S1 done |
-| CV22.E3 | Pi TS Front Door | A TS front door on Pi that wraps the frozen Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | 🟡 Planned |
+| CV22.E3 | Pi TS Front Door | A TS front door on Pi that wraps the current Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | 🟡 Planned |
 | CV22.E4 | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible | 🟡 Planned |
 | CV22.E5 | External-API Commands | Port extraction (Gemini), embeddings (OpenAI), and consult; record/replay for non-determinism; live embedding-determinism contract; the end-to-end fresh-query path | 🟡 Planned |
 | CV22.E6 | Convergence & Python Retirement | TS MCP server; re-home unfinished CV20 Ariad / CV21 MCP feature work to TS; burn down to a deletable Python core; reconsider the `memory → mirror` package rename; npm distribution | 🟡 Planned |
@@ -105,11 +107,14 @@ per row).
 
 - **No big-bang rewrite.** The Python core is never replaced wholesale; it
   dissolves command by command behind a stable contract.
-- **No new Python features.** Python is maintenance-only from the last baseline
-  forward; new feature work lands in TS.
-- **No behavior change.** This is parity, not improvement. The ranker, extraction,
-  and memory semantics are reproduced, not redesigned. Improvements are separate,
-  later work.
+- **No untracked dual evolution.** Python may evolve while it remains the runtime
+  authority for an unported command, but each behavior change creates explicit
+  TS parity scope. Once a command is strangled, new behavior for that command
+  lands in TS and Python becomes compatibility-only for it.
+- **No behavior redesign inside port stories.** Port work reproduces the current
+  Python authority rather than improving it opportunistically. Product stories
+  may continue changing Python before authority transfers; the corresponding TS
+  port must absorb that accumulated observable contract.
 - **No schema or semantic change.** Existing `memory.db` must keep working;
   FTS5/tokenizer behavior is inherited from the shared file, not reimplemented.
 - **No runtime disruption.** The runtimes must not notice which language answers a
@@ -132,8 +137,9 @@ Risk-first, mirroring the decision spine:
    core deleted, npm distribution.
 
 Part-time, no deadline — a background burn. The transition state (TS front door
-over a frozen Python engine) is durable and must stay comfortable to live in; no
-throwaway intermediate states.
+over a still-evolving Python product) is durable and must stay comfortable to
+live in; no throwaway intermediate states. Capability-level parity obligations
+make migration drift explicit rather than blocking product evolution.
 
 ---
 

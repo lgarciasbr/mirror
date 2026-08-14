@@ -107,6 +107,14 @@ activation condition.
 | `journey` | Journey identity — what it is, its current stage, why it matters. | `identity` rows with `layer='journey'` |
 | `journey_path` | Living status document for a journey. Updated as things evolve. | `identity` rows with `layer='journey_path'` |
 
+Journeys may name another journey through `metadata.parent_journey`, forming an
+arbitrary-depth organizational tree. This relationship changes presentation and
+lineage only: context, documents, memories, conversations, tasks, status,
+routing, Builder state, and search remain scoped to the exact journey id.
+`project_path` is independent of tree position; moving a journey never moves or
+infers filesystem content. Parent assignment rejects cycles, and removing a
+journey is allowed only for an empty leaf with no associated records.
+
 **User-home YAML → database flow:**
 
 1. `memory init your-name` copies templates into `~/.mirror-minds/your-name/identity/`

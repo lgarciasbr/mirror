@@ -11,6 +11,47 @@ resolved.
 
 ## Completed Decisions
 
+### TypeScript strangler tracks a moving Python product instead of freezing it
+
+**Date:** 2026-08-13
+**Reference:** [CV15.DS3 Recursive Journey Hierarchy](roadmap/cv15-cognitive-location/cv15-ds3-recursive-journey-hierarchy/index.md), [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md)
+**Participants:** Alisson Vale
+
+The original strangler policy froze the Python core to maintenance-only and
+required all new features to land in TypeScript. That policy reduced migration
+drift, but the migration is a long-running background effort and the TS core has
+not yet reached the journey domain. In practice, the freeze made product
+evolution wait months for migration sequencing. A migration strategy that
+protects convergence by stopping the product is not operationally sustainable.
+
+Decided:
+
+1. **Python remains the product authority until each command is strangled.** It
+   may receive product features while it is still the implementation serving
+   that capability.
+2. **The TypeScript target is explicitly moving.** New or changed Python
+   behavior creates a named TS parity obligation in the owning CV22 story; it
+   does not require simultaneous dual implementation.
+3. **Observable contracts contain drift.** Before a command is claimed as
+   ported, its goldens and parity checks must include all behavior accumulated in
+   Python up to that point.
+4. **Schema discipline remains strict.** The shared database is still the seam.
+   Schema and migration changes remain cross-core events requiring compatibility
+   analysis and parity evidence; avoiding unnecessary schema changes is still
+   preferred.
+5. **Authority transfers command by command.** Once a command is strangled and
+   TS becomes its runtime authority, new behavior for that command lands in TS.
+   Python then becomes compatibility-only for that command rather than a second
+   evolving implementation.
+6. **Parity debt must be visible, not ambient.** CV15.DS3 records recursive
+   journey read parity under CV22.E2.S5 and journey write/removal parity under
+   CV22.E4.
+
+This supersedes only the strict "no new Python features" clause of the 2026-06-23
+strangler decision. The database seam, risk-first sequencing, golden oracle,
+copy-based write validation, and command-by-command retirement strategy remain
+unchanged.
+
 ### Ariad Expand resolves story packages by heading, never by path derivation
 
 **Date:** 2026-07-23
