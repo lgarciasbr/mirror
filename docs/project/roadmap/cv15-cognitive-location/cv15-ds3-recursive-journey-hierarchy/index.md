@@ -3,7 +3,7 @@
 # CV15.DS3 — Recursive Journey Hierarchy
 
 **Status:** ✅ Done
-**Source exploration:** [Árvore profunda de jornadas sem herança](../../../explorations/arvore-profunda-de-jornadas-sem-heranca/index.md)
+**Source exploration:** Explorer Story `6126b3c0` — Árvore profunda de jornadas sem herança (local handoff)
 
 ---
 
@@ -80,5 +80,5 @@ cycles, and preserves every journey's independent identity and filesystem path.
 - [Validation](validation.md)
 - [Review](review.md)
 - [Done](done.md)
-- [Explorer handoff](../../../explorations/arvore-profunda-de-jornadas-sem-heranca/index.md)
+- Explorer Story `6126b3c0` local handoff
 - [CV15.DS1 Hierarchical Journey Organization](../cv15-ds1-hierarchical-journey-organization/index.md)
