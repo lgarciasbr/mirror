@@ -3,6 +3,7 @@
 # CV15.DS3 — Recursive Journey Hierarchy
 
 **Status:** ✅ Done
+**Release:** [v0.31.9](../../../../releases/v0.31.9.md)
 **Source exploration:** Explorer Story `6126b3c0` — Árvore profunda de jornadas sem herança (local handoff)
 
 ---

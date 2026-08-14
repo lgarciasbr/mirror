@@ -4,7 +4,7 @@
 
 **Status:** ✅ Done
 **Source exploration:** [ES-002 Hierarchical Journeys](../../exploration/es-002-hierarchical-journeys.md)  
-**Release intent:** v0.20.0 and v0.21.0 foundations shipped; recursive hierarchy release TBD
+**Release intent:** v0.20.0 and v0.21.0 foundations shipped; recursive hierarchy prepared for [v0.31.9](../../../releases/v0.31.9.md)
 
 ---
 
@@ -46,11 +46,11 @@ Hierarchical journeys organize the field. Scene interprets the field.
 |--------|-------|---------|--------|
 | v0.20.0 | [Hierarchical Journey Organization](cv15-ds1-hierarchical-journey-organization/index.md) | Users can set parent journeys and see journeys rendered hierarchically across web and Mirror textual surfaces | ✅ Done |
 | v0.21.0 | [Scene Workspace Home](cv15-ds2-scene-workspace-home/index.md) | Workspace opens as Current Scene, using the hierarchical journey map, movement signals, horizons, and bounded persisted orientation to return cognitive location | ✅ Done |
-| TBD | [Recursive Journey Hierarchy](cv15-ds3-recursive-journey-hierarchy/index.md) | Journeys form an arbitrary-depth organizational tree with recursive web/text rendering, full lineage, cycle prevention, and no inherited context | ✅ Done |
+| [v0.31.9](../../../releases/v0.31.9.md) | [Recursive Journey Hierarchy](cv15-ds3-recursive-journey-hierarchy/index.md) | Journeys form an arbitrary-depth organizational tree with recursive web/text rendering, full lineage, cycle prevention, and no inherited context | ✅ Done |
 
 Version numbers are release intents. The first two stories shipped separately so
-the hierarchy foundation existed before Scene synthesis depended on it. DS3 is a
-post-foundation evolution whose release boundary remains to be packaged.
+the hierarchy foundation existed before Scene synthesis depended on it. DS3 is the
+post-foundation evolution packaged by v0.31.9.
 
 ---
 

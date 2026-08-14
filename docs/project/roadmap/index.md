@@ -198,8 +198,8 @@ Done. CV15 turned hierarchical journeys into a cognitive-location surface
 through v0.20.0's one-level hierarchy and v0.21.0's Current Scene. DS3 completed
 the structural evolution to arbitrary-depth organizational trees with recursive
 web/text rendering, complete lineage, cycle prevention, stable ids and paths,
-and no inherited context. Its release boundary remains to be packaged. See the
-[CV15 index](cv15-cognitive-location/index.md).
+and no inherited context, packaged by [v0.31.9](../../releases/v0.31.9.md). See
+the [CV15 index](cv15-cognitive-location/index.md).
 
 ## Radar
 
