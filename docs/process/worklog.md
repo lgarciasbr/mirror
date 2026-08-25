@@ -12,6 +12,30 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-25 — Journey Projection Contract v1 (CV23)
+
+Implemented `mirror.journey-projections@1.0` as a Python-Core public contract for
+local consumers and installed extensions. Publication is confined to registered
+Journey roots and linearizable per Journey across processes; fresh manifest merge,
+atomic replacement, immutable receipts, rollback, and explicit divergence protect
+the last valid consumer state. Extension API `1.1` binds projection namespace and
+producer identity permanently to `extension_id`, reserving `ariad` for Core.
+
+A deterministic Ariad compiler now projects authored roadmap order, active
+Delivery state, public Explorer handoffs, canonical Refinement state, and confined
+artifact links without model or network calls. Represented lifecycle mutations
+request refresh only after durable source commit; projection failure never rolls
+source truth back. The complete CLI surface supports capability discovery,
+Operational rebuild, and inspection, with strictly isolated test-only preparation
+and extension publication routes.
+
+The unchanged consumer-owned probe passed all eight checks against synthetic
+state, including exact Operational fixture parity, last-valid preservation,
+path/namespace refusal, and atomic consistency. Acceptance-kit hashes and all 16
+self-tests remained unchanged. Packaged as
+[v0.31.10](../releases/v0.31.10.md); installed-runtime acceptance and the
+consumer-owned return record complete the release story after central promotion.
+
 ### 2026-08-13 — Recursive journey hierarchy and moving-target TS contract (CV15.DS3)
 
 Extended the existing organizational `parent_journey` relation from one level to
