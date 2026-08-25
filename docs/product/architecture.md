@@ -26,6 +26,7 @@ server; all data stays on the user's machine.
 src/memory/                  — Python package: all business logic
   cli/                       — CLI entry points (call services, no raw SQL)
   hooks/                     — Hook handlers (called by runtime lifecycle events)
+  journey_projections/       — Versioned Journey projection contracts, schemas, serialization, and publication
   intelligence/              — LLM-powered extraction, search, routing
   services/                  — Domain services (the implementation layer)
   storage/                   — Persistence components (raw SQL lives here)
@@ -88,6 +89,31 @@ Specification](specs/web-surface/index.md).
 
 The single documented exception: `RuntimeSessionService` still owns some
 transaction-boundary SQL pending a separate architecture decision.
+
+Journey projections add a filesystem read-model boundary without changing this
+import direction. CLI, Ariad lifecycle, and the public Extension API call one
+Journey projection service; contract models/schema validation, deterministic
+serialization, Operational compilation, and publication storage remain separate
+owners. Production root authority always comes from the registered Journey, not
+a caller-supplied path. The subsystem invokes no model or network service.
+
+Projection publication is linearizable per Journey. Core and extension writers,
+as well as inspection, share one cross-process Journey lock; different Journeys
+remain independent. The manifest is re-read and merged only after lock
+acquisition, preventing stale-manifest lost updates. Internal create-once
+receipts bind each snapshot ID to its canonical byte digest, while the manifest
+remains the public current-state authority. Projection replacement precedes
+manifest replacement; controlled pre-manifest failures restore the old document,
+and interrupted/unrecoverable states surface explicit divergence without
+implicit repair.
+
+Extension API `1.1` exposes this owner through a bound
+`ExtensionJourneyProjections` façade. Its namespace and producer identity come
+from `ExtensionAPI.extension_id`, never caller parameters; `ariad` remains
+Core-only. A lazy resolver reads only the registered Journey `project_path` from
+the existing registry connection, and the façade delegates all validation,
+locking, receipts, publication, rollback, and inspection to the shared service.
+The extension's raw SQLite handle grants no projection path authority.
 
 ---
 

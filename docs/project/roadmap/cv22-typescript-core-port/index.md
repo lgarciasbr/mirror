@@ -2,10 +2,15 @@
 
 # CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-**Status:** 🟢 In Progress
+**Status:** ⏸️ Paused — migration interrupted on 2026-08-19; branch and evidence preserved
 **Goal:** Port Mirror Mind's Python core (`src/memory/`) to TypeScript through a database-seam strangler — never a big-bang rewrite — so the system converges on one language across core and runtimes, distributes through npm, widens the contributor pool, and aligns with the MCP/plugin ecosystem, all without losing the accumulated correctness of the ranker, extraction, and memory pipeline.
 
 ---
+
+> **Pause notice:** CV22 is not an active delivery stream. Python is again the
+> sole product authority for new Mirror capabilities. Existing TypeScript work,
+> parity evidence, and the paused branch remain preserved for a future explicit
+> restart; no automatic dual implementation is required while the CV is paused.
 
 ## What This Is
 

@@ -53,8 +53,9 @@ principle.
    cost has one authority. ([§7](#7-the-model-in-the-loop))
 6. **Untrusted content stays untrusted.** The transcript is data to analyze,
    never instructions to follow. ([§5](#5-privacy--trust-boundaries))
-7. **The database is the single source of truth — and now two cores share
-   one file.** Schema changes are cross-core events. ([§6](#6-data--persistence))
+7. **The database is the runtime source of truth.** The TypeScript migration is
+   paused; Python is the sole product authority, and schema changes remain
+   conservative. ([§6](#6-data--persistence))
 8. **Declare your failure posture.** Fail loud in the core; fail quiet only
    where declared, and never silently.
    ([§5](#5-privacy--trust-boundaries), [§8](#8-release-confidence))
@@ -124,20 +125,14 @@ or the relevant service
 A runtime wrapper that grows a conditional beyond argument parsing is a
 design smell, not a convenience.
 
-**The database is the seam between two cores.** Mirror Mind is porting its
-Python core to TypeScript through a database-seam strangler, not a rewrite:
-the [`ts/`](../../ts/README.md) package is a TS front door reading — and, as
-write capability lands, eventually writing — the **same** `memory.db` file,
-proven at read parity over real data
-([CV22.E1](../project/roadmap/cv22-typescript-core-port/cv22-e1-hybrid-search-parity-spike/index.md):
-480 memories, 1536-dim embeddings, hybrid-ranker parity within a margin far
-past the near-tie risk). Authority transfers command by command. Until a
-command is strangled, Python remains its product authority and may evolve;
-each behavior change creates explicit TS parity scope. Once TS owns a command,
-new behavior for that command lands in TS and Python becomes compatibility-only.
-Schema, migrations, and the connection-pragma contract have **one owner** — see
-[§6](#6-data--persistence). The database is not an implementation detail of one
-core; it is the contract between both.
+**Python is the sole active product authority while CV22 is paused.** The
+[`ts/`](../../ts/README.md) package and its database-seam parity evidence remain
+preserved, including CV22.E1's real-data ranker proof, but new capabilities are
+implemented once in `src/memory/` and create no automatic TS parity obligation.
+A future restart of [CV22](../project/roadmap/cv22-typescript-core-port/index.md)
+requires explicit reconciliation against behavior accumulated during the pause.
+Schema, migrations, and the connection-pragma contract continue to have one
+owner — see [§6](#6-data--persistence).
 
 **Never chain on a freshly constructed `MemoryClient`.** `get_connection()`
 opens a new connection per call, and `MemoryClient.__del__` closes it (the
@@ -339,28 +334,19 @@ YAML edit into the database. Runtime directories hold local operational state
 copy of a fact.
 
 **Schema authority is singular.** Migrations live in one place —
-[`src/memory/db/migrations.py`](../../src/memory/db/migrations.py) — and that
-remains true as the [`ts/`](../../ts/README.md) package takes on more feature
-work. The TS core reads and writes the shared schema; it does not grow a
-second migration path. A schema change is a cross-core event: it needs parity
-evidence over the same file, in the spirit of
-[CV22.E1's](../project/roadmap/cv22-typescript-core-port/cv22-e1-hybrid-search-parity-spike/index.md)
-validation, before it ships.
+[`src/memory/db/migrations.py`](../../src/memory/db/migrations.py). CV22's paused
+TypeScript package does not create a second active migration path or a dual-write
+obligation for new work. Schema changes remain conservative and must preserve
+existing user databases; a future CV22 restart must reconcile them explicitly
+before any TS writer resumes authority.
 
-**The connection-pragma contract has one owner today, and must be replicated
-exactly when the second writer arrives.** Every connection Python opens gets
-`PRAGMA busy_timeout=30000`, `PRAGMA foreign_keys=ON`, and an opportunistic
-switch to `PRAGMA journal_mode=WAL`
-([`src/memory/db/connection.py`](../../src/memory/db/connection.py)). The TS
-core's [`ts/src/db/database.ts`](../../ts/src/db/database.ts) is read-only
-today — [CV22's](../project/roadmap/cv22-typescript-core-port/index.md)
-read-only parity foundation — so it does not yet need to set write-time
-pragmas. The principle for when that changes: replicating this
-exact contract is mandatory the moment the TS core gains write capability,
-not reinventing it. A divergent pragma contract is exactly the kind of
-silent divergence
-[TD-001](../project/roadmap/technical-debt-ledger.md#deferred-debt-requirements)
-warns about — treat it as a cross-core change from day one.
+**The connection-pragma contract has one active owner.** Every connection
+Python opens gets `PRAGMA busy_timeout=30000`, `PRAGMA foreign_keys=ON`, and an
+opportunistic switch to `PRAGMA journal_mode=WAL`
+([`src/memory/db/connection.py`](../../src/memory/db/connection.py)). The paused
+TS package must not become an independent writer. If CV22 restarts, reproducing
+this exact contract is a prerequisite to restoring any TS write authority; it is
+not permission to reinvent the connection posture.
 
 **Claimed invariants are enforced ones.** Because `foreign_keys=ON` is set
 on every connection, `FOREIGN KEY` constraints in the schema are real

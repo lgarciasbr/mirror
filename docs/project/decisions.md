@@ -11,6 +11,70 @@ resolved.
 
 ## Completed Decisions
 
+### TypeScript migration pauses and Python resumes sole product authority
+
+**Date:** 2026-08-19
+**Reference:** [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV23 Journey Projection Contract](roadmap/cv23-journey-projection-contract/index.md)
+**Participants:** Alisson Vale
+
+The database-seam strangler produced substantial parity infrastructure and
+command migrations, but the project is now intentionally interrupted before
+completion. Leaving the repository's authority rules in a mixed-engine posture
+would force every new capability to absorb an inactive migration's coordination
+cost and would make ownership ambiguous.
+
+Decided:
+
+1. **CV22 is paused, not erased.** Its branch, commits, tests, goldens, roadmap
+   artifacts, and uncommitted US5 work remain preserved for an explicit future
+   restart.
+2. **Python resumes sole product authority.** New capabilities, including the
+   Journey Projection Contract, are implemented once in `src/memory/`; no TS
+   parity obligation is created while CV22 remains paused.
+3. **The production schema remains conservative.** Pausing the migration does
+   not authorize unnecessary migrations or incompatible database changes.
+4. **Restart is explicit.** Resuming CV22 requires a new Navigator decision and
+   a reconciliation plan against all Python behavior accumulated during the
+   pause.
+
+This decision suspends the active strangler policy below without invalidating
+its historical evidence or architecture experiments.
+
+### Journey projections are a roadmap capability, not Refinement Work
+
+**Date:** 2026-08-19
+**Reference:** [CV23 Journey Projection Contract](roadmap/cv23-journey-projection-contract/index.md)
+**Participants:** Alisson Vale
+
+The consumer-owned `mirror.journey-projections@1.0` proposal introduces a new
+versioned CLI contract, filesystem publication kernel, Ariad compiler, lifecycle
+integration, Extension API capability, security boundary, and installed-runtime
+release gate. This is new product behavior rather than hardening of an existing
+Mirror surface.
+
+Decided:
+
+1. **CV23 owns delivery.** The contract is implemented as a Capability Value
+   with independently verifiable Delivery Stories, not hidden inside a
+   Refinement Story.
+2. **The acceptance kit remains consumer-owned.** Mirror does not edit it or
+   copy its probe into production code. Contract amendments return to the
+   consumer for explicit review.
+3. **Mirror depends only on the public contract.** No Nautilus implementation,
+   prompt, domain model, or repository module becomes a Mirror dependency.
+4. **Publication is linearizable per Journey.** All Core and extension
+   publishers for one Journey share inter-process exclusion. The manifest is
+   re-read under the lock and merged there, preventing stale-manifest lost
+   updates. Inspection observes a consistent manifest/document pair.
+5. **Snapshot identity is durable.** Internal immutable receipts bind each
+   snapshot ID to its canonical byte digest. Reuse for different bytes is
+   rejected; receipts also support bounded divergence diagnosis and explicit
+   recovery without becoming public mutation authority.
+6. **These mechanisms are internal v1 interpretation.** Linearizability,
+   exclusion, lost-update prevention, and immutable receipts strengthen the
+   specified public behavior; they do not alter the probe or add a Nautilus
+   dependency.
+
 ### TypeScript strangler tracks a moving Python product instead of freezing it
 
 **Date:** 2026-08-13

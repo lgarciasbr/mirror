@@ -575,3 +575,32 @@ Either `transcript_export` is expressed in terms of `kebab_slug` (e.g.
 `kebab_slug(text, max_length=50) or "conversation"`, with word-boundary
 truncation added to `kebab_slug` if still desired), or a short comment marks it
 as an intentionally distinct slugger with the reason.
+
+## D-014 — Runtime-diagnose web operation test has a fixed polling budget below observed command latency
+
+**Kind:** testing (non-hermetic timing)
+**Severity:** low
+**Status:** Carried
+**Source:** CV23.DS2 full-suite validation
+
+### Carrying reason
+
+`tests/unit/memory/web/test_server.py::test_operations_run_api_executes_runtime_diagnose_through_controlled_command`
+waits at most two seconds (40 × 50 ms) for a real controlled `runtime diagnose`
+subprocess. In the local development environment that command consistently takes
+about 3.3 seconds, so the test reports a still-running operation despite the
+subprocess completing normally shortly afterward. CV23.DS2 does not touch the
+web operation or runtime-diagnose path; widening or replacing this timing contract
+inside the projection-kernel story would hide unrelated scope.
+
+### Revisit trigger
+
+The next change to runtime-diagnose command execution, web operation polling, or
+the controlled-command test harness; or a CI failure with this exact test.
+
+### Closure condition
+
+The test becomes deterministic: inject a bounded fake command runner/clock for
+unit coverage and keep real subprocess latency in an integration test, or wait on
+an explicit completion signal with a justified timeout that does not encode a
+machine-speed assumption.

@@ -38,7 +38,8 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV19](cv19-soul-mode-integration/index.md) | Soul Mode Integration | ✅ Done |
 | [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
 | [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
-| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | 🟢 In Progress |
+| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ⏸️ Paused |
+| [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | 🟢 In Progress |
 
 ---
 
@@ -104,7 +105,7 @@ In progress. CV21 is the successor to CV8, driven by one force: the coding-agent
 
 ## CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-In progress. CV22 is the successor to CV21: where CV21 packaged Mirror's runtime
+Paused on 2026-08-19. CV22 was the successor to CV21: where CV21 packaged Mirror's runtime
 surface once (plugin + MCP) and propagated it across runtimes, CV22 unifies the
 **core language underneath** by porting the Python core (`src/memory/`) to
 TypeScript. The motivation is convergence — npm distribution, one language across
@@ -116,8 +117,19 @@ runtime authority for an unported command; each change becomes explicit TS parit
 scope instead of freezing product work for the duration of the migration.
 The first epic, CV22.E1, validated the riskiest assumption — hybrid-ranker parity
 between TS and Python over the same SQLite file, proven on 480 real memories with
-1536-dim embeddings and a ~1,700× margin over the near-tie risk. The strategy is
+1536-dim embeddings and a ~1,700× margin over the near-tie risk. The migration is
+now intentionally paused; its branch and evidence remain preserved, while Python
+is again the sole product authority for new work. The strategy and pause are
 recorded in [Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
+
+## CV23 — Journey Projection Contract
+
+In progress. CV23 implements the consumer-owned `mirror.journey-projections@1.0`
+contract as a secure, deterministic Python Core capability. It gives local
+consumers and installed extensions versioned Journey read models, publishes the
+Ariad Operational projection without granting write-back authority, and closes
+only after the unchanged external probe passes against a centrally released and
+installed Mirror runtime. See the [CV23 index](cv23-journey-projection-contract/index.md).
 
 ## CV11 — Localization
 
