@@ -2,11 +2,35 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 from memory.cli.journey_projection import cmd_journey_projection
+
+_FIXTURE_ROOT = Path(__file__).resolve().parents[3] / "fixtures/journey_projections/operational"
+
+
+def _probe_fixture(home: Path) -> Path:
+    target = home / ".journey-projection-probe/fixtures/journey"
+    target.parent.mkdir(parents=True)
+    shutil.copytree(_FIXTURE_ROOT / "journey", target)
+    return target
+
+
+def _prepare_args(home: Path, fixture: Path) -> list[str]:
+    return [
+        "probe-prepare",
+        "--fixture-root",
+        str(fixture),
+        "--active-state",
+        str(fixture / "ariad-active-work.json"),
+        "--mirror-home",
+        str(home),
+        "--format",
+        "json",
+    ]
 
 
 def test_capabilities_returns_only_implemented_operations(capsys) -> None:
@@ -19,7 +43,13 @@ def test_capabilities_returns_only_implemented_operations(capsys) -> None:
         "contractId": "mirror.journey-projections",
         "contractVersion": "1.0",
         "extensionApiVersion": "1.1",
-        "operations": ["capabilities"],
+        "operations": [
+            "capabilities",
+            "probe-prepare",
+            "rebuild-operational",
+            "inspect",
+            "probe-publish",
+        ],
     }
 
 
@@ -33,6 +63,148 @@ def test_unknown_operation_and_format_are_bounded_json(capsys) -> None:
     unsupported = json.loads(capsys.readouterr().out)
     assert unsupported["code"] == "unsupported_contract"
     assert "yaml" not in unsupported["message"]
+
+
+def test_probe_prepare_and_rebuild_match_normative_fixture(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    home = tmp_path / "isolated"
+    fixture = _probe_fixture(home)
+    monkeypatch.setenv("MEMORY_ENV", "test")
+    monkeypatch.delenv("MIRROR_PRODUCTION_HOME", raising=False)
+    monkeypatch.delenv("MIRROR_USER", raising=False)
+
+    assert cmd_journey_projection(_prepare_args(home, fixture)) == 0
+    prepared = json.loads(capsys.readouterr().out)
+    assert prepared == {
+        "status": "prepared",
+        "journeyId": "projection-probe-journey",
+    }
+    assert sorted(path.name for path in home.glob("*.db")) == ["memory_test.db"]
+
+    assert (
+        cmd_journey_projection(
+            [
+                "rebuild-operational",
+                "--journey",
+                "projection-probe-journey",
+                "--mirror-home",
+                str(home),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    rebuilt = json.loads(capsys.readouterr().out)
+    expected = json.loads((_FIXTURE_ROOT / "expected/operational.json").read_text(encoding="utf-8"))
+    assert rebuilt["document"] == expected
+
+    assert (
+        cmd_journey_projection(
+            [
+                "inspect",
+                "--journey",
+                "projection-probe-journey",
+                "--namespace",
+                "ariad",
+                "--projection",
+                "operational",
+                "--mirror-home",
+                str(home),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    inspected = json.loads(capsys.readouterr().out)
+    assert inspected["document"] == expected
+    assert inspected["manifest"]["snapshotId"] == "op-probe-0001"
+
+
+def test_probe_prepare_refuses_production_unconfined_and_symlink_inputs(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    home = tmp_path / "isolated"
+    fixture = _probe_fixture(home)
+    monkeypatch.setenv("MEMORY_ENV", "production")
+    assert cmd_journey_projection(_prepare_args(home, fixture)) != 0
+    assert not list(home.glob("*.db"))
+    capsys.readouterr()
+
+    monkeypatch.setenv("MEMORY_ENV", "test")
+    monkeypatch.setenv("MIRROR_PRODUCTION_HOME", str(home))
+    assert cmd_journey_projection(_prepare_args(home, fixture)) != 0
+    assert not list(home.glob("*.db"))
+    capsys.readouterr()
+
+    monkeypatch.setenv("MIRROR_PRODUCTION_HOME", str(tmp_path / "production"))
+    outside = tmp_path / "outside"
+    shutil.copytree(_FIXTURE_ROOT / "journey", outside)
+    assert cmd_journey_projection(_prepare_args(home, outside)) != 0
+    assert not list(home.glob("*.db"))
+    capsys.readouterr()
+
+    linked = home / ".journey-projection-probe/fixtures/linked"
+    linked.symlink_to(outside, target_is_directory=True)
+    assert cmd_journey_projection(_prepare_args(home, linked)) != 0
+    assert not list(home.glob("*.db"))
+
+
+def test_probe_publish_actor_mismatch_is_payload_free_and_preserves_files(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    home = tmp_path / "isolated"
+    fixture = _probe_fixture(home)
+    monkeypatch.setenv("MEMORY_ENV", "test")
+    monkeypatch.delenv("MIRROR_PRODUCTION_HOME", raising=False)
+    monkeypatch.delenv("MIRROR_USER", raising=False)
+    assert cmd_journey_projection(_prepare_args(home, fixture)) == 0
+    capsys.readouterr()
+    before = sorted(
+        (path.relative_to(home).as_posix(), path.read_bytes())
+        for path in home.rglob("*")
+        if path.is_file()
+    )
+    secret = "PRIVATE-DOCUMENT-PAYLOAD"
+    document = tmp_path / "candidate.json"
+    schema = tmp_path / "schema.json"
+    document.write_text(json.dumps({"secret": secret}), encoding="utf-8")
+    schema.write_text(json.dumps({"type": "object"}), encoding="utf-8")
+
+    result = cmd_journey_projection(
+        [
+            "probe-publish",
+            "--journey",
+            "projection-probe-journey",
+            "--actor-namespace",
+            "foreign",
+            "--target-namespace",
+            "projection-probe",
+            "--projection",
+            "tactical",
+            "--document",
+            str(document),
+            "--schema",
+            str(schema),
+            "--mirror-home",
+            str(home),
+            "--format",
+            "json",
+        ]
+    )
+
+    assert result != 0
+    output = capsys.readouterr().out
+    assert "namespace_violation" in output
+    assert secret not in output
+    after = sorted(
+        (path.relative_to(home).as_posix(), path.read_bytes())
+        for path in home.rglob("*")
+        if path.is_file()
+    )
+    assert after == before
 
 
 def test_front_door_capabilities_uses_no_database_and_emits_one_json_document(

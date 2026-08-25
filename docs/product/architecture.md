@@ -137,6 +137,15 @@ inspection, or publication failure becomes bounded diagnostics and is never
 re-raised into the already-successful source mutation. Read-only operations and
 excluded Explorer evidence do not request refresh.
 
+The Journey Projection CLI is a transport over these owners. Production rebuild
+and inspection accept a Journey ID plus selected Mirror home, then resolve root
+authority from that home's registry. Consumer-probe preparation is a separate
+test-only adapter: it requires `MEMORY_ENV=test`, proves a non-production home,
+confines fixture and active state below `.journey-projection-probe`, verifies the
+isolated SQLite main path, and grants extension publication only through the
+fixed `projection-probe` identity. Fixed compiler identities live in that
+isolated control record and cannot be selected by production callers.
+
 ---
 
 ## 4. Identity Model

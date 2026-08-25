@@ -2,7 +2,7 @@
 
 # CV23 — Journey Projection Contract
 
-**Status:** 🟢 In Progress — DS1–DS5 done; DS6 next
+**Status:** 🟢 In Progress — DS1–DS6 done; DS7 next
 **Goal:** Implement `mirror.journey-projections@1.0` in the Python Core so local consumers and installed extensions can publish and inspect secure, deterministic, versioned Journey read models, while Ariad publishes an Operational projection without surrendering mutation authority.
 
 ---
@@ -44,7 +44,7 @@ the gate.
 | [CV23.DS3](cv23-ds3-extension-projection-api/index.md) | Extension Projection API | `ExtensionAPI.journey_projections` publishes and inspects only the bound extension namespace, with optional extension-owned schema validation and reserved-Ariad protection | ✅ Done |
 | [CV23.DS4](cv23-ds4-ariad-operational-compiler/index.md) | Ariad Operational Compiler | Durable roadmap, active work, Exploratory Stories, Refinement Stories, and artifact references compile into the normative Operational schema deterministically | ✅ Done |
 | [CV23.DS5](cv23-ds5-ariad-lifecycle-refresh/index.md) | Ariad Lifecycle Refresh | Delivery, Explorer, and Refinement mutations request a post-commit refresh without rolling back durable truth when projection publication fails | ✅ Done |
-| CV23.DS6 | Consumer Probe and Security Acceptance | Test-only preparation, failure injection, security tests, deterministic fixture parity, and the unchanged black-box probe prove v1 behavior without production data | 🟡 Planned |
+| [CV23.DS6](cv23-ds6-consumer-probe-and-security-acceptance/index.md) | Consumer Probe and Security Acceptance | Test-only preparation, failure injection, security tests, deterministic fixture parity, and the unchanged black-box probe prove v1 behavior without production data | ✅ Done |
 | CV23.DS7 | Release and Consumer Return | A versioned central release, green CI, safe installed-runtime transition, unchanged installed probe, and complete `mirror-return.json` open the consumer gate | 🟡 Planned |
 
 ## Architectural Boundary

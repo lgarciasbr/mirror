@@ -65,7 +65,13 @@ def test_public_contract_versions_and_incremental_operation_registry() -> None:
     assert CONTRACT_ID == "mirror.journey-projections"
     assert CONTRACT_VERSION == "1.0"
     assert EXTENSION_API_VERSION == "1.1"
-    assert IMPLEMENTED_OPERATIONS == ("capabilities",)
+    assert IMPLEMENTED_OPERATIONS == (
+        "capabilities",
+        "probe-prepare",
+        "rebuild-operational",
+        "inspect",
+        "probe-publish",
+    )
 
 
 @pytest.mark.parametrize(

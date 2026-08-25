@@ -62,8 +62,10 @@ Commands:
                        Usage: python -m memory journal [--journey SLUG] [--mirror-home PATH] <text>
   journey              Inspect or update a journey
                        Usage: python -m memory journey [status [SLUG]] | update <slug> <content> | set-path <slug> <path> [--mirror-home PATH]
-  journey-projection   Discover the versioned Journey Projection contract
+  journey-projection   Publish and inspect versioned Journey read models
                        Usage: python -m memory journey-projection capabilities [--mirror-home PATH] --format json
+                              python -m memory journey-projection rebuild-operational --journey ID --mirror-home PATH --format json
+                              python -m memory journey-projection inspect --journey ID --namespace ID --projection ID --mirror-home PATH --format json
   build                Builder Mode DB context loader
                        Usage: python -m memory build load <slug>
   explore              Explorer Mode context loader

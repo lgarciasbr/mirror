@@ -44,7 +44,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
 | `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
 | `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
-| `python -m memory journey-projection` | — | — | Discovers the installed Journey Projection contract; publication operations land incrementally under CV23 | `capabilities [--mirror-home PATH] --format json` |
+| `python -m memory journey-projection` | — | — | Discovers, rebuilds, and inspects Journey projections; isolated test mode also supports the immutable consumer probe | `capabilities`, `rebuild-operational --journey ID`, `inspect --journey ID --namespace ID --projection ID`, test-only `probe-prepare` and `probe-publish`; all accept `--mirror-home PATH --format json` |
 | `python -m memory web` | — | — | Runs the local Mirror Web Console — Identity and Workspace perspectives, conversation intelligence, bulk conversation maintenance (assign/delete), and allowlisted operation runs | `[--host 127.0.0.1] [--port 8765]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
@@ -56,12 +56,14 @@ uv run python -m memory journey-projection capabilities \
 ```
 
 Capability discovery is database-free and returns the installed
-`mirror.journey-projections` contract version, the independent Extension API
-version, and only operations actually implemented by that runtime. CV23 adds
-publication, inspection, and test-only probe routes incrementally; discovery
-must not advertise an operation before its implementation exists. All output is
-structured JSON. Unknown operations or formats return a nonzero bounded JSON
-error without echoing private paths or payload content.
+`mirror.journey-projections` contract version, Extension API version `1.1`, and
+all five v1 operations. Production consumers can run `rebuild-operational` and
+`inspect`; both resolve the Journey root from the selected home's registry. The
+`probe-prepare` and `probe-publish` routes are unavailable unless
+`MEMORY_ENV=test` and an isolated non-production home is proven. All output is
+structured JSON. Unknown operations, formats, unsafe paths, invalid schemas, and
+authority violations return nonzero bounded JSON without echoing private paths
+or payload content.
 
 Extension API `1.1` adds `api.journey_projections.publish(...)` and
 `api.journey_projections.inspect(...)`. Both are permanently bound to the
@@ -75,8 +77,9 @@ handoff fields, canonical Refinement indexes, and allowlisted artifact paths
 into `ariad:operational`, then publish through the shared linearizable kernel.
 The compiler accepts no production root from consumers, invokes no model or
 network, copies no private narrative bodies, and fails closed on unsafe or
-ambiguous durable references. Public CLI rebuild and inspection routes arrive
-in later CV23 stories and are not advertised prematurely.
+ambiguous durable references. `rebuild-operational` returns the published
+document and identity; `inspect` returns the validated document plus its current
+manifest entry and never repairs divergence implicitly.
 
 Represented Ariad mutations now request Operational refresh only after durable
 source commit. Equal projected `sourceRevision` values are treated as unchanged;

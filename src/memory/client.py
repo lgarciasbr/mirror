@@ -85,11 +85,12 @@ class MemoryClient:
             project_path = self.journeys.get_project_path(journey)
             if not project_path:
                 return None
-            return exploratory_stories_from_store(
+            stories = exploratory_stories_from_store(
                 self.store,
                 journey,
                 Path(project_path),
             )
+            return stories or None
 
         self.projection_refresh = ProjectionRefreshCoordinator(
             operational_projection,
