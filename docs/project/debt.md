@@ -31,6 +31,8 @@ Dropped   no longer relevant or replaced by another item
 | D-011 | Extraction sniffs the user's first name from identity prose with a brittle bilingual regex | design | low | Carried | AI Engineering Audit AI-21 (team review) | Replace with a structured `user/identity` name field, or the next time the identity template wording or `_extract_and_persist` is touched |
 | D-012 | Roadmap folder derivation does not sanitize the candidate-table *code* cell for path separators | security / design | low | Paid | mirror slugify consolidation (security-engineer review); closed by the Ariad Expand path-divergence fix | Closed — see entry |
 | D-013 | `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug` | design | low | Carried | mirror slugify consolidation | The next time transcript-export slug behavior is touched, or a third kebab-slug caller appears |
+| D-014 | Runtime-diagnose web test polling budget is below observed command latency | testing | low | Carried | CV23.DS2 validation | Runtime-diagnose execution, web polling, or that test harness changes, or CI reproduces the failure |
+| D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Carried | CV23.DS7 release installation | Before the next production update or any migration change; reconcile rows 017–019 from a verified backup through an explicit database-drift story |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -575,6 +577,42 @@ Either `transcript_export` is expressed in terms of `kebab_slug` (e.g.
 `kebab_slug(text, max_length=50) or "conversation"`, with word-boundary
 truncation added to `kebab_slug` if still desired), or a short comment marks it
 as an intentionally distinct slugger with the reason.
+
+## D-015 — Production updater blocks on retired experimental migration rows
+
+**Kind:** operations / data
+**Severity:** medium
+**Status:** Carried
+**Source:** CV23.DS7 release installation
+
+### Carrying reason
+
+The production database records migrations
+`017_project_refinement_projection`, `018_refinement_intent_recovery_indexes`,
+and `019_refinement_coherence_confirmations` from the abandoned Refinement
+Workbench experiment, while the released Core intentionally ends at migration
+016. Runtime diagnosis correctly refuses to classify or erase unknown rows. The
+v0.31.10 installation preserved a verified backup and the divergent production
+branch, then installed the exact stable tag without mutating database history.
+Deleting migration evidence during a release would be riskier than carrying the
+drift explicitly.
+
+### Impact
+
+`runtime status` reports attention needed and `runtime update` reports failure
+even when the installed checkout already matches stable. Version and capability
+discovery remain usable, and CV23 itself requires no migration, but the safe
+updater cannot provide a clean success signal until the retired experimental rows
+are reconciled.
+
+### Revisit trigger
+
+Before the next production update or any new Core migration. Use the verified
+pre-v0.31.10 backup, inspect the actual schema objects owned by rows 017–019, and
+remove or archive only through an explicit database-drift plan with restoration
+evidence.
+
+---
 
 ## D-014 — Runtime-diagnose web operation test has a fixed polling budget below observed command latency
 

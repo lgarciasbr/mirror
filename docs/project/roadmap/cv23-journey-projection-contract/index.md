@@ -2,7 +2,7 @@
 
 # CV23 — Journey Projection Contract
 
-**Status:** 🟢 In Progress — DS1–DS6 done; DS7 release active
+**Status:** ✅ Done — released in v0.31.10; installed consumer gate open
 **Goal:** Implement `mirror.journey-projections@1.0` in the Python Core so local consumers and installed extensions can publish and inspect secure, deterministic, versioned Journey read models, while Ariad publishes an Operational projection without surrendering mutation authority.
 
 ---
@@ -29,8 +29,9 @@ the gate.
   `/Users/alissonvale/.mirror-journeys/vida-criativa/nautilus/harness/contracts/mirror-journey-projections/v1`
 - Probe and schema integrity were verified before planning: all recorded SHA-256
   hashes passed and all 16 acceptance-kit self-tests passed.
-- The current released Mirror correctly reports `contract_unavailable`; the gate
-  remains blocked until CV23 is released and returned.
+- Released Mirror `v0.31.10` reports contract `1.0` and Extension API `1.1`.
+  The unchanged installed-runtime probe passed and the consumer-owned return
+  record opened the gate on 2026-08-25.
 - Mirror may implement the contract through its own architecture but must not edit
   the acceptance kit, copy its probe into production code, or depend on Nautilus
   internals.
@@ -45,7 +46,7 @@ the gate.
 | [CV23.DS4](cv23-ds4-ariad-operational-compiler/index.md) | Ariad Operational Compiler | Durable roadmap, active work, Exploratory Stories, Refinement Stories, and artifact references compile into the normative Operational schema deterministically | ✅ Done |
 | [CV23.DS5](cv23-ds5-ariad-lifecycle-refresh/index.md) | Ariad Lifecycle Refresh | Delivery, Explorer, and Refinement mutations request a post-commit refresh without rolling back durable truth when projection publication fails | ✅ Done |
 | [CV23.DS6](cv23-ds6-consumer-probe-and-security-acceptance/index.md) | Consumer Probe and Security Acceptance | Test-only preparation, failure injection, security tests, deterministic fixture parity, and the unchanged black-box probe prove v1 behavior without production data | ✅ Done |
-| [CV23.DS7](cv23-ds7-release-and-consumer-return/index.md) | Release and Consumer Return | A versioned central release, green CI, safe installed-runtime transition, unchanged installed probe, and complete `mirror-return.json` open the consumer gate | 🟢 In Progress |
+| [CV23.DS7](cv23-ds7-release-and-consumer-return/index.md) | Release and Consumer Return | A versioned central release, green CI, safe installed-runtime transition, unchanged installed probe, and complete `mirror-return.json` open the consumer gate | ✅ Done |
 
 ## Architectural Boundary
 

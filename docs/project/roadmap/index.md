@@ -39,7 +39,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
 | [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
 | [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ⏸️ Paused |
-| [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | 🟢 In Progress |
+| [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | ✅ Done — released in v0.31.10 |
 
 ---
 

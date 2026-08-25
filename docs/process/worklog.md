@@ -33,8 +33,12 @@ The unchanged consumer-owned probe passed all eight checks against synthetic
 state, including exact Operational fixture parity, last-valid preservation,
 path/namespace refusal, and atomic consistency. Acceptance-kit hashes and all 16
 self-tests remained unchanged. Packaged as
-[v0.31.10](../releases/v0.31.10.md); installed-runtime acceptance and the
-consumer-owned return record complete the release story after central promotion.
+[v0.31.10](../releases/v0.31.10.md). Central Tests, Docs, and Windows packaging
+were green at the release SHA; the production backup was verified; the stable
+runtime reported version `0.31.10`; and the unchanged installed probe opened the
+consumer-owned return gate. D-015 records pre-existing retired experimental
+migration rows that keep runtime diagnostics attention-needed without changing
+the released contract or its isolated acceptance.
 
 ### 2026-08-13 — Recursive journey hierarchy and moving-target TS contract (CV15.DS3)
 

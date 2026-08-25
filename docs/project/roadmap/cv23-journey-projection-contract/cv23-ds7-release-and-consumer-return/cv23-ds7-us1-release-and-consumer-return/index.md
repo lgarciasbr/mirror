@@ -2,7 +2,7 @@
 
 # CV23.DS7.US1 — Release and Consumer Return
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
