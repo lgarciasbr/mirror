@@ -69,6 +69,15 @@ installed extension's `extension_id`; extensions cannot select `ariad`, another
 extension namespace, or a filesystem root. See the [Extension API
 reference](docs/product/extensions/api-reference.md#journey-projections).
 
+Ariad Operational rebuilds are Core-owned. They compile the registered
+Journey's authored roadmap, explicit active work, public Exploratory Story
+handoff fields, canonical Refinement indexes, and allowlisted artifact paths
+into `ariad:operational`, then publish through the shared linearizable kernel.
+The compiler accepts no production root from consumers, invokes no model or
+network, copies no private narrative bodies, and fails closed on unsafe or
+ambiguous durable references. Public CLI rebuild and inspection routes arrive
+in later CV23 stories and are not advertised prematurely.
+
 ## Operating Mode Lifecycle
 
 ```bash

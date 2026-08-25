@@ -64,6 +64,11 @@ class JourneyProjectionService:
             domain=domain,
         )
 
+    def registered_root(self, journey_id: str) -> Path:
+        """Resolve and validate the authoritative registered Journey root."""
+        validate_identifier(journey_id)
+        return self._store(journey_id).root
+
     def _store(self, journey_id: str) -> ProjectionStore:
         root = self.root_resolver(journey_id)
         if root is None:

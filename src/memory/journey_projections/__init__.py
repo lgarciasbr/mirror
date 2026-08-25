@@ -14,6 +14,7 @@ from memory.journey_projections.models import (
     ProjectionManifest,
     ProjectionPublication,
 )
+from memory.journey_projections.operational import AriadOperationalProjectionService
 from memory.journey_projections.service import JourneyProjectionService
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     "CONTRACT_VERSION",
     "EXTENSION_API_VERSION",
     "SCHEMA_VERSION",
+    "AriadOperationalProjectionService",
     "ExtensionJourneyProjections",
     "JourneyProjectionService",
     "ProjectionEnvelope",
