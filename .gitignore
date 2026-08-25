@@ -23,6 +23,8 @@ pi_exports/
 docs/project/explorations/
 .mirror-clone-role
 .mirror-update-channel
+# Generated Journey read models, locks, and immutable local receipts.
+.mirror/projections/
 
 # Local recovery/backup notes and patches (Windows compat workflow)
 tmp/

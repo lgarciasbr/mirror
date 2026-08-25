@@ -78,6 +78,7 @@ def plan_delivery_story_checkpoint(
         aggregate_checkpoint_status=_replace_status(
             cursor.aggregate_checkpoint_status, "plan", "pending"
         ),
+        refresh_projection=False,
     )
     report = DeliveryStoryPlanReport(
         journey=journey,
@@ -91,6 +92,7 @@ def plan_delivery_story_checkpoint(
         plan_artifact_path=plan_artifact_path,
     )
     materialized = _write_delivery_story_package(report)
+    store.request_projection_refresh(journey)
     return replace(report, materialized_artifacts=materialized)
 
 
@@ -131,6 +133,7 @@ def approve_delivery_story_plan(
         aggregate_checkpoint_status=_replace_status(
             cursor.aggregate_checkpoint_status, "plan", "approved"
         ),
+        refresh_projection=False,
     )
     report = DeliveryStoryPlanReport(
         journey=journey,
@@ -144,6 +147,7 @@ def approve_delivery_story_plan(
         plan_artifact_path=plan_artifact_path,
     )
     materialized = _write_delivery_story_package(report)
+    store.request_projection_refresh(journey)
     unfilled = _unfilled_plan_sections_for(plan_artifact_path)
     return replace(report, materialized_artifacts=materialized, unfilled_sections=unfilled)
 

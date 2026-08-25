@@ -313,6 +313,7 @@ def plan_lifecycle_item(
         navigator_flow_unit=existing.navigator_flow_unit,
         child_work_items=existing.child_work_items,
         aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
+        refresh_projection=False,
     )
     report = BuilderPlanReport(
         journey=normalized_journey,
@@ -347,6 +348,7 @@ def plan_lifecycle_item(
     )
     if artifact_path is not None:
         _write_story_package(artifact_path.parent, report)
+    store.request_projection_refresh(normalized_journey)
     return report
 
 
@@ -726,6 +728,7 @@ def coherence_lifecycle_item(
         navigator_flow_unit=existing.navigator_flow_unit,
         child_work_items=existing.child_work_items,
         aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
+        refresh_projection=False,
     )
     report = BuilderCoherenceReport(
         journey=normalized_journey,
@@ -744,6 +747,7 @@ def coherence_lifecycle_item(
     if coherence_artifact_path is not None:
         coherence_artifact_path.parent.mkdir(parents=True, exist_ok=True)
         coherence_artifact_path.write_text(_render_coherence_artifact(report), encoding="utf-8")
+    store.request_projection_refresh(normalized_journey)
     return report
 
 
@@ -845,6 +849,7 @@ def done_lifecycle_item(
         navigator_flow_unit=existing.navigator_flow_unit,
         child_work_items=existing.child_work_items,
         aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
+        refresh_projection=False,
     )
     report = BuilderDoneReport(
         journey=normalized_journey,
@@ -862,6 +867,7 @@ def done_lifecycle_item(
     if done_artifact_path is not None:
         done_artifact_path.parent.mkdir(parents=True, exist_ok=True)
         done_artifact_path.write_text(_render_done_artifact(report), encoding="utf-8")
+    store.request_projection_refresh(normalized_journey)
     return report
 
 
@@ -969,6 +975,7 @@ def review_lifecycle_item(
         navigator_flow_unit=existing.navigator_flow_unit,
         child_work_items=existing.child_work_items,
         aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
+        refresh_projection=False,
     )
     report = BuilderReviewReport(
         journey=normalized_journey,
@@ -989,6 +996,7 @@ def review_lifecycle_item(
     if review_artifact_path is not None:
         review_artifact_path.parent.mkdir(parents=True, exist_ok=True)
         review_artifact_path.write_text(_render_review_artifact(report), encoding="utf-8")
+    store.request_projection_refresh(normalized_journey)
     return report
 
 
@@ -1124,6 +1132,7 @@ def validate_lifecycle_item(
         navigator_flow_unit=existing.navigator_flow_unit,
         child_work_items=existing.child_work_items,
         aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
+        refresh_projection=False,
     )
     report = BuilderValidationReport(
         journey=normalized_journey,
@@ -1147,6 +1156,7 @@ def validate_lifecycle_item(
     if validation_artifact_path is not None:
         validation_artifact_path.parent.mkdir(parents=True, exist_ok=True)
         validation_artifact_path.write_text(_render_validation_artifact(report), encoding="utf-8")
+    store.request_projection_refresh(normalized_journey)
     return report
 
 

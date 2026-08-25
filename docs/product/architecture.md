@@ -126,6 +126,17 @@ kernel; lifecycle-triggered refresh remains a separate coordinator concern.
 Malformed, cyclic, duplicate, or escaping durable references fail before
 publication and never trigger inference or implicit repair.
 
+Operational refresh is a post-commit observer, not mutation authority. A generic
+optional callback on `Store` is wired by `MemoryClient` to one
+`ProjectionRefreshCoordinator`. Delivery cursor writes compare only projected
+active-work fields; Explorer persistence compares only public story fields; and
+Refinement service operations request once after their complete logical commit.
+The coordinator compiles registered state, skips publication when the current
+`sourceRevision` already matches, and otherwise delegates to DS2. Compilation,
+inspection, or publication failure becomes bounded diagnostics and is never
+re-raised into the already-successful source mutation. Read-only operations and
+excluded Explorer evidence do not request refresh.
+
 ---
 
 ## 4. Identity Model

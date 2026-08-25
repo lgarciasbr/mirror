@@ -78,6 +78,13 @@ network, copies no private narrative bodies, and fails closed on unsafe or
 ambiguous durable references. Public CLI rebuild and inspection routes arrive
 in later CV23 stories and are not advertised prematurely.
 
+Represented Ariad mutations now request Operational refresh only after durable
+source commit. Equal projected `sourceRevision` values are treated as unchanged;
+otherwise publication uses the shared kernel. Refresh failure is intentionally
+non-transactional with source truth: the source mutation stays committed and the
+latest bounded outcome remains available through the internal coordinator. No
+background retry, repair, model, network, or extra CLI output is introduced.
+
 ## Operating Mode Lifecycle
 
 ```bash

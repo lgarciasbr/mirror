@@ -14,7 +14,11 @@ from typing import Any, Literal, NoReturn
 from memory.builder.roadmap_grammar import HEADING_RE, STATUS_RE, parse_markdown_link
 from memory.builder.story_paths import StoryPackageAmbiguityError, resolve_story_directory
 from memory.journey_projections.errors import ProjectionError, ProjectionErrorCode
-from memory.journey_projections.models import ProjectionPublication, validate_identifier
+from memory.journey_projections.models import (
+    ProjectionInspection,
+    ProjectionPublication,
+    validate_identifier,
+)
 from memory.journey_projections.schemas import validate_projection_document
 from memory.journey_projections.serialization import canonical_json_bytes
 from memory.journey_projections.service import JourneyProjectionService
@@ -100,13 +104,18 @@ class OperationalCompiler:
         journey_id: str,
         *,
         active_work: Mapping[str, Any] | None = None,
+        exploratory_stories: list[Mapping[str, Any]] | None = None,
     ) -> dict[str, Any]:
         validate_identifier(journey_id)
         root = self._root(project_root)
         content = {
             "roadmap": {"roots": self._compile_roadmap(root)},
             "activeWork": self._compile_active_work(active_work),
-            "exploratoryStories": self._compile_explorations(root, journey_id),
+            "exploratoryStories": (
+                [dict(story) for story in exploratory_stories]
+                if exploratory_stories is not None
+                else self._compile_explorations(root, journey_id)
+            ),
             "refinementStories": self._compile_refinements(root),
         }
         digest = hashlib.sha256(canonical_json_bytes(content)).hexdigest()
@@ -612,15 +621,45 @@ class AriadOperationalProjectionService:
         self._projection_service = projection_service
         self._compiler = compiler or OperationalCompiler()
 
+    def compile(
+        self,
+        journey_id: str,
+        *,
+        active_work: Mapping[str, Any] | None = None,
+        exploratory_stories: list[Mapping[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        root = self._projection_service.registered_root(journey_id)
+        return self._compiler.compile(
+            root,
+            journey_id,
+            active_work=active_work,
+            exploratory_stories=exploratory_stories,
+        )
+
+    def inspect(self, journey_id: str) -> ProjectionInspection:
+        return self._projection_service.inspect(
+            journey_id,
+            "ariad",
+            "operational",
+            domain="operational",
+        )
+
+    def publish_compiled(self, document: Mapping[str, Any]) -> ProjectionPublication:
+        return self._projection_service.publish(document, domain="operational")
+
     def rebuild(
         self,
         journey_id: str,
         *,
         active_work: Mapping[str, Any] | None = None,
+        exploratory_stories: list[Mapping[str, Any]] | None = None,
     ) -> OperationalRebuild:
-        root = self._projection_service.registered_root(journey_id)
-        document = self._compiler.compile(root, journey_id, active_work=active_work)
-        publication = self._projection_service.publish(document, domain="operational")
+        document = self.compile(
+            journey_id,
+            active_work=active_work,
+            exploratory_stories=exploratory_stories,
+        )
+        publication = self.publish_compiled(document)
         return OperationalRebuild(
             status="published",
             publication=publication,

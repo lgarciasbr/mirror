@@ -78,10 +78,12 @@ def set_delivery_cursor(
     navigator_flow_unit: str | None = None,
     child_work_items: tuple[str, ...] = (),
     aggregate_checkpoint_status: tuple[str, ...] = (),
+    refresh_projection: bool = True,
 ) -> BuilderDeliveryCursor:
     """Persist the Builder delivery cursor for a journey."""
     normalized_journey = _normalize_required(journey, "journey")
     normalized_method = _normalize_required(method, "method")
+    previous = get_delivery_cursor(store, normalized_journey)
     cursor = BuilderDeliveryCursor(
         journey=normalized_journey,
         method=normalized_method,
@@ -122,12 +124,15 @@ def set_delivery_cursor(
             ensure_ascii=False,
         ),
     )
+    if refresh_projection and _projected_active_work(previous) != _projected_active_work(cursor):
+        store.request_projection_refresh(normalized_journey)
     return cursor
 
 
 def clear_delivery_cursor(store: Store, journey: str) -> None:
     """Clear the Builder delivery cursor for a journey."""
     normalized_journey = _normalize_required(journey, "journey")
+    previous = get_delivery_cursor(store, normalized_journey)
     store.upsert_runtime_session(
         _session_id(normalized_journey),
         interface="builder_delivery_cursor",
@@ -135,6 +140,8 @@ def clear_delivery_cursor(store: Store, journey: str) -> None:
         active=False,
         metadata=None,
     )
+    if _projected_active_work(previous) is not None:
+        store.request_projection_refresh(normalized_journey)
 
 
 def render_delivery_cursor_sync_report(cursor: BuilderDeliveryCursor) -> str:
@@ -192,6 +199,19 @@ def render_delivery_cursor_sync_report(cursor: BuilderDeliveryCursor) -> str:
             ]
         )
         + "\n"
+    )
+
+
+def _projected_active_work(
+    cursor: BuilderDeliveryCursor | None,
+) -> tuple[str, str | None, str | None, str] | None:
+    if cursor is None or cursor.active_item is None:
+        return None
+    return (
+        cursor.active_item,
+        cursor.active_checkpoint,
+        cursor.pending_confirmation,
+        cursor.last_delivery_event or "active",
     )
 
 
