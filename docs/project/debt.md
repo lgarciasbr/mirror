@@ -32,7 +32,7 @@ Dropped   no longer relevant or replaced by another item
 | D-012 | Roadmap folder derivation does not sanitize the candidate-table *code* cell for path separators | security / design | low | Paid | mirror slugify consolidation (security-engineer review); closed by the Ariad Expand path-divergence fix | Closed — see entry |
 | D-013 | `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug` | design | low | Carried | mirror slugify consolidation | The next time transcript-export slug behavior is touched, or a third kebab-slug caller appears |
 | D-014 | Runtime-diagnose web test polling budget is below observed command latency | testing | low | Carried | CV23.DS2 validation | Runtime-diagnose execution, web polling, or that test harness changes, or CI reproduces the failure |
-| D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Carried | CV23.DS7 release installation | Before the next production update or any migration change; reconcile rows 017–019 from a verified backup through an explicit database-drift story |
+| D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Paid | CV23.DS7 release installation → local repair 2026-08-25 | Paid by verified removal of empty retired schema and rows 017–019 |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -582,10 +582,10 @@ as an intentionally distinct slugger with the reason.
 
 **Kind:** operations / data
 **Severity:** medium
-**Status:** Carried
-**Source:** CV23.DS7 release installation
+**Status:** Paid
+**Source:** CV23.DS7 release installation → local repair 2026-08-25
 
-### Carrying reason
+### Original carrying reason
 
 The production database records migrations
 `017_project_refinement_projection`, `018_refinement_intent_recovery_indexes`,
@@ -605,12 +605,22 @@ discovery remain usable, and CV23 itself requires no migration, but the safe
 updater cannot provide a clean success signal until the retired experimental rows
 are reconciled.
 
-### Revisit trigger
+### Resolution
 
-Before the next production update or any new Core migration. Use the verified
-pre-v0.31.10 backup, inspect the actual schema objects owned by rows 017–019, and
-remove or archive only through an explicit database-drift plan with restoration
-evidence.
+Read-only inspection proved all six retired `project_refinement_*` tables and all
+bindings, intents, and confirmations were empty. A new production backup
+(`memory_20260825_214655.zip`, SHA-256
+`f183f84ad85c1c55a324858c3caa057a3f9557b3a3aeb26267d56050db0b69df`) was
+created and verified. The exact repair was rehearsed against a restored copy,
+which reached `16/16` and runtime `ready`, before production execution.
+
+The production repair ran under `BEGIN IMMEDIATE`, removed the nine retired
+triggers, six empty tables and migration rows 017–019, and verified that every
+retained table's row count was unchanged. Post-repair `quick_check` is `ok`,
+`foreign_key_check` has zero findings, no retired schema object remains,
+`runtime status` reports `current (16/16)`, and `runtime diagnose` reports zero
+findings. Bounded hash evidence is retained beside the verified backup as
+`d015-repair-20260825.json`.
 
 ---
 

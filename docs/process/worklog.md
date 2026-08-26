@@ -12,6 +12,21 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-25 — Retired Refinement migration drift repaired (D-015)
+
+Repaired the local production database after CV23 release validation found three
+unknown migration rows from the abandoned Refinement Workbench experiment.
+Read-only inspection proved all six `project_refinement_*` tables were empty. A
+fresh verified backup was restored into a temporary home, the exact cleanup was
+rehearsed there, and the repaired copy reached Core migrations `16/16` with
+runtime status `ready` before production execution.
+
+The production transaction removed only the nine retired triggers, six empty
+tables, and migration rows 017–019. Every retained table's row count remained
+unchanged; SQLite quick and foreign-key checks passed; no retired schema object
+remains; and `runtime diagnose` now reports zero findings. Backup, database, and
+repair-script hashes are retained in local bounded evidence. D-015 is paid.
+
 ### 2026-08-25 — Journey Projection Contract v1 (CV23)
 
 Implemented `mirror.journey-projections@1.0` as a Python-Core public contract for
