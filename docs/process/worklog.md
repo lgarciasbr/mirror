@@ -12,6 +12,22 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-26 — v0.31.11 installed Nautilus confinement acceptance
+
+Published `v0.31.11` at immutable commit `c9519c3` after green central Tests,
+Docs, and Windows packaging on `main` and green tagged Windows packaging. The
+stable production runtime updated from `v0.31.10` after verified backups and now
+reports migrations `16/16`, healthy installed extensions, and status `ready`.
+
+The installed public CLI rebuilt `nautilus-harness` without rewriting its valid
+parent-relative roadmap links. Operational snapshot
+`op-59d36a08c142494c88c12ecb5fcbf105` now represents current source revision
+`sha256:222aa1214a54c8059c7689daf21d6b98f128277a2462b79fd908ca49dc5d6c93`;
+inspection proves the manifest and stable document match across roots `CV-001`,
+`CV-002`, and `CV-003`. Bounded consumer evidence was returned for TD-001
+closure. CV23.DS8 remains in Validation until explicit Navigator acceptance and
+consumer-owned ledger closure.
+
 ### 2026-08-25 — Retired Refinement migration drift repaired (D-015)
 
 Repaired the local production database after CV23 release validation found three

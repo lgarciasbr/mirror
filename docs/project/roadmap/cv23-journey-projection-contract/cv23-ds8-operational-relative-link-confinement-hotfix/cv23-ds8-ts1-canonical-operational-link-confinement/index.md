@@ -2,7 +2,7 @@
 
 # CV23.DS8.TS1 — Canonical Operational Link Confinement
 
-**Status:** 🟠 In Progress
+**Status:** 🟣 In Validation
 **Type:** Technical Story
 
 ---

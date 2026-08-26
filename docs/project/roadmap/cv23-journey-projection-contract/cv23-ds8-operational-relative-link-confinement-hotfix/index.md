@@ -2,7 +2,7 @@
 
 # CV23.DS8 — Operational Relative-Link Confinement Hotfix
 
-**Status:** 🟠 In Progress
+**Status:** 🟣 In Validation — v0.31.11 installed rebuild passed; Navigator acceptance pending
 
 ---
 
@@ -18,7 +18,7 @@ release is accepted through the installed Nautilus consumer gate.
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV23.DS8.TS1 | Canonical Operational Link Confinement | Technical Story | Replace lexical parent rejection with canonical Journey-root confinement and prove the complete security regression matrix | 🟠 In Progress |
+| CV23.DS8.TS1 | Canonical Operational Link Confinement | Technical Story | Replace lexical parent rejection with canonical Journey-root confinement and prove the complete security regression matrix | 🟣 In Validation |
 
 ## Done Condition
 

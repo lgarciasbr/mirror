@@ -49,6 +49,24 @@ Source implementation evidence complete:
   consumer projection files and worktree remain unchanged.
 - Consumer-kit hashes remain unchanged and all 16 self-tests pass.
 
-Pending hard gates: release authorization, central CI, stable installation,
-unchanged Nautilus rebuild/inspection, snapshot advancement, and consumer-owned
-TD-001 closure.
+Release and installed-consumer evidence complete:
+
+- `v0.31.11` is immutable at
+  `c9519c30caac1522209a56840a09dabc123cead0`; `main`, `stable`, and the tag
+  matched at promotion, and the GitHub Release is public.
+- Central Tests, Docs, main Windows packaging, and tagged Windows packaging all
+  passed at the exact release commit.
+- A verified production backup preceded consumer execution.
+- The stable installation reports `0.31.11`, Core migrations `16/16`, extension
+  health ready, and runtime status ready.
+- The unchanged installed `rebuild-operational` command published snapshot
+  `op-59d36a08c142494c88c12ecb5fcbf105` at source revision
+  `sha256:222aa1214a54c8059c7689daf21d6b98f128277a2462b79fd908ca49dc5d6c93`.
+- Installed inspection matches the rebuilt document and manifest exactly and
+  represents roadmap roots `CV-001`, `CV-002`, and `CV-003`.
+- Bounded return evidence is available to the Nautilus agent as
+  `td-001-mirror-return.json`; no consumer source link was rewritten.
+- Post-install consumer-kit hashes remain unchanged and all 16 self-tests pass.
+
+Pending hard gate: explicit Navigator validation acceptance and consumer-owned
+TD-001 ledger closure.
