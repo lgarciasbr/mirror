@@ -201,6 +201,7 @@ def pull_lifecycle_item(
         navigator_flow_unit=existing.navigator_flow_unit,
         child_work_items=child_work_items,
         aggregate_checkpoint_status=aggregate_checkpoint_status,
+        cursor_generation=existing.cursor_generation + 1,
     )
     return BuilderPullReport(
         journey=normalized_journey,

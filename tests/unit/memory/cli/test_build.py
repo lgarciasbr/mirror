@@ -6,6 +6,7 @@ import pytest
 
 from memory import MemoryClient
 from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cursor
+from memory.builder.delivery_story_plan import plan_delivery_story_checkpoint
 from memory.builder.method_adoption import set_adopted_method
 from memory.cli import build
 from memory.cli.runtime import CloneRole
@@ -288,6 +289,12 @@ def test_mm_build_skill_requires_marked_ariad_surfaces_to_render_verbatim():
     assert "Do not close an RS while any attached CR remains unfinished" in skill
     assert "capture this as a CR" in skill
     assert "pull that refinement story" in skill
+    assert "--preauthorize-approval" in skill
+    assert "--use-preauthorization" in skill
+    assert "--stop-after navigator_validation" in skill
+    assert "cancel-delivery-story-plan-preauthorization" in skill
+    assert "Vague continuation" in skill
+    assert "stop at Navigator Validation" in skill
 
 
 def test_build_plan_item_renders_checkpoint_and_updates_cursor(mocker, tmp_path, capsys):
@@ -450,6 +457,168 @@ def test_build_approve_delivery_story_plan_records_approval(mocker, tmp_path, ca
     assert "The approved Delivery Story Plan now authorizes" in out
     assert "Push, release, deploy, purchase" in out
     assert "Begin implementing the approved plan now." in out
+
+
+def test_build_plan_and_consume_conditional_preauthorization(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project = tmp_path / "project"
+    package = project / "docs/project/roadmap/cv20/cv20-ds5"
+    package.mkdir(parents=True)
+    (package / "index.md").write_text(
+        "# CV20.DS5 — Delivery Story Level Lifecycle", encoding="utf-8"
+    )
+    mem.journeys.set_project_path("sandbox-pet-store", str(project))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        cursor_generation=3,
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "plan-delivery-story",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--objective",
+            "Aggregate exact scope.",
+            "--child",
+            "CV20.DS5.US1",
+            "--preauthorize-approval",
+            "--stop-after",
+            "navigator_validation",
+        ]
+    )
+    plan_path = package / "plan.md"
+    plan_path.write_text(
+        plan_path.read_text(encoding="utf-8").replace("Pending — ", "Decided: "),
+        encoding="utf-8",
+    )
+    build.main(
+        [
+            "approve-delivery-story-plan",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--use-preauthorization",
+        ]
+    )
+    build.main(
+        [
+            "approve-delivery-story-plan",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--use-preauthorization",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>>" in out
+    assert "exact_scope" in out
+    assert "navigator_validation" in out
+    assert out.count("<<<ARIAD:IMPLEMENTATION_STARTED>>>") == 1
+    assert "No transition was repeated" in out
+    assert get_delivery_cursor(mem.store, "sandbox-pet-store").plan_preauthorization.status == (
+        "consumed"
+    )
+
+
+def test_build_conditional_approval_renders_bounded_incomplete_fallback(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project = tmp_path / "project"
+    package = project / "docs/project/roadmap/cv20/cv20-ds5"
+    package.mkdir(parents=True)
+    (package / "index.md").write_text("# CV20.DS5 — DS", encoding="utf-8")
+    mem.journeys.set_project_path("sandbox-pet-store", str(project))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+    build.cmd_plan_delivery_story(
+        "ariad",
+        journey="sandbox-pet-store",
+        objective="Private objective must not leak in mismatch.",
+        child_work_items=("CV20.DS5.US1",),
+        preauthorize_approval=True,
+    )
+    capsys.readouterr()
+
+    build.cmd_approve_delivery_story_plan(
+        "ariad", journey="sandbox-pet-store", use_preauthorization=True
+    )
+
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>" in out
+    assert "plan_incomplete" in out
+    assert "ordinary" in out
+    assert "Navigator" in out
+    assert "approval is available." in out
+    assert "Private objective" not in out
+    assert "IMPLEMENTATION_STARTED" not in out
+
+
+def test_build_cancel_plan_preauthorization_preserves_ordinary_gate(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_delivery_story_checkpoint(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Plan aggregate delivery.",
+        child_work_items=("CV20.DS5.US1",),
+        preauthorize=True,
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "cancel-delivery-story-plan-preauthorization",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert "navigator_cancelled" in out
+    assert "IMPLEMENTATION_STARTED" not in out
+    assert cursor.pending_confirmation == "navigator_delivery_story_plan_approval"
+    assert cursor.plan_preauthorization.status == "invalidated"
 
 
 def test_build_set_flow_unit_records_delivery_story_choice(mocker, tmp_path, capsys):

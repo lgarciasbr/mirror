@@ -605,6 +605,30 @@ def test_pull_preserves_children_when_repulling_same_item(tmp_path):
     assert report.cursor.child_work_items == ("DS-35.US-1",)
 
 
+def test_each_pull_advances_cursor_generation_even_for_same_item(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        active_item="DS-35",
+        active_item_level="delivery_story",
+        cursor_generation=4,
+    )
+    item = BuilderLifecycleItem(
+        code="DS-35",
+        title="Application & Admin Parity",
+        level="delivery_story",
+        why_now="resume",
+    )
+
+    first = pull_lifecycle_item(store, journey="uncle-vinny", method="ariad", item=item)
+    second = pull_lifecycle_item(store, journey="uncle-vinny", method="ariad", item=item)
+
+    assert first.cursor.cursor_generation == 5
+    assert second.cursor.cursor_generation == 6
+
+
 def test_story_folder_name_appends_slugified_title():
     assert (
         _story_folder_name("DS-35.US-1", "Port the application step flow")

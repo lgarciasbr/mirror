@@ -1,0 +1,57 @@
+[< Parent](../index.md)
+
+# CV20.DS15.TS1 — Driver-Owned Plan Fidelity And Completion
+
+**Status:** 🟠 In Progress
+**Type:** Technical Story
+
+---
+
+## Technical Story
+
+In order to keep Plan approval truthful,
+as the Ariad Driver,
+I want Plan materialization to preserve existing authored content and detect an
+incomplete Plan before conditional approval,
+so that Navigator authority governs the implementation contract rather than a
+generic scaffold.
+
+## Outcome
+
+`plan-delivery-story` creates `plan.md` only when absent. Existing Plans are
+reported as existing and remain byte-identical. Conditional approval requires all
+five Plan contract sections to exist and rejects empty, `Pending`, TODO/TBD, or
+placeholder bodies before changing the approval checkpoint. Ordinary explicit
+approval retains its compatibility warning behavior.
+
+## Acceptance Behavior
+
+```text
+Given a Driver-authored non-empty plan.md
+When Delivery Story planning is invoked
+Then the file remains byte-identical
+And the artifact surface reports it as existing
+```
+
+```text
+Given a conditionally preauthorized Plan with an unresolved required section
+When receipt consumption is attempted
+Then approval remains blocked
+And the bounded reason is plan_incomplete
+```
+
+## Scope
+
+- Insert-if-absent Plan scaffold materialization.
+- Structural required-section completeness inspection.
+- Conditional-only completeness blocking.
+
+## Out Of Scope
+
+- Semantic judgment of Plan quality.
+- Changing ordinary explicit approval into a universal completeness gate.
+
+## Validation
+
+Focused tests: `tests/unit/memory/builder/test_delivery_story_plan.py`.
+Aggregate validation remains pending at the parent Delivery Story checkpoint.

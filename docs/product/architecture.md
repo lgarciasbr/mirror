@@ -90,6 +90,17 @@ Specification](specs/web-surface/index.md).
 The single documented exception: `RuntimeSessionService` still owns some
 transaction-boundary SQL pending a separate architecture decision.
 
+Ariad's Delivery cursor is the sole runtime owner of conditional Plan authority.
+Each Pull advances an active-item generation. A bounded single-use receipt may
+bind Journey, method, generation, active Delivery Story, flow unit, canonical
+child-code set, Plan contract version, exact-scope policy, and the fixed
+Navigator Validation stop. It stores no prompt or Plan body. Conditional
+approval revalidates those coordinates and Plan completeness, then consumes the
+receipt in the same cursor persistence update as approval. Mismatch invalidates
+the receipt and preserves ordinary approval; child order is presentational while
+set addition/removal is authoritative. No model, provider, persona, network
+service, or semantic prose comparison participates in verification.
+
 Journey projections add a filesystem read-model boundary without changing this
 import direction. CLI, Ariad lifecycle, and the public Extension API call one
 Journey projection service; contract models/schema validation, deterministic

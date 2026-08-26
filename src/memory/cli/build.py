@@ -26,10 +26,14 @@ from memory.builder.delivery_story_closure import (
     validate_delivery_story,
 )
 from memory.builder.delivery_story_plan import (
+    PlanPreauthorizationMismatch,
     approve_delivery_story_plan,
+    cancel_delivery_story_plan_preauthorization,
     plan_delivery_story_checkpoint,
     render_delivery_story_implementation_started,
     render_delivery_story_plan_report,
+    render_plan_preauthorization_mismatch,
+    render_plan_preauthorization_recorded,
 )
 from memory.builder.flow_unit import (
     ALLOWED_FLOW_UNITS,
@@ -930,6 +934,8 @@ def cmd_plan_delivery_story(
     child_work_items: tuple[str, ...] = (),
     journey: str | None = None,
     session_id: str | None = None,
+    preauthorize_approval: bool = False,
+    stop_after: str = "navigator_validation",
 ) -> None:
     mem = MemoryClient()
     _reject_unknown_method(method)
@@ -951,11 +957,15 @@ def cmd_plan_delivery_story(
             objective=objective,
             child_work_items=child_work_items,
             plan_artifact_path=plan_artifact_path,
+            preauthorize=preauthorize_approval,
+            stop_boundary=stop_after,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
     print(render_delivery_story_plan_report(report))
+    if preauthorize_approval:
+        print(render_plan_preauthorization_recorded(report))
     _print_artifacts_materialized(
         context=f"Delivery Story Plan — {report.cursor.active_item or 'active item'}",
         artifacts=report.materialized_artifacts,
@@ -969,6 +979,7 @@ def cmd_approve_delivery_story_plan(
     *,
     journey: str | None = None,
     session_id: str | None = None,
+    use_preauthorization: bool = False,
 ) -> None:
     mem = MemoryClient()
     _reject_unknown_method(method)
@@ -988,18 +999,63 @@ def cmd_approve_delivery_story_plan(
             journey=resolved_journey,
             method=method,
             plan_artifact_path=plan_artifact_path,
+            use_preauthorization=use_preauthorization,
         )
+    except PlanPreauthorizationMismatch as exc:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        print(
+            render_plan_preauthorization_mismatch(
+                active_item=cursor.active_item if cursor else None,
+                reason=exc.reason,
+            )
+        )
+        return
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
     print(render_delivery_story_plan_report(report))
+    if report.status == "already_approved":
+        return
     _print_artifacts_materialized(
         context=f"Delivery Story Plan Approval — {report.cursor.active_item or 'active item'}",
         artifacts=report.materialized_artifacts,
         project_path=project_path,
         boundary="Plan approval artifacts were materialized. Implementation may proceed under the approved plan.",
     )
-    print(render_delivery_story_implementation_started(report))
+    if report.implementation_started:
+        print(render_delivery_story_implementation_started(report))
+
+
+def cmd_cancel_delivery_story_plan_preauthorization(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="Delivery Story Plan preauthorization cancellation",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = cancel_delivery_story_plan_preauthorization(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(
+        render_plan_preauthorization_mismatch(
+            active_item=cursor.active_item,
+            reason="navigator_cancelled",
+        )
+    )
 
 
 def cmd_set_flow_unit(
@@ -2230,6 +2286,17 @@ def main(argv: list[str] | None = None) -> None:
         default=[],
         help="Child work package id; may be repeated",
     )
+    p_ds_plan.add_argument(
+        "--preauthorize-approval",
+        action="store_true",
+        help="Record exact-scope single-use Navigator authority for this Plan",
+    )
+    p_ds_plan.add_argument(
+        "--stop-after",
+        default="navigator_validation",
+        choices=("navigator_validation",),
+        help="Fixed hard stop for conditional Plan authority",
+    )
 
     p_ds_approve = sub.add_parser(
         "approve-delivery-story-plan",
@@ -2242,6 +2309,19 @@ def main(argv: list[str] | None = None) -> None:
         default=None,
         help="Runtime session id for resolving the active Builder journey",
     )
+    p_ds_approve.add_argument(
+        "--use-preauthorization",
+        action="store_true",
+        help="Consume a matching complete single-use Plan authorization receipt",
+    )
+
+    p_ds_cancel_preauthorization = sub.add_parser(
+        "cancel-delivery-story-plan-preauthorization",
+        help="Cancel pending conditional Delivery Story Plan authority",
+    )
+    p_ds_cancel_preauthorization.add_argument("--method", required=True)
+    p_ds_cancel_preauthorization.add_argument("--journey", default=None)
+    p_ds_cancel_preauthorization.add_argument("--session-id", default=None)
 
     p_plan = sub.add_parser(
         "plan-item",
@@ -2676,9 +2756,18 @@ def main(argv: list[str] | None = None) -> None:
             session_id=args.session_id,
             objective=args.objective,
             child_work_items=tuple(args.children),
+            preauthorize_approval=args.preauthorize_approval,
+            stop_after=args.stop_after,
         )
     elif args.command == "approve-delivery-story-plan":
         cmd_approve_delivery_story_plan(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            use_preauthorization=args.use_preauthorization,
+        )
+    elif args.command == "cancel-delivery-story-plan-preauthorization":
+        cmd_cancel_delivery_story_plan_preauthorization(
             args.method,
             journey=args.journey,
             session_id=args.session_id,

@@ -797,6 +797,54 @@ Return the `DELIVERY_STORY_PLAN_CHECKPOINT` surface verbatim. Interpret only
 after the block. Explain that the DS-level Plan is pending approval and that no
 implementation, validation, push, or release is authorized by planning alone.
 
+### Conditional Plan preauthorization
+
+Use conditional preauthorization only when the Navigator explicitly authorizes
+one active Delivery Story by exact child identity and names the fixed next hard
+stop at Navigator Validation. Vague continuation, cadence selection, “faça tudo”,
+“não me pergunte nada”, or generic autonomy language never creates authority.
+The first slice supports `delivery_story` flow only.
+
+For an explicit matching request, include:
+
+```bash
+uv run python -m memory build plan-delivery-story --method ariad \
+  --objective "<aggregate Delivery Story objective>" \
+  --child <every exact child code> \
+  --preauthorize-approval \
+  --stop-after navigator_validation
+```
+
+Return `DELIVERY_STORY_PLAN_CHECKPOINT`,
+`PLAN_PREAUTHORIZATION_RECORDED`, and artifact surfaces verbatim. The receipt is
+not approval: complete the Driver-owned `plan.md` first. Required sections must
+exist and contain no empty, `Pending`, TODO/TBD, or placeholder body. Never
+replace an existing non-empty Plan with the runtime scaffold.
+
+In the same assistant turn, after completing the Plan, consume the receipt with:
+
+```bash
+uv run python -m memory build approve-delivery-story-plan --method ariad \
+  --use-preauthorization
+```
+
+On exact match, return every approval/start surface, implement only local approved
+work, and stop at Navigator Validation. On `PLAN_PREAUTHORIZATION_MISMATCH`,
+return the bounded surface and stop at ordinary Plan approval. Never repair,
+expand, reinterpret, or recreate authority silently. Child order is
+presentational, but addition or removal is a mismatch.
+
+Cancel pending authority when the Navigator withdraws it:
+
+```bash
+uv run python -m memory build cancel-delivery-story-plan-preauthorization \
+  --method ariad
+```
+
+Cancellation preserves the ordinary Plan approval gate. Preauthorization never
+crosses validation acceptance, debt, Done/history, commit, push, release, deploy,
+purchase, or another irreversible boundary.
+
 If the Navigator asks to plan the Delivery Story before selecting
 `delivery_story` flow, first surface or request the flow-unit choice; do not
 silently use DS-level Plan from the default `story_by_story` flow.

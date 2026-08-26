@@ -3,11 +3,35 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
 
 from memory.storage.store import Store
 
 _CURSOR_SESSION_PREFIX = "__builder_delivery_cursor__:"
+_KEEP_PREAUTHORIZATION = object()
+
+
+@dataclass(frozen=True)
+class PlanPreauthorizationReceipt:
+    """Bounded single-use Navigator authority for one aggregate Plan."""
+
+    journey: str
+    method: str
+    cursor_generation: int
+    active_item: str
+    active_item_level: str
+    flow_unit: str
+    child_work_items: tuple[str, ...]
+    plan_contract_version: str
+    policy: str
+    stop_boundary: str
+    scope_fingerprint: str
+    status: str = "pending"
+    reason: str | None = None
+
+
+class DeliveryCursorConflict(RuntimeError):
+    """The persisted cursor changed after the caller observed it."""
 
 
 @dataclass(frozen=True)
@@ -26,6 +50,8 @@ class BuilderDeliveryCursor:
     navigator_flow_unit: str | None = None
     child_work_items: tuple[str, ...] = ()
     aggregate_checkpoint_status: tuple[str, ...] = ()
+    cursor_generation: int = 0
+    plan_preauthorization: PlanPreauthorizationReceipt | None = None
 
 
 def get_delivery_cursor(store: Store, journey: str) -> BuilderDeliveryCursor | None:
@@ -58,6 +84,8 @@ def get_delivery_cursor(store: Store, journey: str) -> BuilderDeliveryCursor | N
         navigator_flow_unit=_optional_string(data.get("navigator_flow_unit")),
         child_work_items=_optional_string_tuple(data.get("child_work_items")),
         aggregate_checkpoint_status=_optional_string_tuple(data.get("aggregate_checkpoint_status")),
+        cursor_generation=_optional_nonnegative_int(data.get("cursor_generation")),
+        plan_preauthorization=_deserialize_preauthorization(data.get("plan_preauthorization")),
     )
 
 
@@ -78,12 +106,28 @@ def set_delivery_cursor(
     navigator_flow_unit: str | None = None,
     child_work_items: tuple[str, ...] = (),
     aggregate_checkpoint_status: tuple[str, ...] = (),
+    cursor_generation: int | None = None,
+    plan_preauthorization: PlanPreauthorizationReceipt | None | object = _KEEP_PREAUTHORIZATION,
+    expected_cursor: BuilderDeliveryCursor | None = None,
     refresh_projection: bool = True,
 ) -> BuilderDeliveryCursor:
     """Persist the Builder delivery cursor for a journey."""
     normalized_journey = _normalize_required(journey, "journey")
     normalized_method = _normalize_required(method, "method")
     previous = get_delivery_cursor(store, normalized_journey)
+    resolved_generation = (
+        previous.cursor_generation
+        if cursor_generation is None and previous is not None
+        else _normalize_nonnegative_int(cursor_generation)
+    )
+    preauthorization_was_explicit = plan_preauthorization is not _KEEP_PREAUTHORIZATION
+    resolved_preauthorization = (
+        previous.plan_preauthorization
+        if not preauthorization_was_explicit and previous is not None
+        else plan_preauthorization
+    )
+    if resolved_preauthorization is _KEEP_PREAUTHORIZATION:
+        resolved_preauthorization = None
     cursor = BuilderDeliveryCursor(
         journey=normalized_journey,
         method=normalized_method,
@@ -99,31 +143,37 @@ def set_delivery_cursor(
         navigator_flow_unit=_normalize_optional(navigator_flow_unit),
         child_work_items=_normalize_optional_tuple(child_work_items),
         aggregate_checkpoint_status=_normalize_optional_tuple(aggregate_checkpoint_status),
-    )
-    store.upsert_runtime_session(
-        _session_id(normalized_journey),
-        interface="builder_delivery_cursor",
-        journey=normalized_journey,
-        active=True,
-        metadata=json.dumps(
-            {
-                "method": cursor.method,
-                "active_item": cursor.active_item,
-                "active_item_title": cursor.active_item_title,
-                "active_item_level": cursor.active_item_level,
-                "active_checkpoint": cursor.active_checkpoint,
-                "pending_confirmation": cursor.pending_confirmation,
-                "last_delivery_event": cursor.last_delivery_event,
-                "cadence_profile": cursor.cadence_profile,
-                "cadence_limits": cursor.cadence_limits,
-                "granularity_decision": cursor.granularity_decision,
-                "navigator_flow_unit": cursor.navigator_flow_unit,
-                "child_work_items": cursor.child_work_items,
-                "aggregate_checkpoint_status": cursor.aggregate_checkpoint_status,
-            },
-            ensure_ascii=False,
+        cursor_generation=resolved_generation,
+        plan_preauthorization=(
+            resolved_preauthorization
+            if isinstance(resolved_preauthorization, PlanPreauthorizationReceipt)
+            else None
         ),
     )
+    if not preauthorization_was_explicit:
+        cursor = replace(
+            cursor,
+            plan_preauthorization=_invalidate_for_coordinate_change(previous, cursor),
+        )
+    metadata = _serialize_cursor(cursor)
+    if expected_cursor is not None:
+        if expected_cursor.journey != normalized_journey:
+            raise ValueError("expected cursor journey does not match")
+        swapped = store.compare_and_swap_runtime_session_metadata(
+            _session_id(normalized_journey),
+            expected_metadata=_serialize_cursor(expected_cursor),
+            metadata=metadata,
+        )
+        if not swapped:
+            raise DeliveryCursorConflict("delivery cursor changed before atomic update")
+    else:
+        store.upsert_runtime_session(
+            _session_id(normalized_journey),
+            interface="builder_delivery_cursor",
+            journey=normalized_journey,
+            active=True,
+            metadata=metadata,
+        )
     if refresh_projection and _projected_active_work(previous) != _projected_active_work(cursor):
         store.request_projection_refresh(normalized_journey)
     return cursor
@@ -219,6 +269,33 @@ def _session_id(journey: str) -> str:
     return f"{_CURSOR_SESSION_PREFIX}{journey}"
 
 
+def _serialize_cursor(cursor: BuilderDeliveryCursor) -> str:
+    return json.dumps(
+        {
+            "method": cursor.method,
+            "active_item": cursor.active_item,
+            "active_item_title": cursor.active_item_title,
+            "active_item_level": cursor.active_item_level,
+            "active_checkpoint": cursor.active_checkpoint,
+            "pending_confirmation": cursor.pending_confirmation,
+            "last_delivery_event": cursor.last_delivery_event,
+            "cadence_profile": cursor.cadence_profile,
+            "cadence_limits": cursor.cadence_limits,
+            "granularity_decision": cursor.granularity_decision,
+            "navigator_flow_unit": cursor.navigator_flow_unit,
+            "child_work_items": cursor.child_work_items,
+            "aggregate_checkpoint_status": cursor.aggregate_checkpoint_status,
+            "cursor_generation": cursor.cursor_generation,
+            "plan_preauthorization": (
+                asdict(cursor.plan_preauthorization)
+                if cursor.plan_preauthorization is not None
+                else None
+            ),
+        },
+        ensure_ascii=False,
+    )
+
+
 def _normalize_required(value: str, field_name: str) -> str:
     normalized = value.strip() if isinstance(value, str) else ""
     if not normalized:
@@ -250,10 +327,92 @@ def _optional_string(value: object) -> str | None:
 
 
 def _optional_string_tuple(value: object) -> tuple[str, ...]:
-    if not isinstance(value, list):
+    if not isinstance(value, (list, tuple)):
         return ()
     normalized: list[str] = []
     for item in value:
         if isinstance(item, str) and item.strip():
             normalized.append(item.strip())
     return tuple(normalized)
+
+
+def _normalize_nonnegative_int(value: int | None) -> int:
+    if value is None:
+        return 0
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError("cursor_generation must be a non-negative integer")
+    return value
+
+
+def _optional_nonnegative_int(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return 0
+    return value
+
+
+def _deserialize_preauthorization(value: object) -> PlanPreauthorizationReceipt | None:
+    if not isinstance(value, dict):
+        return None
+    required_strings = (
+        "journey",
+        "method",
+        "active_item",
+        "active_item_level",
+        "flow_unit",
+        "plan_contract_version",
+        "policy",
+        "stop_boundary",
+        "scope_fingerprint",
+    )
+    strings = {name: _optional_string(value.get(name)) for name in required_strings}
+    generation = value.get("cursor_generation")
+    status = _optional_string(value.get("status")) or "pending"
+    reason = _optional_string(value.get("reason"))
+    children = _optional_string_tuple(value.get("child_work_items"))
+    if (
+        any(item is None for item in strings.values())
+        or isinstance(generation, bool)
+        or not isinstance(generation, int)
+        or generation < 0
+        or not children
+        or status not in {"pending", "consumed", "invalidated"}
+    ):
+        return None
+    return PlanPreauthorizationReceipt(
+        journey=strings["journey"] or "",
+        method=strings["method"] or "",
+        cursor_generation=generation,
+        active_item=strings["active_item"] or "",
+        active_item_level=strings["active_item_level"] or "",
+        flow_unit=strings["flow_unit"] or "",
+        child_work_items=children,
+        plan_contract_version=strings["plan_contract_version"] or "",
+        policy=strings["policy"] or "",
+        stop_boundary=strings["stop_boundary"] or "",
+        scope_fingerprint=strings["scope_fingerprint"] or "",
+        status=status,
+        reason=reason,
+    )
+
+
+def _invalidate_for_coordinate_change(
+    previous: BuilderDeliveryCursor | None,
+    current: BuilderDeliveryCursor,
+) -> PlanPreauthorizationReceipt | None:
+    receipt = current.plan_preauthorization
+    if previous is None or receipt is None or receipt.status != "pending":
+        return receipt
+    reason: str | None = None
+    if previous.cursor_generation != current.cursor_generation:
+        reason = "cursor_generation_changed"
+    elif previous.active_item != current.active_item:
+        reason = "active_item_changed"
+    elif previous.active_item_level != current.active_item_level:
+        reason = "active_item_level_changed"
+    elif previous.navigator_flow_unit != current.navigator_flow_unit:
+        reason = "flow_unit_changed"
+    elif set(previous.child_work_items) != set(current.child_work_items):
+        reason = "child_scope_changed"
+    if reason is None:
+        return receipt
+    return replace(receipt, status="invalidated", reason=reason)
