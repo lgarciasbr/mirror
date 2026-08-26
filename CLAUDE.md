@@ -84,6 +84,15 @@ hierarchical rendering without flattening or reformatting it.
 **Commits:** use descriptive English commit messages. Explain the WHY, not just
 what was done. Prefer small commits with clear review boundaries.
 
+**Backup protocol:** when backing up Mirror, always create the canonical backup
+under `~/.mirror-minds/leandro/backups/` first. Then copy the same backup file to
+the Obsidian vault folder
+`/Users/leandro/Library/CloudStorage/OneDrive-i9Flow/Documentos - Geral/Projetos/Leandro/Backups/Mirror Mind/`.
+When the user asks for Mirror + Ariad backup, also create an Ariad companion zip
+from Ariad-related docs/code/tests in the Mirror repository and copy it, plus its
+manifest, to the same Obsidian folder. Validate copied zip files with
+`unzip -tq`.
+
 ### Ego-Persona Model
 
 The mirror has one voice: the ego. Personas are specialized lenses activated by
