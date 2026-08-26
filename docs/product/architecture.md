@@ -116,10 +116,13 @@ locking, receipts, publication, rollback, and inspection to the shared service.
 The extension's raw SQLite handle grants no projection path authority.
 
 The Ariad Operational compiler is a pure read-model compiler above that same
-service. It resolves authored roadmap links with shared Ariad grammar, preserves
-authored hierarchy order, reads active work only from explicit durable state,
-and extracts only public exploration/refinement fields and allowlisted artifact
-references. Its `sourceRevision` hashes the canonical projected content, so
+service. It resolves authored roadmap links from their containing documents with
+shared Ariad grammar, then classifies safety by the canonical target beneath the
+registered Journey root. Parent-relative traversal is valid only while confined;
+absolute, URI-like, backslash-based, canonical-escape, and symlink-escape targets
+remain bounded failures. The compiler preserves authored hierarchy order, reads
+active work only from explicit durable state, and extracts only public
+exploration/refinement fields and allowlisted artifact references. Its `sourceRevision` hashes the canonical projected content, so
 excluded narrative bodies cannot perturb consumer identity. A registered-root
 rebuild validates the Operational schema and delegates publication to the DS2
 kernel; lifecycle-triggered refresh remains a separate coordinator concern.

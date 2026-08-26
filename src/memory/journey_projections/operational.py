@@ -372,27 +372,37 @@ class OperationalCompiler:
     def _resolve_link(self, root: Path, parent: Path, target: str) -> Path:
         raw = target.strip().split("#", 1)[0]
         candidate_target = Path(raw)
-        if (
-            not raw
-            or candidate_target.is_absolute()
-            or "\\" in raw
-            or ".." in candidate_target.parts
-            or ":" in raw
-        ):
+        if not raw or candidate_target.is_absolute() or "\\" in raw or ":" in raw:
             raise ProjectionError(
                 ProjectionErrorCode.UNSAFE_PROJECTION_PATH,
                 "Durable Ariad source reference is outside the registered Journey.",
             )
-        candidate = parent.parent / candidate_target
+        candidate = self._confined_candidate(parent.parent / candidate_target, root)
         if candidate.is_dir():
             candidate = candidate / "index.md"
         self._assert_confined(candidate, root, require_file=True)
         return candidate
 
+    def _confined_candidate(self, path: Path, root: Path) -> Path:
+        """Canonicalize a source link before deciding whether traversal is safe."""
+        try:
+            resolved = path.resolve(strict=False)
+        except (OSError, RuntimeError) as exc:
+            raise ProjectionError(
+                ProjectionErrorCode.SCHEMA_VALIDATION_FAILED,
+                "Durable Ariad source could not be compiled.",
+            ) from exc
+        if not resolved.is_relative_to(root):
+            raise ProjectionError(
+                ProjectionErrorCode.UNSAFE_PROJECTION_PATH,
+                "Durable Ariad source reference is outside the registered Journey.",
+            )
+        return resolved
+
     def _assert_confined(self, path: Path, root: Path, *, require_file: bool) -> None:
         try:
             resolved = path.resolve(strict=True)
-        except OSError as exc:
+        except (OSError, RuntimeError) as exc:
             raise ProjectionError(
                 ProjectionErrorCode.SCHEMA_VALIDATION_FAILED,
                 "Durable Ariad source could not be compiled.",

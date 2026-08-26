@@ -123,6 +123,60 @@ def test_probe_prepare_and_rebuild_match_normative_fixture(
     assert inspected["manifest"]["snapshotId"] == "op-probe-0001"
 
 
+def test_public_rebuild_accepts_confined_parent_link_topology(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    home = tmp_path / "isolated"
+    fixture = _probe_fixture(home)
+    roadmap = fixture / "docs/project/roadmap"
+    shutil.rmtree(roadmap)
+    capability = roadmap / "cv1"
+    delivery = roadmap / "ds1"
+    capability.mkdir(parents=True)
+    delivery.mkdir()
+    (roadmap / "index.md").write_text(
+        "# Roadmap\n\n| Code | Capability Value | Status |\n|---|---|---|\n"
+        "| [CV1](cv1/index.md) | One | Active |\n",
+        encoding="utf-8",
+    )
+    (capability / "index.md").write_text(
+        "# CV1 — One\n\n**Status:** Active\n\n## Outcome\n\nOne.\n\n"
+        "| Code | Delivery Story | Status |\n|---|---|---|\n"
+        "| [CV1.DS1](../ds1/index.md) | Root delivery | Planned |\n",
+        encoding="utf-8",
+    )
+    (delivery / "index.md").write_text(
+        "# CV1.DS1 — Root delivery\n\n**Status:** Planned\n\n"
+        "## Outcome\n\nConfined parent traversal.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("MEMORY_ENV", "test")
+    monkeypatch.delenv("MIRROR_PRODUCTION_HOME", raising=False)
+    monkeypatch.delenv("MIRROR_USER", raising=False)
+
+    assert cmd_journey_projection(_prepare_args(home, fixture)) == 0
+    capsys.readouterr()
+    assert (
+        cmd_journey_projection(
+            [
+                "rebuild-operational",
+                "--journey",
+                "projection-probe-journey",
+                "--mirror-home",
+                str(home),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    rebuilt = json.loads(capsys.readouterr().out)
+
+    child = rebuilt["document"]["content"]["roadmap"]["roots"][0]["children"][0]
+    assert child["id"] == "CV1.DS1"
+    assert child["path"] == "docs/project/roadmap/ds1/index.md"
+
+
 def test_probe_prepare_refuses_production_unconfined_and_symlink_inputs(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:

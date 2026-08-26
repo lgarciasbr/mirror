@@ -291,6 +291,76 @@ def test_document_first_refinement_index_owns_status_and_order(tmp_path: Path) -
     ]
 
 
+@pytest.mark.parametrize(
+    ("capability_directory", "target"),
+    [
+        ("cv1", "../ds1/index.md"),
+        ("capabilities/cv1", "../../ds1/index.md"),
+        ("cv1", "../ds1/"),
+    ],
+)
+def test_confined_parent_links_compile_root_level_delivery_packages(
+    tmp_path: Path,
+    capability_directory: str,
+    target: str,
+) -> None:
+    roadmap = tmp_path / "docs/project/roadmap"
+    capability = roadmap / capability_directory
+    delivery = roadmap / "ds1"
+    capability.mkdir(parents=True)
+    delivery.mkdir(parents=True)
+    (roadmap / "index.md").write_text(
+        "# Roadmap\n\n| Code | Capability Value | Status |\n|---|---|---|\n"
+        f"| [CV1]({capability_directory}/index.md) | One | Active |\n",
+        encoding="utf-8",
+    )
+    (capability / "index.md").write_text(
+        "# CV1 — One\n\n**Status:** Active\n\n## Outcome\n\nOne.\n\n"
+        "| Code | Delivery Story | Status |\n|---|---|---|\n"
+        f"| [CV1.DS1]({target}) | Root delivery | Planned |\n",
+        encoding="utf-8",
+    )
+    (delivery / "index.md").write_text(
+        "# CV1.DS1 — Root delivery\n\n**Status:** Planned\n\n"
+        "## Outcome\n\nCompiled through a confined parent link.\n",
+        encoding="utf-8",
+    )
+
+    document = fixed_compiler().compile(tmp_path, "synthetic-journey")
+
+    projected = document["content"]["roadmap"]["roots"][0]["children"][0]
+    assert projected["id"] == "CV1.DS1"
+    assert projected["path"] == "docs/project/roadmap/ds1/index.md"
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "../../../../outside.md",
+        "/tmp/outside.md",
+        "file:///tmp/outside.md",
+        "..\\outside.md",
+    ],
+)
+def test_unsafe_roadmap_link_forms_remain_rejected(
+    tmp_path: Path,
+    target: str,
+) -> None:
+    roadmap = tmp_path / "docs/project/roadmap"
+    roadmap.mkdir(parents=True)
+    (roadmap / "index.md").write_text(
+        "# Roadmap\n\n| Code | Capability Value | Status |\n|---|---|---|\n"
+        f"| [CV1]({target}) | Unsafe | Planned |\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ProjectionError) as caught:
+        fixed_compiler().compile(tmp_path, "synthetic-journey")
+
+    assert caught.value.code is ProjectionErrorCode.UNSAFE_PROJECTION_PATH
+    assert str(tmp_path) not in caught.value.message
+
+
 def test_missing_linked_package_fails_before_publication(tmp_path: Path) -> None:
     roadmap = tmp_path / "docs/project/roadmap"
     roadmap.mkdir(parents=True)
@@ -327,6 +397,38 @@ def test_linked_symlink_escape_is_rejected_without_leaking_path(tmp_path: Path) 
     assert str(tmp_path) not in caught.value.message
 
 
+def test_parent_link_through_directory_symlink_escape_is_rejected(
+    tmp_path: Path,
+) -> None:
+    roadmap = tmp_path / "docs/project/roadmap"
+    capability = roadmap / "cv1"
+    capability.mkdir(parents=True)
+    outside = tmp_path.parent / f"{tmp_path.name}-outside"
+    outside.mkdir()
+    (outside / "index.md").write_text(
+        "# CV1.DS1 — Outside\n\n**Status:** Planned\n",
+        encoding="utf-8",
+    )
+    (roadmap / "linked-outside").symlink_to(outside, target_is_directory=True)
+    (roadmap / "index.md").write_text(
+        "# Roadmap\n\n| Code | Capability Value | Status |\n|---|---|---|\n"
+        "| [CV1](cv1/index.md) | One | Active |\n",
+        encoding="utf-8",
+    )
+    (capability / "index.md").write_text(
+        "# CV1 — One\n\n**Status:** Active\n\n"
+        "| Code | Delivery Story | Status |\n|---|---|---|\n"
+        "| [CV1.DS1](../linked-outside/) | Outside | Planned |\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ProjectionError) as caught:
+        fixed_compiler().compile(tmp_path, "synthetic-journey")
+
+    assert caught.value.code is ProjectionErrorCode.UNSAFE_PROJECTION_PATH
+    assert str(outside) not in caught.value.message
+
+
 def test_rebuild_preserves_last_valid_projection_when_compilation_fails(
     tmp_path: Path,
 ) -> None:
@@ -344,6 +446,37 @@ def test_rebuild_preserves_last_valid_projection_when_compilation_fails(
     before = (projection.read_bytes(), manifest.read_bytes())
     cv_index = root / "docs/project/roadmap/cv-probe/index.md"
     cv_index.write_text("# malformed\n", encoding="utf-8")
+
+    with pytest.raises(ProjectionError) as caught:
+        service.rebuild("projection-probe-journey", active_work=active_work)
+
+    assert caught.value.code is ProjectionErrorCode.SCHEMA_VALIDATION_FAILED
+    assert (projection.read_bytes(), manifest.read_bytes()) == before
+
+
+def test_missing_confined_parent_link_preserves_last_valid_projection(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "journey"
+    shutil.copytree(FIXTURE / "journey", root)
+    active_work = load_json(root / "ariad-active-work.json")
+    projection_service = JourneyProjectionService(lambda _: root)
+    service = AriadOperationalProjectionService(
+        projection_service,
+        compiler=fixed_compiler(),
+    )
+    service.rebuild("projection-probe-journey", active_work=active_work)
+    projection = root / ".mirror/projections/ariad/operational.json"
+    manifest = root / ".mirror/projections/current.json"
+    before = (projection.read_bytes(), manifest.read_bytes())
+    cv_index = root / "docs/project/roadmap/cv-probe/index.md"
+    cv_index.write_text(
+        cv_index.read_text(encoding="utf-8").replace(
+            "ds-1/index.md",
+            "../missing/index.md",
+        ),
+        encoding="utf-8",
+    )
 
     with pytest.raises(ProjectionError) as caught:
         service.rebuild("projection-probe-journey", active_work=active_work)
