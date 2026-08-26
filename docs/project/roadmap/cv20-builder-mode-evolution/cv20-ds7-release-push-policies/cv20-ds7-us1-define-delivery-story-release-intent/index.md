@@ -2,7 +2,7 @@
 
 # CV20.DS7.US1 — Define Delivery Story Release Intent
 
-**Status:** 🟠 In Progress
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
