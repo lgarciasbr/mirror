@@ -1626,10 +1626,16 @@ def render_prepare_report(report: BuilderPrepareReport) -> str:
 
 
 def _write_story_package(directory: Path, report: BuilderPlanReport) -> None:
+    """Create missing story artifacts without replacing Driver-authored contracts."""
     directory.mkdir(parents=True, exist_ok=True)
-    (directory / "index.md").write_text(_render_story_index_artifact(report), encoding="utf-8")
-    (directory / "plan.md").write_text(_render_plan_artifact(report), encoding="utf-8")
-    (directory / "test-guide.md").write_text(_render_test_guide_artifact(report), encoding="utf-8")
+    artifacts = (
+        (directory / "index.md", _render_story_index_artifact(report)),
+        (directory / "plan.md", _render_plan_artifact(report)),
+        (directory / "test-guide.md", _render_test_guide_artifact(report)),
+    )
+    for path, content in artifacts:
+        if not path.exists():
+            path.write_text(content, encoding="utf-8")
 
 
 def _render_story_index_artifact(report: BuilderPlanReport) -> str:

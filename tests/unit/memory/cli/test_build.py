@@ -359,6 +359,22 @@ Candidate Delivery Stories:
     assert "E2E decision: required" in plan_text
 
 
+def test_plan_item_artifact_manifest_reports_preserved_package_as_existing(tmp_path):
+    plan_path = tmp_path / "story" / "plan.md"
+    plan_path.parent.mkdir(parents=True)
+    paths = (plan_path.parent / "index.md", plan_path, plan_path.parent / "test-guide.md")
+    for path in paths:
+        path.write_text("authored", encoding="utf-8")
+
+    artifacts = build._plan_package_artifacts(plan_path, dict.fromkeys(paths, True))
+
+    assert {(artifact.kind, artifact.status) for artifact in artifacts} == {
+        ("story index", "existing"),
+        ("plan", "existing"),
+        ("test guide", "existing"),
+    }
+
+
 def test_build_plan_delivery_story_records_aggregate_checkpoint(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)

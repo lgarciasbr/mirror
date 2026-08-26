@@ -229,6 +229,43 @@ def test_plan_lifecycle_item_updates_cursor_and_renders_checkpoint(tmp_path):
     assert "# Plan — CV2.DS1" in plan_path.read_text(encoding="utf-8")
 
 
+def test_plan_lifecycle_item_preserves_existing_driver_authored_plan(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_item_title="Checkout entry and address capture",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+    )
+    plan_path = tmp_path / "project" / "docs/project/roadmap/cv2/cv2-ds1/plan.md"
+    plan_path.parent.mkdir(parents=True)
+    authored = b"# Driver-authored Plan\n\nPreserve persistence and API decisions.\n"
+    authored_index = b"# Authored story index\n\nPreserve acceptance behavior.\n"
+    authored_test_guide = b"# Authored test guide\n\nPreserve Navigator route.\n"
+    plan_path.write_bytes(authored)
+    (plan_path.parent / "index.md").write_bytes(authored_index)
+    (plan_path.parent / "test-guide.md").write_bytes(authored_test_guide)
+
+    plan_lifecycle_item(
+        store,
+        journey="sandbox-pet-store",
+        method=get_ariad_method(),
+        objective="Plan checkout entry implementation.",
+        plan_artifact_path=plan_path,
+    )
+
+    assert plan_path.read_bytes() == authored
+    assert (plan_path.parent / "index.md").read_bytes() == authored_index
+    assert (plan_path.parent / "test-guide.md").read_bytes() == authored_test_guide
+    cursor = get_delivery_cursor(store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_checkpoint == "after_plan"
+    assert cursor.pending_confirmation == "navigator_approval"
+
+
 def test_plan_lifecycle_item_requires_prepare(tmp_path):
     _client, store = _store(tmp_path)
     set_delivery_cursor(

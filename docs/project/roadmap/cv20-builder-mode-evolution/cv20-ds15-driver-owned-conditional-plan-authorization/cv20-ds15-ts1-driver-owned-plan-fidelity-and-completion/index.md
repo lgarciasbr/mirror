@@ -18,11 +18,13 @@ generic scaffold.
 
 ## Outcome
 
-`plan-delivery-story` creates `plan.md` only when absent. Existing Plans are
-reported as existing and remain byte-identical. Conditional approval requires all
-five Plan contract sections to exist and rejects empty, `Pending`, TODO/TBD, or
-placeholder bodies before changing the approval checkpoint. Ordinary explicit
-approval retains its compatibility warning behavior.
+`plan-delivery-story` creates `plan.md` only when absent. `plan-item` likewise
+creates only missing `index.md`, `plan.md`, and `test-guide.md` artifacts. Existing
+Driver-authored package files are reported as existing and remain byte-identical.
+Conditional approval requires all five aggregate Plan contract sections to exist
+and rejects empty, `Pending`, TODO/TBD, or placeholder bodies before changing the
+approval checkpoint. Ordinary explicit approval retains its compatibility warning
+behavior.
 
 ## Acceptance Behavior
 
@@ -53,5 +55,7 @@ And the bounded reason is plan_incomplete
 
 ## Validation
 
-Focused tests: `tests/unit/memory/builder/test_delivery_story_plan.py`.
-Aggregate validation was accepted by the Navigator at the parent Delivery Story checkpoint.
+Focused tests: `tests/unit/memory/builder/test_delivery_story_plan.py`,
+`tests/unit/memory/builder/test_lifecycle.py`, and
+`tests/unit/memory/cli/test_build.py`. Aggregate validation was accepted by the
+Navigator at the parent Delivery Story checkpoint.

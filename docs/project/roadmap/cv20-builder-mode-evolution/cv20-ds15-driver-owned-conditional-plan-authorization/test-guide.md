@@ -83,8 +83,10 @@ reordered, vague language preauthorizes, or any later hard gate is crossed.
 
 Implementation evidence prepared for Navigator validation:
 
-- focused cursor, Plan, lifecycle, CLI, storage, and process-concurrency suite:
-  passed;
+- focused cursor, aggregate/implementable Plan, lifecycle, CLI, storage, and
+  process-concurrency suite: passed;
+- `plan-item` insert-only regression verified existing `index.md`, `plan.md`, and
+  `test-guide.md` remain byte-identical and artifact surfaces report `existing`;
 - two-process receipt consumption: exactly one `approved` / implementation start
   and one idempotent `already_approved` result;
 - changed child set, presentational reorder, incomplete Plan, cancellation, retry,

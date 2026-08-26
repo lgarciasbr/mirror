@@ -10,6 +10,7 @@ from pathlib import Path
 from memory.builder.ariad_method import get_ariad_method
 from memory.builder.artifact_surfaces import (
     MaterializedArtifact,
+    existing_artifact,
     materialized_artifact,
     render_artifacts_materialized_surface,
 )
@@ -1282,22 +1283,18 @@ def _plan_package_artifacts(
         return ()
     index_path = plan_artifact_path.parent / "index.md"
     test_guide_path = plan_artifact_path.parent / "test-guide.md"
-    return (
-        materialized_artifact(
-            "story index",
-            index_path,
-            existed_before=existed_before.get(index_path, False),
-        ),
-        materialized_artifact(
-            "plan",
-            plan_artifact_path,
-            existed_before=existed_before.get(plan_artifact_path, False),
-        ),
-        materialized_artifact(
-            "test guide",
-            test_guide_path,
-            existed_before=existed_before.get(test_guide_path, False),
-        ),
+    artifacts = (
+        ("story index", index_path),
+        ("plan", plan_artifact_path),
+        ("test guide", test_guide_path),
+    )
+    return tuple(
+        (
+            existing_artifact(kind, path)
+            if existed_before.get(path, False)
+            else materialized_artifact(kind, path, existed_before=False)
+        )
+        for kind, path in artifacts
     )
 
 
