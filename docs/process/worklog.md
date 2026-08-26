@@ -25,8 +25,9 @@ parent-relative roadmap links. Operational snapshot
 `sha256:222aa1214a54c8059c7689daf21d6b98f128277a2462b79fd908ca49dc5d6c93`;
 inspection proves the manifest and stable document match across roots `CV-001`,
 `CV-002`, and `CV-003`. Bounded consumer evidence was returned for TD-001
-closure. CV23.DS8 remains in Validation until explicit Navigator acceptance and
-consumer-owned ledger closure.
+closure. Navigator accepted the installed validation on 2026-08-26; DS8 and
+CV23 are closed with no new debt. Consumer-owned ledger closure remains the
+Nautilus agent's next action using the returned evidence.
 
 ### 2026-08-25 — Retired Refinement migration drift repaired (D-015)
 

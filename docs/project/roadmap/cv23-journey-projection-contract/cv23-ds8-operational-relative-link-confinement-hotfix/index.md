@@ -2,7 +2,7 @@
 
 # CV23.DS8 — Operational Relative-Link Confinement Hotfix
 
-**Status:** 🟣 In Validation — v0.31.11 installed rebuild passed; Navigator acceptance pending
+**Status:** ✅ Done — released and accepted in v0.31.11
 
 ---
 
@@ -18,14 +18,15 @@ release is accepted through the installed Nautilus consumer gate.
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV23.DS8.TS1 | Canonical Operational Link Confinement | Technical Story | Replace lexical parent rejection with canonical Journey-root confinement and prove the complete security regression matrix | 🟣 In Validation |
+| CV23.DS8.TS1 | Canonical Operational Link Confinement | Technical Story | Replace lexical parent rejection with canonical Journey-root confinement and prove the complete security regression matrix | ✅ Done |
 
 ## Done Condition
 
 The source and installed public CLI compile the legitimate Nautilus
 CV-to-root-DS topology, all escape and last-valid-preservation regressions pass,
-a patch newer than `v0.31.10` is released, and Nautilus closes TD-001 after its
-Operational snapshot and manifest advance to current Ariad truth.
+a patch newer than `v0.31.10` is released, and bounded return evidence allows
+Nautilus to close TD-001 after its Operational snapshot and manifest advance to
+current Ariad truth.
 
 ## External Defect Authority
 

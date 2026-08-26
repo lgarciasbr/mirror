@@ -68,5 +68,6 @@ Release and installed-consumer evidence complete:
   `td-001-mirror-return.json`; no consumer source link was rewritten.
 - Post-install consumer-kit hashes remain unchanged and all 16 self-tests pass.
 
-Pending hard gate: explicit Navigator validation acceptance and consumer-owned
-TD-001 ledger closure.
+Navigator accepted the installed validation on 2026-08-26. Mirror-side delivery
+is closed with no new debt; `td-001-mirror-return.json` is the durable handoff for
+the Nautilus agent's consumer-owned ledger closure.
