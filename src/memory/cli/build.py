@@ -89,6 +89,11 @@ from memory.builder.pull_candidates import (
     render_pull_candidates_report,
     render_roadmap_snapshot_report,
 )
+from memory.builder.release_intent import (
+    inspect_release_intent,
+    render_release_intent_report,
+    set_release_intent,
+)
 from memory.builder.resume_state import read_builder_resume_state
 from memory.builder.resume_surface import render_builder_resume_surface
 from memory.builder.roadmap_position import resolve_roadmap_position
@@ -1057,6 +1062,43 @@ def cmd_cancel_delivery_story_plan_preauthorization(
             reason="navigator_cancelled",
         )
     )
+
+
+def cmd_release_intent(
+    method: str,
+    *,
+    intent: str | None = None,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="Delivery Story release intent",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        report = (
+            set_release_intent(
+                mem.store,
+                journey=resolved_journey,
+                method=method,
+                intent=intent,
+            )
+            if intent is not None
+            else inspect_release_intent(
+                mem.store,
+                journey=resolved_journey,
+                method=method,
+            )
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_release_intent_report(report))
 
 
 def cmd_set_flow_unit(
@@ -2348,6 +2390,20 @@ def main(argv: list[str] | None = None) -> None:
         help="Runtime session id for resolving the active Builder journey",
     )
 
+    p_release_intent = sub.add_parser(
+        "release-intent",
+        help="Record or inspect non-authorizing Delivery Story release intent",
+    )
+    p_release_intent.add_argument("--method", required=True)
+    p_release_intent.add_argument("--journey", default=None)
+    p_release_intent.add_argument("--session-id", default=None)
+    p_release_intent.add_argument(
+        "--intent",
+        choices=("planned", "none", "undecided"),
+        default=None,
+        help="Omit to inspect the active Delivery Story release intent",
+    )
+
     p_flow = sub.add_parser(
         "set-flow-unit",
         help="Inspect or set the Ariad Navigator flow unit",
@@ -2778,6 +2834,13 @@ def main(argv: list[str] | None = None) -> None:
         )
     elif args.command == "approve-plan":
         cmd_approve_plan(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "release-intent":
+        cmd_release_intent(
+            args.method,
+            intent=args.intent,
+            journey=args.journey,
+            session_id=args.session_id,
+        )
     elif args.command == "set-flow-unit":
         cmd_set_flow_unit(
             args.method,

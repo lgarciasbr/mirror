@@ -101,6 +101,13 @@ the receipt and preserves ordinary approval; child order is presentational while
 set addition/removal is authoritative. No model, provider, persona, network
 service, or semantic prose comparison participates in verification.
 
+The same cursor carries optional Delivery Story release intent as bounded planning
+state. `planned`, `none`, and `undecided` remain distinct from an unrecorded
+state and are bound to the Delivery Story ancestor rather than one child story.
+Intent survives Pulls within that DS and clears when work moves to another DS.
+It never grants commit, push, tag, stable-promotion, publication, or remote
+mutation authority.
+
 Journey projections add a filesystem read-model boundary without changing this
 import direction. CLI, Ariad lifecycle, and the public Extension API call one
 Journey projection service; contract models/schema validation, deterministic

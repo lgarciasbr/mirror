@@ -13,6 +13,7 @@ from memory.builder.delivery_cursor import (
 )
 from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
 from memory.builder.method_definition import ContractDefinition, MethodDefinition
+from memory.builder.release_intent import delivery_story_code_for_item
 from memory.builder.roadmap_grammar import strip_markdown_link as _strip_markdown_link
 from memory.builder.story_paths import create_story_directory, resolve_story_directory
 from memory.builder.story_paths import story_folder_name as _story_folder_name
@@ -186,6 +187,8 @@ def pull_lifecycle_item(
     item_changed = existing.active_item is not None and existing.active_item != normalized_item.code
     child_work_items = () if item_changed else existing.child_work_items
     aggregate_checkpoint_status = () if item_changed else existing.aggregate_checkpoint_status
+    delivery_story = delivery_story_code_for_item(normalized_item.code)
+    preserve_release_intent = existing.release_intent_delivery_story == delivery_story
     cursor = set_delivery_cursor(
         store,
         journey=normalized_journey,
@@ -202,6 +205,10 @@ def pull_lifecycle_item(
         child_work_items=child_work_items,
         aggregate_checkpoint_status=aggregate_checkpoint_status,
         cursor_generation=existing.cursor_generation + 1,
+        release_intent_delivery_story=(
+            existing.release_intent_delivery_story if preserve_release_intent else None
+        ),
+        release_intent=existing.release_intent if preserve_release_intent else None,
     )
     return BuilderPullReport(
         journey=normalized_journey,

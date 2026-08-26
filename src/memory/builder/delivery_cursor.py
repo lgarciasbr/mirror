@@ -9,6 +9,7 @@ from memory.storage.store import Store
 
 _CURSOR_SESSION_PREFIX = "__builder_delivery_cursor__:"
 _KEEP_PREAUTHORIZATION = object()
+_KEEP_RELEASE_INTENT = object()
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,8 @@ class BuilderDeliveryCursor:
     aggregate_checkpoint_status: tuple[str, ...] = ()
     cursor_generation: int = 0
     plan_preauthorization: PlanPreauthorizationReceipt | None = None
+    release_intent_delivery_story: str | None = None
+    release_intent: str | None = None
 
 
 def get_delivery_cursor(store: Store, journey: str) -> BuilderDeliveryCursor | None:
@@ -86,6 +89,8 @@ def get_delivery_cursor(store: Store, journey: str) -> BuilderDeliveryCursor | N
         aggregate_checkpoint_status=_optional_string_tuple(data.get("aggregate_checkpoint_status")),
         cursor_generation=_optional_nonnegative_int(data.get("cursor_generation")),
         plan_preauthorization=_deserialize_preauthorization(data.get("plan_preauthorization")),
+        release_intent_delivery_story=_optional_string(data.get("release_intent_delivery_story")),
+        release_intent=_optional_release_intent(data.get("release_intent")),
     )
 
 
@@ -109,6 +114,8 @@ def set_delivery_cursor(
     cursor_generation: int | None = None,
     plan_preauthorization: PlanPreauthorizationReceipt | None | object = _KEEP_PREAUTHORIZATION,
     expected_cursor: BuilderDeliveryCursor | None = None,
+    release_intent_delivery_story: str | None | object = _KEEP_RELEASE_INTENT,
+    release_intent: str | None | object = _KEEP_RELEASE_INTENT,
     refresh_projection: bool = True,
 ) -> BuilderDeliveryCursor:
     """Persist the Builder delivery cursor for a journey."""
@@ -128,6 +135,16 @@ def set_delivery_cursor(
     )
     if resolved_preauthorization is _KEEP_PREAUTHORIZATION:
         resolved_preauthorization = None
+    resolved_release_story = (
+        previous.release_intent_delivery_story
+        if release_intent_delivery_story is _KEEP_RELEASE_INTENT and previous is not None
+        else release_intent_delivery_story
+    )
+    resolved_release_intent = (
+        previous.release_intent
+        if release_intent is _KEEP_RELEASE_INTENT and previous is not None
+        else release_intent
+    )
     cursor = BuilderDeliveryCursor(
         journey=normalized_journey,
         method=normalized_method,
@@ -148,6 +165,12 @@ def set_delivery_cursor(
             resolved_preauthorization
             if isinstance(resolved_preauthorization, PlanPreauthorizationReceipt)
             else None
+        ),
+        release_intent_delivery_story=_normalize_optional(
+            resolved_release_story if isinstance(resolved_release_story, str) else None
+        ),
+        release_intent=_normalize_release_intent(
+            resolved_release_intent if isinstance(resolved_release_intent, str) else None
         ),
     )
     if not preauthorization_was_explicit:
@@ -291,6 +314,8 @@ def _serialize_cursor(cursor: BuilderDeliveryCursor) -> str:
                 if cursor.plan_preauthorization is not None
                 else None
             ),
+            "release_intent_delivery_story": cursor.release_intent_delivery_story,
+            "release_intent": cursor.release_intent,
         },
         ensure_ascii=False,
     )
@@ -324,6 +349,20 @@ def _optional_string(value: object) -> str | None:
         return None
     normalized = value.strip()
     return normalized or None
+
+
+def _normalize_release_intent(value: str | None) -> str | None:
+    normalized = _normalize_optional(value)
+    if normalized is None:
+        return None
+    if normalized not in {"planned", "none", "undecided"}:
+        raise ValueError("release_intent must be planned, none, or undecided")
+    return normalized
+
+
+def _optional_release_intent(value: object) -> str | None:
+    normalized = _optional_string(value)
+    return normalized if normalized in {"planned", "none", "undecided"} else None
 
 
 def _optional_string_tuple(value: object) -> tuple[str, ...]:

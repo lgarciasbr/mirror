@@ -295,6 +295,10 @@ def test_mm_build_skill_requires_marked_ariad_surfaces_to_render_verbatim():
     assert "cancel-delivery-story-plan-preauthorization" in skill
     assert "Vague continuation" in skill
     assert "stop at Navigator Validation" in skill
+    assert "release-intent --method ariad" in skill
+    assert "<planned|none|undecided>" in skill
+    assert "Release intent belongs to the" in skill
+    assert "not authorization to commit, push" in skill
 
 
 def test_build_plan_item_renders_checkpoint_and_updates_cursor(mocker, tmp_path, capsys):
@@ -635,6 +639,56 @@ def test_build_cancel_plan_preauthorization_preserves_ordinary_gate(mocker, tmp_
     assert "IMPLEMENTATION_STARTED" not in out
     assert cursor.pending_confirmation == "navigator_delivery_story_plan_approval"
     assert cursor.plan_preauthorization.status == "invalidated"
+
+
+def test_build_release_intent_command_records_and_inspects_non_authorizing_state(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS7.US1",
+        active_item_level="user_story",
+        last_delivery_event="plan_approved",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "release-intent",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--intent",
+            "planned",
+        ]
+    )
+    build.main(
+        [
+            "release-intent",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert out.count("<<<ARIAD:RELEASE_INTENT>>>") == 2
+    assert "CV20.DS7" in out
+    assert "planned" in out
+    assert "does not authorize commit, push, tag" in out
+    assert "creation, stable promotion, release publication, or" in out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor.release_intent == "planned"
+    assert cursor.last_delivery_event == "plan_approved"
 
 
 def test_build_set_flow_unit_records_delivery_story_choice(mocker, tmp_path, capsys):

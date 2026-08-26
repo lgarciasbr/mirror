@@ -60,6 +60,7 @@ def render_builder_resume_surface(
             _card_text(
                 cursor.last_delivery_event if cursor and cursor.last_delivery_event else "none"
             ),
+            *_release_intent_lines(cursor),
             "│                                                        │",
             _card_text("🧰 Refinement field"),
             *_refinement_field_lines(state, canonical_refinement_index),
@@ -73,6 +74,19 @@ def render_builder_resume_surface(
         ]
     )
     return wrap_ariad_surface("builder_resume", "\n".join(lines) + "\n")
+
+
+def _release_intent_lines(cursor: object) -> list[str]:
+    intent = getattr(cursor, "release_intent", None)
+    delivery_story = getattr(cursor, "release_intent_delivery_story", None)
+    if not intent or not delivery_story:
+        return []
+    return [
+        "│                                                        │",
+        _card_text("release intent"),
+        *_card_wrapped(f"{delivery_story}: {intent}"),
+        *_card_wrapped("intent is not release authorization"),
+    ]
 
 
 def _refinement_field_lines(

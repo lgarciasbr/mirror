@@ -47,6 +47,29 @@ def test_render_builder_resume_surface_shows_cursor_and_next_actions():
     assert "no story lifecycle work" in rendered
 
 
+def test_render_builder_resume_surface_shows_non_authorizing_release_intent():
+    state = BuilderResumeState(
+        journey="sandbox-pet-store",
+        adopted_method="ariad",
+        cursor=BuilderDeliveryCursor(
+            journey="sandbox-pet-store",
+            method="ariad",
+            active_item="CV20.DS7.US1",
+            release_intent_delivery_story="CV20.DS7",
+            release_intent="planned",
+        ),
+        resumable=True,
+        reason=None,
+        allowed_next_actions=("prepare_active_item",),
+    )
+
+    rendered = render_builder_resume_surface(state)
+
+    assert "release intent" in rendered
+    assert "CV20.DS7: planned" in rendered
+    assert "intent is not release authorization" in rendered
+
+
 def test_render_builder_resume_surface_shows_active_refinement_field(store):
     set_adopted_method(store, "sandbox-pet-store", "ariad")
     set_delivery_cursor(

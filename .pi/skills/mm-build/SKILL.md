@@ -741,6 +741,34 @@ hand-edit the package's materialized children to work around a blocked Expand,
 and do not re-run Pull/Expand until the Navigator has fixed the authored
 content.
 
+## Delivery Story Release Intent
+
+When the active Ariad item belongs to a Delivery Story and the Navigator
+explicitly says the DS is expected to create a release boundary, has no release
+intent, or remains undecided, record only that planning state:
+
+```bash
+uv run python -m memory build release-intent --method ariad \
+  --intent <planned|none|undecided>
+```
+
+If the Navigator names a specific journey, pass `--journey <slug>`. To inspect
+without changing state, omit `--intent`. Return the `RELEASE_INTENT` surface
+verbatim.
+
+Map only explicit meaning:
+
+- `planned` — the DS is expected to create a release boundary if completed
+  coherently;
+- `none` — the DS is explicitly not expected to create a release boundary;
+- `undecided` — the decision is intentionally unresolved and may be revisited.
+
+Do not infer intent from cadence, version changes, completed implementation,
+existing tags, roadmap position, or a previous DS. Release intent belongs to the
+Delivery Story ancestor and is not authorization to commit, push, create a tag,
+promote stable, publish a release, or mutate a remote system. Those remain
+separate gates.
+
 ## Delivery Story Navigator Flow
 
 When the active Ariad work is a Delivery Story or the Navigator refers to the
