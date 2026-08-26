@@ -2,7 +2,7 @@
 
 # CV20.DS15.TS2 — Cursor-Bound Exact-Scope Authorization Receipt
 
-**Status:** 🟠 In Progress
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
@@ -55,4 +55,4 @@ And prior pending authority is invalidated
 ## Validation
 
 Focused tests: `test_delivery_cursor.py`, `test_lifecycle.py`, and receipt tests in
-`test_delivery_story_plan.py`. Aggregate validation remains pending.
+`test_delivery_story_plan.py`. Aggregate validation was accepted by the Navigator.

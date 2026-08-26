@@ -2,7 +2,7 @@
 
 # CV20.DS15.TS3 — Preauthorization Verification And Invalidation
 
-**Status:** 🟠 In Progress
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
@@ -55,4 +55,4 @@ And ordinary approval remains the next gate
 
 Focused unit coverage plus
 `tests/integration/memory/builder/test_plan_preauthorization_concurrency.py`.
-Aggregate Navigator validation remains pending.
+Aggregate Navigator validation was accepted.

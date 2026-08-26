@@ -2,7 +2,7 @@
 
 # CV20.DS15.US1 — One-Turn Conditional Plan Orchestration
 
-**Status:** 🟠 In Progress
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
@@ -54,4 +54,4 @@ And the ordinary Plan gate remains
 ## Validation
 
 CLI/parser and Pi skill-contract tests in `tests/unit/memory/cli/test_build.py`.
-Navigator-visible sandbox validation remains pending at the parent checkpoint.
+Navigator-visible aggregate validation was accepted at the parent checkpoint.

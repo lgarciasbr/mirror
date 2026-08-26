@@ -101,4 +101,4 @@ Implementation evidence prepared for Navigator validation:
   local waits. The same tests fail individually before reaching their assertions;
   no projection or web source was changed by this Delivery Story.
 
-Navigator-visible sandbox acceptance and aggregate Validation remain pending.
+Navigator accepted aggregate Validation. Debt Review recorded `no_action`; no scoped debt blocks closure.

@@ -2,7 +2,7 @@
 
 # CV20.DS15.TS1 — Driver-Owned Plan Fidelity And Completion
 
-**Status:** 🟠 In Progress
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
@@ -54,4 +54,4 @@ And the bounded reason is plan_incomplete
 ## Validation
 
 Focused tests: `tests/unit/memory/builder/test_delivery_story_plan.py`.
-Aggregate validation remains pending at the parent Delivery Story checkpoint.
+Aggregate validation was accepted by the Navigator at the parent Delivery Story checkpoint.

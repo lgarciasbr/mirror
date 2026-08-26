@@ -2,7 +2,7 @@
 
 # CV20.DS15 — Driver-Owned Conditional Plan Authorization
 
-**Status:** 🟠 In Progress
+**Status:** ✅ Done
 
 ---
 
@@ -20,10 +20,10 @@ starting implementation.
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV20.DS15.TS1 | Driver-Owned Plan Fidelity And Completion | Technical Story | Plan materialization preserves authored content and exposes a blocking completeness check suitable for conditional approval | 🟠 In Progress |
-| CV20.DS15.TS2 | Cursor-Bound Exact-Scope Authorization Receipt | Technical Story | A bounded, private, single-use receipt binds Navigator authority to one Journey, cursor generation, Delivery Story, flow unit, exact child set, Plan contract, and stop boundary | 🟠 In Progress |
-| CV20.DS15.TS3 | Preauthorization Verification And Invalidation | Technical Story | Exact-scope consumption is atomic and idempotent, mismatch reasons are bounded, retries do not approve twice, and ordinary approval remains the fallback | 🟠 In Progress |
-| CV20.DS15.US1 | One-Turn Conditional Plan Orchestration | User Story | Explicit natural language can plan, complete, conditionally approve, and start local implementation without another Navigator turn, then stop at Navigator Validation | 🟠 In Progress |
+| CV20.DS15.TS1 | Driver-Owned Plan Fidelity And Completion | Technical Story | Plan materialization preserves authored content and exposes a blocking completeness check suitable for conditional approval | ✅ Done |
+| CV20.DS15.TS2 | Cursor-Bound Exact-Scope Authorization Receipt | Technical Story | A bounded, private, single-use receipt binds Navigator authority to one Journey, cursor generation, Delivery Story, flow unit, exact child set, Plan contract, and stop boundary | ✅ Done |
+| CV20.DS15.TS3 | Preauthorization Verification And Invalidation | Technical Story | Exact-scope consumption is atomic and idempotent, mismatch reasons are bounded, retries do not approve twice, and ordinary approval remains the fallback | ✅ Done |
+| CV20.DS15.US1 | One-Turn Conditional Plan Orchestration | User Story | Explicit natural language can plan, complete, conditionally approve, and start local implementation without another Navigator turn, then stop at Navigator Validation | ✅ Done |
 
 ## Done Condition
 
