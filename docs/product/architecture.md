@@ -193,6 +193,18 @@ routing, Builder state, and search remain scoped to the exact journey id.
 infers filesystem content. Parent assignment rejects cycles, and removing a
 journey is allowed only for an empty leaf with no associated records.
 
+Canonical desktop administration uses `mirror.journey-mutation@1.0`. The
+Mirror-owned Journey administration service validates create, move, sibling
+order and project-path operations against an exact registry `sourceVersion`.
+The focused storage boundary acquires an immediate SQLite transaction, rejects
+stale authority, commits Journey rows and a sanitized idempotency receipt once,
+and provides native read-back for the `0.2.0` registry projection. CLI is only a
+JSON transport; desktop harnesses never mutate Journey SQL directly. Registry
+publication remains post-commit: a failed consumer export keeps its prior local
+projection and retries the same receipt without compensating over newer Mirror
+state. These operations invoke no model, conversation or dedicated-thread
+lifecycle.
+
 **User-home YAML → database flow:**
 
 1. `memory init your-name` copies templates into `~/.mirror-minds/your-name/identity/`
