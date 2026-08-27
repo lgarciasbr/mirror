@@ -194,12 +194,14 @@ infers filesystem content. Parent assignment rejects cycles, and removing a
 journey is allowed only for an empty leaf with no associated records.
 
 Canonical desktop administration uses `mirror.journey-mutation@1.0`. The
-Mirror-owned Journey administration service validates create, move, sibling
-order and project-path operations against an exact registry `sourceVersion`.
+Mirror-owned Journey administration service validates create, move, sibling order, project-path and empty-leaf deletion
+operations against an exact registry `sourceVersion`.
 The focused storage boundary acquires an immediate SQLite transaction, rejects
 stale authority, commits Journey rows and a sanitized idempotency receipt once,
-and provides native read-back for the `0.2.0` registry projection. CLI is only a
-JSON transport; desktop harnesses never mutate Journey SQL directly. Registry
+and provides native read-back for the `0.2.0` registry projection. Deletion
+re-checks child Journeys and every database-backed Journey association inside
+the same immediate transaction; any protected record blocks the operation and
+nothing cascades. CLI is only a JSON transport; desktop harnesses never mutate Journey SQL directly. Registry
 publication remains post-commit: a failed consumer export keeps its prior local
 projection and retries the same receipt without compensating over newer Mirror
 state. These operations invoke no model, conversation or dedicated-thread

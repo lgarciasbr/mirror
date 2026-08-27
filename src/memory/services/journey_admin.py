@@ -147,6 +147,7 @@ class JourneyAdminService:
             "set_project_path",
             "clear_project_path",
             "move_journey",
+            "delete_journey",
         } or not isinstance(payload, dict):
             _fail("unsupported_operation")
         canonical_request = json.dumps(
@@ -177,6 +178,7 @@ class JourneyAdminService:
             key: json.dumps(meta, ensure_ascii=False, sort_keys=True) for key, meta in metas.items()
         }
         create: Identity | None = None
+        delete = False
         journey_id = ""
 
         def exact(fields: set[str]) -> None:
@@ -263,6 +265,12 @@ class JourneyAdminService:
                 )
             else:
                 metas[journey_id].pop("project_path", None)
+        elif operation == "delete_journey":
+            exact({"journeyId"})
+            journey_id = payload.get("journeyId")
+            if not isinstance(journey_id, str) or journey_id not in by_id:
+                _fail("unknown_journey")
+            delete = True
         else:
             exact({"journeyId", "parentId", "position"})
             journey_id = payload.get("journeyId")
@@ -305,6 +313,7 @@ class JourneyAdminService:
                 journey_id=journey_id,
                 create=create,
                 metadata_updates=updates,
+                delete=delete,
             )
         except ValueError as error:
             raise JourneyMutationError(str(error)) from error

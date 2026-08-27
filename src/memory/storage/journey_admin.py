@@ -53,6 +53,7 @@ class JourneyAdminStore(ConnectionBacked):
         journey_id: str,
         create: Identity | None,
         metadata_updates: dict[str, str],
+        delete: bool = False,
     ) -> tuple[str, bool]:
         self.conn.execute("BEGIN IMMEDIATE")
         try:
@@ -89,6 +90,21 @@ class JourneyAdminStore(ConnectionBacked):
                 )
                 if cursor.rowcount != 1:
                     raise ValueError("unknown_journey")
+            if delete:
+                identity = self.conn.execute(
+                    "SELECT id FROM identity WHERE layer = 'journey' AND key = ?", (journey_id,)
+                ).fetchone()
+                if identity is None:
+                    raise ValueError("unknown_journey")
+                associations = self.count_journey_associations(journey_id)
+                populated = sorted(name for name, count in associations.items() if count)
+                if populated:
+                    raise ValueError(f"journey_not_empty:{','.join(populated)}")
+                cursor = self.conn.execute(
+                    "DELETE FROM identity WHERE layer = 'journey' AND key = ?", (journey_id,)
+                )
+                if cursor.rowcount != 1:
+                    raise ValueError("delete_read_back_contradiction")
             result = source_version(self.journey_rows())
             self.conn.execute(
                 "INSERT INTO journey_mutation_receipts (request_id, request_digest, source_version, result_version, operation, journey_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",

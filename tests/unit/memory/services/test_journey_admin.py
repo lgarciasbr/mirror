@@ -79,6 +79,63 @@ def test_stale_cycle_and_unauthorized_fields_fail_without_mutation(tmp_path: Pat
     assert client.journey_admin.export_registry()["sourceVersion"] == source["sourceVersion"]
 
 
+def test_delete_removes_only_an_empty_leaf_and_is_idempotent(tmp_path: Path) -> None:
+    client = MemoryClient(db_path=tmp_path / "memory.db")
+    create(client, "root-one", "Root One")
+    create(client, "empty-leaf", "Empty Leaf")
+    source = client.journey_admin.export_registry()
+    request = {
+        "schemaVersion": "mirror.journey-mutation@1.0",
+        "requestId": "delete-request-001",
+        "expectedSourceVersion": source["sourceVersion"],
+        "operation": "delete_journey",
+        "payload": {"journeyId": "empty-leaf"},
+    }
+
+    first = client.journey_admin.mutate(request)
+    retry = client.journey_admin.mutate(request)
+
+    assert client.store.get_identity("journey", "empty-leaf") is None
+    assert client.store.get_identity("journey", "root-one") is not None
+    assert first["receipt"]["resultVersion"] == retry["receipt"]["resultVersion"]
+    assert retry["receipt"]["idempotent"] is True
+
+
+def test_delete_rejects_children_and_protected_associations_without_cascade(tmp_path: Path) -> None:
+    client = MemoryClient(db_path=tmp_path / "memory.db")
+    create(client, "root-one", "Root One")
+    create(client, "child-one", "Child One", "root-one")
+    create(client, "populated-leaf", "Populated Leaf")
+    conversation = client.start_conversation("pi", journey="populated-leaf")
+    source = client.journey_admin.export_registry()
+
+    with pytest.raises(JourneyMutationError, match="journey_not_empty:child_journeys"):
+        client.journey_admin.mutate(
+            {
+                "schemaVersion": "mirror.journey-mutation@1.0",
+                "requestId": "delete-parent-001",
+                "expectedSourceVersion": source["sourceVersion"],
+                "operation": "delete_journey",
+                "payload": {"journeyId": "root-one"},
+            }
+        )
+    with pytest.raises(JourneyMutationError, match="journey_not_empty:conversations"):
+        client.journey_admin.mutate(
+            {
+                "schemaVersion": "mirror.journey-mutation@1.0",
+                "requestId": "delete-used-0001",
+                "expectedSourceVersion": source["sourceVersion"],
+                "operation": "delete_journey",
+                "payload": {"journeyId": "populated-leaf"},
+            }
+        )
+
+    assert client.store.get_identity("journey", "root-one") is not None
+    assert client.store.get_identity("journey", "populated-leaf") is not None
+    assert client.store.get_conversation(conversation.id) is not None
+    assert client.journey_admin.export_registry()["sourceVersion"] == source["sourceVersion"]
+
+
 def test_move_and_project_path_preserve_identity_content(tmp_path: Path) -> None:
     project = tmp_path / "project"
     project.mkdir()
