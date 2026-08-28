@@ -185,10 +185,12 @@ class JourneyAdminService:
             if set(payload) - fields:
                 _fail("unauthorized_field")
 
+        def effective_parent(key: str) -> str | None:
+            parent = metas.get(key, {}).get("parent_journey")
+            return parent if isinstance(parent, str) and parent in metas else None
+
         def ordered(parent: str | None, include: str | None = None) -> list[str]:
-            ids = [
-                key for key, meta in metas.items() if (meta.get("parent_journey") or None) == parent
-            ]
+            ids = [key for key in metas if effective_parent(key) == parent]
             if include and include not in ids:
                 ids.append(include)
             return sorted(
@@ -286,7 +288,7 @@ class JourneyAdminService:
                     _fail("cycle")
                 lineage.add(current)
                 current = metas[current].get("parent_journey") or None
-            old_parent = metas[journey_id].get("parent_journey") or None
+            old_parent = effective_parent(journey_id)
             if parent:
                 metas[journey_id]["parent_journey"] = parent
             else:

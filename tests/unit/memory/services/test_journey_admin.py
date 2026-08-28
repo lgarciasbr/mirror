@@ -45,6 +45,36 @@ def test_create_is_versioned_ordered_and_idempotent(tmp_path: Path) -> None:
     assert client.store.get_recent_conversations_by_journey("child-one") == []
 
 
+def test_create_appends_after_projected_orphan_roots(tmp_path: Path) -> None:
+    client = MemoryClient(db_path=tmp_path / "memory.db")
+    create(client, "root-one", "Root One")
+    create(client, "missing-parent", "Missing Parent")
+    create(client, "orphan-one", "Orphan One", "missing-parent")
+    client.store.delete_identity("journey", "missing-parent")
+    source = client.journey_admin.export_registry()
+
+    result = client.journey_admin.mutate(
+        {
+            "schemaVersion": "mirror.journey-mutation@1.0",
+            "requestId": "req-orphan-root-001",
+            "expectedSourceVersion": source["sourceVersion"],
+            "operation": "create_journey",
+            "payload": {
+                "slug": "root-two",
+                "name": "Root Two",
+                "description": "A deliberate root Journey appended after every projected root.",
+                "parentId": None,
+                "position": len(source["roots"]),
+            },
+        }
+    )
+
+    assert [root["id"] for root in result["registry"]["roots"]] == [
+        *[root["id"] for root in source["roots"]],
+        "root-two",
+    ]
+
+
 def test_stale_cycle_and_unauthorized_fields_fail_without_mutation(tmp_path: Path) -> None:
     client = MemoryClient(db_path=tmp_path / "memory.db")
     create(client, "root-one", "Root One")
