@@ -12,6 +12,20 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-29 — v0.31.12 release candidate prepared
+
+Prepared `v0.31.12 — Bounded Authority and Journey Integrity` as the patch
+release boundary for the nine commits after v0.31.11. The release combines
+bounded natural/cadence-aware story Plan authority, preserved Driver-authored
+Plans, non-authorizing Delivery Story release intent, transactional model-free
+Journey administration, and truthful authored-roadmap preflight before Delivery
+Story Done.
+
+The release does not change model pins or `src/memory/intelligence/prompts.py`, so
+the model-behavior eval gate is not triggered. Promotion, stable publication,
+GitHub Release creation, and installed-runtime acceptance remain pending the
+release verification sequence.
+
 ### 2026-08-29 — CR016 truthful Delivery Story Done coherence
 
 Closed the closure-coherence defect discovered during CV20.DS16 dogfood.
