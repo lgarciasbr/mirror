@@ -12,6 +12,37 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-29 — CV9.E2.S31 completed through Coherence
+
+Implemented the generic explicit conversation append boundary on a dedicated
+feature branch. A strict JSON service contract validates safe external message
+IDs, roles, timestamps, UTF-8 byte limits, metadata envelopes, and request shape
+before storage. One message-store-owned `BEGIN IMMEDIATE` transaction resolves
+only the complete conversation ID, verifies exact Journey equality, classifies
+idempotent retries, rejects cross-conversation or divergent ID reuse, inserts
+missing rows, and commits once. Ended conversations remain eligible without
+reopening or semantic refresh, runtime sessions remain outside the boundary, and
+message reads now have deterministic `created_at, id` ordering.
+
+TDD evidence moved from missing-module collection RED to the first focused
+GREEN, then Navigator Validation added a second RED: pathological metadata
+nesting leaked `RecursionError`, while unpaired Unicode surrogates in content or
+metadata leaked `UnicodeEncodeError`. A minimal parser/CLI containment boundary
+now maps those failures to bounded `malformed_request` before database access,
+without traceback or payload echo; 34 focused tests pass. The isolated CLI smoke
+covers initial append, complete retry, late append to an ended conversation,
+canonical provenance, atomic conflict rejection, unchanged runtime-session
+state, and bounded receipts. Ruff, format, diff checks, and scoped mypy pass.
+The complete non-live suite reaches 2,630 passes with one external-baseline
+runtime read-only/WAL recovery failure. A controlled same-Python/SQLite/TMPDIR
+comparison reproduces it identically in S31 and a clean `origin/main` worktree:
+SQLite 3.51 returns the read-only connection lazily and the first `SELECT` fails
+before the pre-existing connect-time recovery branch can run. Navigator
+Validation was accepted, Debt Review found no S31-created debt, and the authored
+roadmap/worklog gaps identified by Coherence were aligned. D-016 remains Carried
+and blocks preparation of the `v0.31.13` release candidate. No commit, push,
+version bump, release note, or release action was executed.
+
 ### 2026-08-29 — v0.31.12 release candidate prepared
 
 Prepared `v0.31.12 — Bounded Authority and Journey Integrity` as the patch
