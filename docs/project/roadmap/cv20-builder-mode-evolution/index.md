@@ -45,6 +45,7 @@ Ariad governs the first implementation. The architecture must remain open enough
 | [CV20.DS13](cv20-ds13-ds-grammar-roadmap-support/index.md) | Delivery Story Grammar Roadmap Support | Builder reads Delivery Story grammar roadmaps (hyphenated `DS-NN` codes, `## Chapter N —` sections, DS tables) as correctly as the CV grammar — fixing pull candidates, expand, and delivery-cursor drift | ✅ Done |
 | [CV20.DS14](cv20-ds14-change-request-terminal-verbs/index.md) | Change Request Terminal Verbs | Builder can park, reject, and promote a Change Request (and park a Refinement Story) through the CLI — the terminal states the domain models but the runtime cannot reach — so an RS holding such a CR closes cleanly instead of forcing an off-contract storage write | ✅ Done |
 | [CV20.DS15](cv20-ds15-driver-owned-conditional-plan-authorization/index.md) | Driver-Owned Conditional Plan Authorization | Ariad preserves a complete Driver-authored Plan and can consume explicit, exact-scope, single-use Navigator preauthorization without another turn while every mismatch retains the hard gate | ✅ Done |
+| [CV20.DS16](cv20-ds16-story-level-conditional-plan-preauthorization/index.md) | Story-Level Conditional Plan Preauthorization | Ariad supports natural story-level Plan delegation and declarative accelerated continuation while preserving Driver ownership, exact bounded authority, ordinary approval fallback, and the Navigator Validation stop | ✅ Done |
 
 ---
 

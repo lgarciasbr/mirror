@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from memory.builder.artifact_surfaces import MaterializedArtifact, existing_artifact
@@ -11,8 +11,17 @@ from memory.builder.delivery_cursor import (
     get_delivery_cursor,
     set_delivery_cursor,
 )
+from memory.builder.flow_unit import (
+    FLOW_UNIT_STORY_BY_STORY,
+    effective_navigator_flow_unit,
+)
 from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
 from memory.builder.method_definition import ContractDefinition, MethodDefinition
+from memory.builder.plan_preauthorization import (
+    PREAUTHORIZATION_STOP,
+    STORY_PLAN_CONTRACT,
+    create_plan_preauthorization_receipt,
+)
 from memory.builder.release_intent import delivery_story_code_for_item
 from memory.builder.roadmap_grammar import strip_markdown_link as _strip_markdown_link
 from memory.builder.story_paths import create_story_directory, resolve_story_directory
@@ -93,6 +102,7 @@ class BuilderPlanReport:
     local_rules: tuple[str, ...]
     cursor: BuilderDeliveryCursor
     plan_artifact_path: Path | None = None
+    preauthorization_recorded: bool = False
     next_event: str = "implement"
 
 
@@ -286,6 +296,8 @@ def plan_lifecycle_item(
     e2e_decision: str | None = None,
     local_rules: tuple[str, ...] = (),
     plan_artifact_path: Path | None = None,
+    preauthorize: bool = False,
+    stop_boundary: str = PREAUTHORIZATION_STOP,
 ) -> BuilderPlanReport:
     """Create the Plan checkpoint and block implementation pending approval."""
     normalized_journey = _normalize_required(journey, "journey")
@@ -305,6 +317,21 @@ def plan_lifecycle_item(
     active_checkpoint = "after_plan"
     pending_confirmation = "navigator_approval"
     artifact_path = plan_artifact_path
+    flow_unit = existing.navigator_flow_unit
+    receipt = existing.plan_preauthorization
+    preauthorization_recorded = preauthorize or _cadence_preauthorizes_story_plan(
+        method, existing.cadence_profile
+    )
+    if preauthorization_recorded:
+        flow_unit, _source = effective_navigator_flow_unit(existing)
+        if flow_unit != FLOW_UNIT_STORY_BY_STORY:
+            raise ValueError("story Plan preauthorization requires story_by_story flow")
+        receipt = create_plan_preauthorization_receipt(
+            replace(existing, navigator_flow_unit=flow_unit),
+            method=method.id,
+            plan_contract_version=STORY_PLAN_CONTRACT,
+            stop_boundary=stop_boundary,
+        )
     cursor = set_delivery_cursor(
         store,
         journey=normalized_journey,
@@ -318,9 +345,11 @@ def plan_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         granularity_decision=None,
-        navigator_flow_unit=existing.navigator_flow_unit,
+        navigator_flow_unit=flow_unit,
         child_work_items=existing.child_work_items,
         aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
+        cursor_generation=existing.cursor_generation,
+        plan_preauthorization=receipt,
         refresh_projection=False,
     )
     report = BuilderPlanReport(
@@ -353,6 +382,7 @@ def plan_lifecycle_item(
         local_rules=local_rules,
         cursor=cursor,
         plan_artifact_path=artifact_path,
+        preauthorization_recorded=preauthorization_recorded,
     )
     if artifact_path is not None:
         _write_story_package(artifact_path.parent, report)
@@ -374,6 +404,9 @@ def approve_plan_checkpoint(store: Store, *, journey: str, method: str) -> Build
         raise ValueError(
             "Plan approval requires a pending after_plan navigator_approval checkpoint"
         )
+    receipt = existing.plan_preauthorization
+    if receipt is not None and receipt.status == "pending":
+        receipt = replace(receipt, status="invalidated", reason="ordinary_approval_used")
     return set_delivery_cursor(
         store,
         journey=normalized_journey,
@@ -390,6 +423,8 @@ def approve_plan_checkpoint(store: Store, *, journey: str, method: str) -> Build
         navigator_flow_unit=existing.navigator_flow_unit,
         child_work_items=existing.child_work_items,
         aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
+        cursor_generation=existing.cursor_generation,
+        plan_preauthorization=receipt,
     )
 
 
@@ -1561,7 +1596,7 @@ def render_plan_checkpoint(report: BuilderPlanReport) -> str:
                 *_card_wrapped(_plan_next_action(report)),
                 "│                                                        │",
                 _card_text("boundary"),
-                _card_text("Implementation remains blocked until approval."),
+                *_card_wrapped(_plan_boundary(report)),
                 "╰────────────────────────────────────────────────────────╯",
             ]
         )
@@ -1890,8 +1925,29 @@ def _granularity_message(report: BuilderPlanReport) -> str:
     return "Delivery Story must expand into User Stories and/or Technical Stories before Plan."
 
 
+def _cadence_preauthorizes_story_plan(
+    method: MethodDefinition,
+    cadence_profile: str | None,
+) -> bool:
+    if cadence_profile is None:
+        return False
+    profile = next(
+        (candidate for candidate in method.cadence_profiles if candidate.id == cadence_profile),
+        None,
+    )
+    return bool(profile is not None and profile.plan_approval_policy == "bounded_story_authority")
+
+
 def _plan_next_action(report: BuilderPlanReport) -> str:
+    if report.preauthorization_recorded:
+        return "Driver completes Plan and consumes bounded authority."
     return "Navigator approves the Plan or requests changes."
+
+
+def _plan_boundary(report: BuilderPlanReport) -> str:
+    if report.preauthorization_recorded:
+        return "No additional Navigator approval turn is expected."
+    return "Implementation remains blocked until approval."
 
 
 def _user_story_statement(title: str) -> str:

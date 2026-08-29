@@ -36,6 +36,7 @@ from memory.builder.delivery_story_plan import (
     render_plan_preauthorization_mismatch,
     render_plan_preauthorization_recorded,
 )
+from memory.builder.delivery_story_roadmap_closure import inspect_authored_closure
 from memory.builder.flow_unit import (
     ALLOWED_FLOW_UNITS,
     inspect_navigator_flow_unit,
@@ -101,6 +102,14 @@ from memory.builder.story_paths import (
     StoryPackageAmbiguityError,
     create_story_directory,
     resolve_story_directory,
+)
+from memory.builder.story_plan_preauthorization import (
+    approve_story_plan_with_preauthorization,
+    cancel_story_plan_preauthorization,
+    render_story_implementation_started,
+    render_story_plan_preauthorization_mismatch,
+    render_story_plan_preauthorization_recorded,
+    render_story_preauthorization_already_consumed,
 )
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.builder.template_generation import (
@@ -906,6 +915,18 @@ def cmd_done_delivery_story(
     try:
         cursor = get_delivery_cursor(mem.store, resolved_journey)
         project_path = mem.journeys.get_project_path(resolved_journey)
+        if not project_path:
+            raise ValueError("project path is required before Delivery Story Done")
+        if cursor is None or not cursor.active_item:
+            raise ValueError("active Delivery Story is required before Done")
+        preflight = inspect_authored_closure(
+            Path(project_path),
+            delivery_story=cursor.active_item,
+            child_work_items=cursor.child_work_items,
+        )
+        if not preflight.ready:
+            detail = "; ".join(preflight.issues)
+            raise ValueError("authored roadmap is not ready for Delivery Story Done: " + detail)
         artifact_path = _checkpoint_artifact_path(project_path, cursor, "done.md")
         existed_before = artifact_path.exists() if artifact_path else False
         report = done_delivery_story(
@@ -1199,6 +1220,8 @@ def cmd_plan_item(
     journey: str | None = None,
     session_id: str | None = None,
     objective: str | None = None,
+    preauthorize_approval: bool = False,
+    stop_after: str = "navigator_validation",
 ) -> None:
     mem = MemoryClient()
     _reject_unknown_method(method)
@@ -1232,11 +1255,15 @@ def cmd_plan_item(
             e2e_decision=str(context["e2e_decision"]),
             local_rules=_MIRROR_LOCAL_IMPLEMENTATION_RULES,
             plan_artifact_path=plan_artifact_path,
+            preauthorize=preauthorize_approval,
+            stop_boundary=stop_after,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
     print(render_plan_checkpoint(report))
+    if report.preauthorization_recorded:
+        print(render_story_plan_preauthorization_recorded(report.cursor))
     plan_artifact_path = report.plan_artifact_path
     _print_artifacts_materialized(
         context=f"Plan — {report.active_item}",
@@ -1390,6 +1417,7 @@ def cmd_approve_plan(
     *,
     journey: str | None = None,
     session_id: str | None = None,
+    use_preauthorization: bool = False,
 ) -> None:
     mem = MemoryClient()
     _reject_unknown_method(method)
@@ -1405,11 +1433,69 @@ def cmd_approve_plan(
         sys.exit(1)
     _require_adopted_method(mem, resolved_journey, method)
     try:
-        cursor = approve_plan_checkpoint(mem.store, journey=resolved_journey, method=method)
+        if use_preauthorization:
+            cursor = get_delivery_cursor(mem.store, resolved_journey)
+            project_path = mem.journeys.get_project_path(resolved_journey)
+            plan_artifact_path = _checkpoint_artifact_path(project_path, cursor, "plan.md")
+            report = approve_story_plan_with_preauthorization(
+                mem.store,
+                journey=resolved_journey,
+                method=method,
+                plan_artifact_path=plan_artifact_path,
+            )
+            if report.status == "already_approved":
+                print(render_story_preauthorization_already_consumed(report.cursor))
+                return
+            cursor = report.cursor
+        else:
+            cursor = approve_plan_checkpoint(mem.store, journey=resolved_journey, method=method)
+    except PlanPreauthorizationMismatch as exc:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        print(
+            render_story_plan_preauthorization_mismatch(
+                active_item=cursor.active_item if cursor else None,
+                reason=exc.reason,
+            )
+        )
+        return
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
     print(render_plan_approval(cursor))
+    if use_preauthorization:
+        print(render_story_implementation_started(cursor))
+
+
+def cmd_cancel_story_plan_preauthorization(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="story Plan preauthorization cancellation",
+    )
+    _require_adopted_method(mem, resolved_journey, method)
+    try:
+        cursor = cancel_story_plan_preauthorization(
+            mem.store,
+            journey=resolved_journey,
+            method=method,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(
+        render_story_plan_preauthorization_mismatch(
+            active_item=cursor.active_item,
+            reason="navigator_cancelled",
+        )
+    )
 
 
 def cmd_check_implementation(
@@ -2378,6 +2464,17 @@ def main(argv: list[str] | None = None) -> None:
         default=None,
         help="Optional objective to show in the Plan checkpoint",
     )
+    p_plan.add_argument(
+        "--preauthorize-approval",
+        action="store_true",
+        help="Record exact-story single-use Navigator authority for this Plan",
+    )
+    p_plan.add_argument(
+        "--stop-after",
+        default="navigator_validation",
+        choices=("navigator_validation",),
+        help="Fixed hard stop for conditional Plan authority",
+    )
     p_approve = sub.add_parser(
         "approve-plan",
         help="Approve the active Ariad Plan checkpoint",
@@ -2389,6 +2486,19 @@ def main(argv: list[str] | None = None) -> None:
         default=None,
         help="Runtime session id for resolving the active Builder journey",
     )
+    p_approve.add_argument(
+        "--use-preauthorization",
+        action="store_true",
+        help="Consume matching complete single-use story Plan authority",
+    )
+
+    p_cancel_story_preauthorization = sub.add_parser(
+        "cancel-plan-preauthorization",
+        help="Cancel pending conditional User/Technical Story Plan authority",
+    )
+    p_cancel_story_preauthorization.add_argument("--method", required=True)
+    p_cancel_story_preauthorization.add_argument("--journey", default=None)
+    p_cancel_story_preauthorization.add_argument("--session-id", default=None)
 
     p_release_intent = sub.add_parser(
         "release-intent",
@@ -2831,9 +2941,22 @@ def main(argv: list[str] | None = None) -> None:
             journey=args.journey,
             session_id=args.session_id,
             objective=args.objective,
+            preauthorize_approval=args.preauthorize_approval,
+            stop_after=args.stop_after,
         )
     elif args.command == "approve-plan":
-        cmd_approve_plan(args.method, journey=args.journey, session_id=args.session_id)
+        cmd_approve_plan(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            use_preauthorization=args.use_preauthorization,
+        )
+    elif args.command == "cancel-plan-preauthorization":
+        cmd_cancel_story_plan_preauthorization(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+        )
     elif args.command == "release-intent":
         cmd_release_intent(
             args.method,

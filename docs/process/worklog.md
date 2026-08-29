@@ -12,6 +12,43 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-29 — CR016 truthful Delivery Story Done coherence
+
+Closed the closure-coherence defect discovered during CV20.DS16 dogfood.
+`done-delivery-story` now runs a read-only authored-roadmap preflight before
+cursor or artifact mutation. It verifies explicit Done status on the resolved DS
+package, known child packages and candidate rows, and canonical roadmap table
+rows. Stale state fails with project-relative evidence; the agent remains
+responsible for semantic Markdown updates.
+
+Focused tests, the complete non-live unit/integration suite, scoped Ruff and
+mypy, documentation links, roadmap headings, and diff checks passed. Isolated
+`sandbox-pet-store` dogfood proved both bounded refusal without mutation and
+successful closure after status alignment. Navigator accepted validation and a
+no-action debt review. Commit, push, and release remain separate gates.
+
+### 2026-08-26 — CV20.DS16 natural and cadence-aware story Plan authority
+
+Closed CV20.DS16 after revising conditional story Plan authorization around the
+Navigator's actual intent. In stepwise/checkpoint, natural delegation such as
+`crie o plano e execute sem que eu precise autorizar` now authorizes one complete,
+exact active US/TS Plan without policy-shaped wording. Ariad derives scope,
+generation, level, mismatch fallback, single use, and the Navigator Validation
+stop from structural state. In accelerated cadence, method data declares
+`bounded_story_authority`, so a plain Plan request continues into local
+implementation without another approval turn; lifecycle code does not infer
+authority from the cadence profile name.
+
+Sandbox dogfood validated both routes end to end and exposed a false
+`plan_incomplete` classification where legitimate product vocabulary such as
+`Payment placeholder` was mistaken for scaffold text. The completeness check now
+recognizes actual placeholder markers without rejecting domain prose. Debt Review
+also removed the initial hard-coded accelerated check by adding declarative
+`CadenceProfileDefinition.plan_approval_policy` and exposing it through method
+inspection. The complete non-live unit/integration suite, Ruff, formatting,
+changed-module mypy, documentation links, roadmap headings, and diff checks passed.
+Navigator accepted validation; push and release remain separate gates.
+
 ### 2026-08-26 — v0.31.11 installed Nautilus confinement acceptance
 
 Published `v0.31.11` at immutable commit `c9519c3` after green central Tests,

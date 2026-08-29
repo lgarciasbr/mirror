@@ -11,6 +11,53 @@ resolved.
 
 ## Completed Decisions
 
+### Conditional Plan authority is flow-aware, exact, and single-use
+
+**Date:** 2026-08-26
+**Reference:** [CV20.DS15 Driver-Owned Conditional Plan Authorization](roadmap/cv20-builder-mode-evolution/cv20-ds15-driver-owned-conditional-plan-authorization/index.md), [CV20.DS16 Story-Level Conditional Plan Preauthorization](roadmap/cv20-builder-mode-evolution/cv20-ds16-story-level-conditional-plan-preauthorization/index.md)
+**Participants:** Alisson Vale
+
+Ariad must preserve Plan completeness and structural approval while avoiding a
+redundant Navigator turn when the human naturally delegates Plan creation and
+execution or selects accelerated cadence. Delivery Story scope and
+implementable-story scope have different structural shapes, but they require one
+safety model.
+
+Decided:
+
+1. **Preauthorization carries authority; it does not remove structural approval.**
+   A receipt can satisfy the gate only after Plan materialization and immediate
+   structural revalidation. In stepwise/checkpoint this requires natural explicit
+   delegation; accelerated cadence records bounded story authority automatically.
+2. **The receipt schema is flow-aware.** `delivery_story` authority binds the
+   canonical exact child-code set. `story_by_story` authority binds one exact
+   User Story or Technical Story and carries no fabricated child scope.
+3. **Driver-owned completeness is mandatory.** Existing Plan packages remain
+   byte-preserved; conditional consumption requires complete Scope, Non-Goals,
+   Acceptance Behavior, Validation Route, and Implementation Contract sections.
+4. **Consumption is private, atomic, and single-use.** Bounded coordinates and a
+   canonical fingerprint enter cursor metadata; prompt text and Plan prose do
+   not. Receipt consumption and Plan approval share one compare-and-swap update,
+   and retries cannot start implementation twice.
+5. **Mismatch preserves ordinary approval.** Journey, method, item, level,
+   generation, flow, child scope where applicable, Plan contract, policy, stop,
+   completeness, cancellation, or malformed authority blocks conditional
+   approval with a bounded reason.
+6. **The fixed boundary is Navigator Validation.** Conditional authority cannot
+   approve Validation, Debt Review, Done/history, commit, push, tag, release,
+   deploy, purchase, or another irreversible action.
+7. **Natural delegation does not become semantic authority verification.** The
+   agent routes ordinary phrases such as “create the Plan and execute it without
+   asking me again”; Python Core still derives scope identity structurally and
+   deterministically. No model, persona, provider, network service, or prose
+   equivalence participates in receipt verification.
+8. **Cadence controls whether Plan stops through method data.**
+   `CadenceProfileDefinition.plan_approval_policy` declares
+   `navigator_approval` or `bounded_story_authority`; lifecycle code never grants
+   authority from a profile name. Ariad gives accelerated cadence bounded story
+   authority, while stepwise and checkpoint retain the ordinary Plan stop. The
+   complete matching Plan may proceed only to Navigator Validation.
+
 ### TypeScript migration pauses and Python resumes sole product authority
 
 **Date:** 2026-08-19

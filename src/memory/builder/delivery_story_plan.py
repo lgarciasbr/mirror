@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -19,20 +17,22 @@ from memory.builder.delivery_cursor import (
     set_delivery_cursor,
 )
 from memory.builder.flow_unit import FLOW_UNIT_DELIVERY_STORY
+from memory.builder.plan_preauthorization import (
+    DELIVERY_STORY_PLAN_CONTRACT,
+    PREAUTHORIZATION_POLICY,
+    PREAUTHORIZATION_STOP,
+    PlanPreauthorizationMismatch,
+    canonical_child_scope,
+    create_plan_preauthorization_receipt,
+    invalidate_plan_preauthorization,
+    plan_preauthorization_mismatch_reason,
+)
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.storage.store import Store
 
-_PLAN_CONTRACT_VERSION = "delivery_story_plan@1"
-_PREAUTHORIZATION_POLICY = "exact_scope"
-_PREAUTHORIZATION_STOP = "navigator_validation"
-
-
-class PlanPreauthorizationMismatch(ValueError):
-    """A bounded structural mismatch prevented conditional Plan approval."""
-
-    def __init__(self, reason: str) -> None:
-        self.reason = reason
-        super().__init__(reason)
+_PLAN_CONTRACT_VERSION = DELIVERY_STORY_PLAN_CONTRACT
+_PREAUTHORIZATION_POLICY = PREAUTHORIZATION_POLICY
+_PREAUTHORIZATION_STOP = PREAUTHORIZATION_STOP
 
 
 @dataclass(frozen=True)
@@ -689,59 +689,13 @@ def _create_preauthorization_receipt(
     child_work_items: tuple[str, ...],
     stop_boundary: str,
 ) -> PlanPreauthorizationReceipt:
-    if not cursor.active_item or not cursor.active_item_level or not cursor.navigator_flow_unit:
-        raise ValueError("complete active Delivery Story coordinates are required")
-    children = _canonical_children(child_work_items)
-    fingerprint = _scope_fingerprint(
-        journey=cursor.journey,
+    return create_plan_preauthorization_receipt(
+        cursor,
         method=method,
-        cursor_generation=cursor.cursor_generation,
-        active_item=cursor.active_item,
-        active_item_level=cursor.active_item_level,
-        flow_unit=cursor.navigator_flow_unit,
-        child_work_items=children,
-        stop_boundary=stop_boundary,
-    )
-    return PlanPreauthorizationReceipt(
-        journey=cursor.journey,
-        method=method,
-        cursor_generation=cursor.cursor_generation,
-        active_item=cursor.active_item,
-        active_item_level=cursor.active_item_level,
-        flow_unit=cursor.navigator_flow_unit,
-        child_work_items=children,
+        child_work_items=child_work_items,
         plan_contract_version=_PLAN_CONTRACT_VERSION,
-        policy=_PREAUTHORIZATION_POLICY,
         stop_boundary=stop_boundary,
-        scope_fingerprint=fingerprint,
     )
-
-
-def _scope_fingerprint(
-    *,
-    journey: str,
-    method: str,
-    cursor_generation: int,
-    active_item: str,
-    active_item_level: str,
-    flow_unit: str,
-    child_work_items: tuple[str, ...],
-    stop_boundary: str,
-) -> str:
-    payload = {
-        "journey": journey,
-        "method": method,
-        "cursor_generation": cursor_generation,
-        "active_item": active_item,
-        "active_item_level": active_item_level,
-        "flow_unit": flow_unit,
-        "child_work_items": list(child_work_items),
-        "plan_contract_version": _PLAN_CONTRACT_VERSION,
-        "policy": _PREAUTHORIZATION_POLICY,
-        "stop_boundary": stop_boundary,
-    }
-    canonical = json.dumps(payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _preauthorization_mismatch_reason(
@@ -751,43 +705,15 @@ def _preauthorization_mismatch_reason(
     method: str,
     unfilled_sections: tuple[str, ...],
 ) -> str | None:
-    receipt = cursor.plan_preauthorization
-    if receipt is None:
-        return "authorization_missing"
-    if receipt.status != "pending":
-        return receipt.reason or "authorization_not_pending"
-    checks = (
-        (receipt.journey == journey, "journey_changed"),
-        (receipt.method == method, "method_changed"),
-        (receipt.cursor_generation == cursor.cursor_generation, "cursor_generation_changed"),
-        (receipt.active_item == cursor.active_item, "active_item_changed"),
-        (receipt.active_item_level == cursor.active_item_level, "active_item_level_changed"),
-        (receipt.flow_unit == cursor.navigator_flow_unit, "flow_unit_changed"),
-        (
-            receipt.child_work_items == _canonical_children(cursor.child_work_items),
-            "child_scope_changed",
-        ),
-        (receipt.plan_contract_version == _PLAN_CONTRACT_VERSION, "plan_contract_changed"),
-        (receipt.policy == _PREAUTHORIZATION_POLICY, "policy_changed"),
-        (receipt.stop_boundary == _PREAUTHORIZATION_STOP, "stop_boundary_changed"),
+    return plan_preauthorization_mismatch_reason(
+        cursor,
+        journey=journey,
+        method=method,
+        flow_unit=FLOW_UNIT_DELIVERY_STORY,
+        child_work_items=cursor.child_work_items,
+        plan_contract_version=_PLAN_CONTRACT_VERSION,
+        unfilled_sections=unfilled_sections,
     )
-    for matches, reason in checks:
-        if not matches:
-            return reason
-    if receipt.scope_fingerprint != _scope_fingerprint(
-        journey=receipt.journey,
-        method=receipt.method,
-        cursor_generation=receipt.cursor_generation,
-        active_item=receipt.active_item,
-        active_item_level=receipt.active_item_level,
-        flow_unit=receipt.flow_unit,
-        child_work_items=receipt.child_work_items,
-        stop_boundary=receipt.stop_boundary,
-    ):
-        return "scope_fingerprint_changed"
-    if unfilled_sections:
-        return "plan_incomplete"
-    return None
 
 
 def _invalidate_preauthorization(
@@ -796,29 +722,7 @@ def _invalidate_preauthorization(
     *,
     reason: str,
 ) -> None:
-    receipt = cursor.plan_preauthorization
-    if receipt is None or receipt.status != "pending":
-        return
-    set_delivery_cursor(
-        store,
-        journey=cursor.journey,
-        method=cursor.method,
-        active_item=cursor.active_item,
-        active_item_title=cursor.active_item_title,
-        active_item_level=cursor.active_item_level,
-        active_checkpoint=cursor.active_checkpoint,
-        pending_confirmation=cursor.pending_confirmation,
-        last_delivery_event=cursor.last_delivery_event,
-        cadence_profile=cursor.cadence_profile,
-        cadence_limits=cursor.cadence_limits,
-        granularity_decision=cursor.granularity_decision,
-        navigator_flow_unit=cursor.navigator_flow_unit,
-        child_work_items=cursor.child_work_items,
-        aggregate_checkpoint_status=cursor.aggregate_checkpoint_status,
-        cursor_generation=cursor.cursor_generation,
-        plan_preauthorization=replace(receipt, status="invalidated", reason=reason),
-        refresh_projection=False,
-    )
+    invalidate_plan_preauthorization(store, cursor, reason=reason)
 
 
 def _is_consumed_approval(cursor: BuilderDeliveryCursor) -> bool:
@@ -832,7 +736,7 @@ def _is_consumed_approval(cursor: BuilderDeliveryCursor) -> bool:
 
 
 def _canonical_children(items: tuple[str, ...]) -> tuple[str, ...]:
-    return tuple(sorted(set(_normalize_items(items))))
+    return canonical_child_scope(items)
 
 
 def _normalize_items(items: tuple[str, ...]) -> tuple[str, ...]:

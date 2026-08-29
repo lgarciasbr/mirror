@@ -648,7 +648,7 @@ When the user asks to change testing/runtime cadence, use:
 uv run python -m memory build set-cadence --method ariad --profile <stepwise|checkpoint|accelerated|autonomous>
 ```
 
-Use `stepwise` for detailed dogfooding. Use `checkpoint` for normal Ariad cadence. Use `accelerated` only to continue through soft stops while still stopping at hard gates. Use `autonomous` only with explicit Navigator limits, for example:
+Use `stepwise` for detailed dogfooding: Plan stops for approval unless the Navigator naturally asks the Driver to create and execute the active story Plan without another approval turn. Use `checkpoint` for normal Ariad cadence. Use `accelerated` when the Navigator trusts the Driver to complete the active story Plan and continue directly into local implementation; the runtime automatically records bounded story Plan authority and still stops at Navigator Validation. Use `autonomous` only with explicit Navigator limits, for example:
 
 ```bash
 uv run python -m memory build set-cadence --method ariad \
@@ -658,7 +658,7 @@ uv run python -m memory build set-cadence --method ariad \
   --limit "stop on failing checks"
 ```
 
-Higher-autonomy cadence never grants permission to cross hard gates: Plan approval, Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, and Done/history boundaries remain explicit stops. In current Ariad, Pull is the Navigator signal to Prepare; pulling a Delivery Story also expands it into implementable User/Technical Stories and stops for confirmation of the recommended next story.
+Higher-autonomy cadence never grants permission to cross Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, or Done/history boundaries. For an active User Story or Technical Story in `story_by_story`, `accelerated` satisfies the Plan approval gate through a complete, structurally matching, single-use receipt instead of pausing for another Navigator turn; Plan completeness and mismatch checks still apply. In current Ariad, Pull is the Navigator signal to Prepare; pulling a Delivery Story also expands it into implementable User/Technical Stories and stops for confirmation of the recommended next story.
 
 When the user asks to continue under the active cadence, use:
 
@@ -831,7 +831,9 @@ Use conditional preauthorization only when the Navigator explicitly authorizes
 one active Delivery Story by exact child identity and names the fixed next hard
 stop at Navigator Validation. Vague continuation, cadence selection, “faça tudo”,
 “não me pergunte nada”, or generic autonomy language never creates authority.
-The first slice supports `delivery_story` flow only.
+Delivery Story preauthorization applies only to `delivery_story` flow. Exact
+User Story and Technical Story preauthorization is handled separately under
+`story_by_story` flow below.
 
 For an explicit matching request, include:
 
@@ -921,7 +923,70 @@ as the implementable unit; they must expand first. Plan must not approve the
 checkpoint, start implementation, change implementation files for the pulled
 item, change story status, commit, push, or release.
 
-When the Navigator approves the Plan checkpoint, run:
+### Conditional story Plan preauthorization
+
+Use story-level conditional preauthorization for one active User Story or
+Technical Story in `story_by_story` flow through either of two routes:
+
+- **natural explicit delegation in any cadence** — the Navigator asks the Driver
+  to create the active story Plan and execute it without another Plan approval
+  turn, for example `crie o plano e execute sem que eu precise autorizar`,
+  `faça o plano e implemente com preautorização concedida`, or an equivalent
+  natural phrase;
+- **accelerated cadence** — `plan-item` automatically records bounded story Plan
+  authority, so the Driver completes the Plan and continues without a Plan stop.
+
+The Navigator does not need to recite story identity, sibling exclusions,
+fingerprint policy, mismatch behavior, or the Validation boundary. Ariad derives
+those safeguards from the active cursor and method: exact active item and level,
+`story_by_story` flow, current generation, no sibling scope, complete Plan,
+single use, bounded mismatch fallback, and stop at Navigator Validation.
+
+Vague continuation such as `continue`, an isolated `faça tudo`, or `não me
+pergunte nada` does not create stepwise story authority. Selecting `accelerated`
+is itself the explicit cadence decision that authorizes Plan continuation for
+active implementable stories. For natural explicit delegation, run:
+
+```bash
+uv run python -m memory build plan-item --method ariad \
+  --preauthorize-approval \
+  --stop-after navigator_validation
+```
+
+In `accelerated` cadence, run ordinary `plan-item` without the explicit flag; the
+runtime automatically records bounded story Plan authority and emits the same
+receipt surface. Do not pause for Navigator approval after either route.
+
+Return `PLAN_CHECKPOINT`, `PLAN_PREAUTHORIZATION_RECORDED`, and artifact surfaces
+verbatim. Preserve existing `index.md`, `plan.md`, and `test-guide.md` bytes. The
+receipt is not approval: the Driver-owned Plan must contain complete Scope,
+Non-Goals, Acceptance Behavior, Validation Route, and Implementation Contract
+sections before authority can be consumed.
+
+In the same assistant turn, after completing the exact story Plan, run:
+
+```bash
+uv run python -m memory build approve-plan --method ariad \
+  --use-preauthorization
+```
+
+On exact match, return every approval and `IMPLEMENTATION_STARTED` surface,
+implement only the active story locally, and stop at Navigator Validation. On
+`PLAN_PREAUTHORIZATION_MISMATCH`, return the bounded surface and stop at ordinary
+Plan approval; never repair, reinterpret, or recreate authority silently.
+
+Cancel pending story authority when the Navigator withdraws it:
+
+```bash
+uv run python -m memory build cancel-plan-preauthorization --method ariad
+```
+
+Cancellation preserves the ordinary Plan gate. Story authority is private,
+single-use, cursor-generation-bound, and cannot authorize a sibling story,
+Validation acceptance, Debt Review, Done/history, commit, push, release, deploy,
+purchase, or another irreversible action.
+
+When the Navigator approves an ordinary Plan checkpoint, run:
 
 ```bash
 uv run python -m memory build approve-plan --method ariad
@@ -963,17 +1028,25 @@ uv run python -m memory build review-delivery-story --method ariad \
 ```
 
 For DS-level Done requests after Debt Review and Navigator closure confirmation,
-run:
+first align authored project state: mark the resolved Delivery Story package,
+every known child package/candidate row, and every canonical roadmap table row
+for the DS as Done. Then run:
 
 ```bash
 uv run python -m memory build done-delivery-story --method ariad \
   --summary "<DS-level done/history summary>"
 ```
 
+The command runs an authored roadmap closure preflight before cursor or artifact
+mutation. If any DS package, known child package/candidate row, or canonical
+roadmap row remains non-Done, the runtime refuses Done before cursor or artifact mutation and names project-relative files to align. The agent owns semantic
+Markdown updates; Python verifies explicit status evidence and never invents
+project meaning.
+
 DS-level Coherence is not a separate lifecycle stage before Done. It is checked
-inside the Done stage after closure/status/roadmap/history materialization, so
-Done is responsible for ensuring docs, roadmap, cursor, artifacts, and next-pull
-readiness remain consistent after closure.
+inside Done only after the authored status preflight passes, so the final surface
+can truthfully state that docs, roadmap, cursor, artifacts, and next-pull readiness
+remain consistent after closure.
 
 If the user names a specific journey, pass `--journey <slug>`. Return every
 `DELIVERY_STORY_CLOSURE_CHECKPOINT` surface verbatim. Explain after the block

@@ -14,7 +14,7 @@ _KEEP_RELEASE_INTENT = object()
 
 @dataclass(frozen=True)
 class PlanPreauthorizationReceipt:
-    """Bounded single-use Navigator authority for one aggregate Plan."""
+    """Bounded single-use Navigator authority for one exact Plan scope."""
 
     journey: str
     method: str
@@ -413,7 +413,7 @@ def _deserialize_preauthorization(value: object) -> PlanPreauthorizationReceipt 
         or isinstance(generation, bool)
         or not isinstance(generation, int)
         or generation < 0
-        or not children
+        or (strings["flow_unit"] == "delivery_story" and not children)
         or status not in {"pending", "consumed", "invalidated"}
     ):
         return None
