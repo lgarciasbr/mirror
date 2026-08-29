@@ -43,6 +43,17 @@ roadmap/worklog gaps identified by Coherence were aligned. D-016 remains Carried
 and blocks preparation of the `v0.31.13` release candidate. No commit, push,
 version bump, release note, or release action was executed.
 
+### 2026-08-29 — Ariad Coherence reentry maintenance
+
+Repaired an unreachable lifecycle state in which Coherence could produce
+`navigator_coherence` but could not run again after evidence correction. Reentry
+is now strictly limited to that pending confirmation paired with
+`last_delivery_event=coherence`; unrelated or inconsistent pending states remain
+blocked. Tests cover pending creation, corrected CLI reentry, checkpoint cleanup,
+`coherence_complete`, unrelated pending guards, and Done remaining unable to
+consume the confirmation. This maintenance was discovered during CV9.E2.S31 but
+is separate from that story's scope.
+
 ### 2026-08-29 — v0.31.12 release candidate prepared
 
 Prepared `v0.31.12 — Bounded Authority and Journey Integrity` as the patch
