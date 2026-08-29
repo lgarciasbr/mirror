@@ -31,6 +31,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-journal` | `$mm-journal` | `/mm:journal` | Records a personal journal entry | `[--journey J] "text"` |
 | `/mm-recall` | `$mm-recall` | `/mm:recall` | Loads a previous conversation into context | `<conversation_id> [--limit N]` |
 | `/mm-conversations` | `$mm-conversations` | `/mm:conversations` | Lists recent conversations | `--limit N`, `--journey J`, `--persona P` |
+| `python -m memory conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
 | `/mm-backup` | `$mm-backup` | `/mm:backup` | Backs up the memory database | no arguments |
 | `/mm-seed` | `$mm-seed` | `/mm:seed` | Seeds identity files from the active user home into the database | no arguments |
 | `/mm-mute` | `$mm-mute` | `/mm:mute` | Toggles conversation logging | no arguments |
@@ -47,6 +48,39 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `python -m memory journey-projection` | — | — | Discovers, rebuilds, and inspects Journey projections; isolated test mode also supports the immutable consumer probe | `capabilities`, `rebuild-operational --journey ID`, `inspect --journey ID --namespace ID --projection ID`, test-only `probe-prepare` and `probe-publish`; all accept `--mirror-home PATH --format json` |
 | `python -m memory web` | — | — | Runs the local Mirror Web Console — Identity and Workspace perspectives, conversation intelligence, bulk conversation maintenance (assign/delete), and allowlisted operation runs | `[--host 127.0.0.1] [--port 8765]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
+
+## Explicit Conversation Append
+
+```bash
+uv run python -m memory conversations append \
+  --mirror-home <home> --format json < payload.json
+```
+
+The request is a strict JSON object with `schemaVersion: "1.0.0"`, one complete
+`conversationId`, its exact `journeyId`, a bounded ASCII `sourceInterface`, and
+1–20 externally identified user/assistant messages. Each message supplies
+`id`, `role`, non-empty `content`, timezone-aware RFC 3339 `createdAt`, and an
+optional caller-owned metadata object. Message IDs match exactly
+`[A-Za-z0-9][A-Za-z0-9._:-]{0,127}`. The CLI reads at most 262,145 bytes for a
+262,144-byte payload limit; content is limited to 51,200 UTF-8 bytes per message
+and the complete persisted metadata envelope to 4,096 UTF-8 bytes.
+
+Mirror resolves only the complete conversation ID and checks exact Journey
+equality. It does not inspect or mutate runtime sessions, infer an active
+conversation, reopen an ended conversation, or run extraction and other semantic
+refreshes. One storage-owned `BEGIN IMMEDIATE` transaction classifies all IDs,
+rejects every conflict, inserts only missing rows, and commits once. Identical
+retries return `existing`; divergent or cross-conversation ID reuse rejects the
+whole batch.
+
+Success and expected failure are compact bounded JSON. Success receipts contain
+only conversation/Journey identity, counts, and validated message IDs with
+`inserted` or `existing` state. Failure reasons are
+`malformed_request`, `unsupported_schema_version`, `limit_exceeded`,
+`conversation_not_found`, `journey_mismatch`,
+`duplicate_request_message_id`, `idempotency_conflict`, and
+`persistence_failure`. Receipts never echo message content, caller metadata,
+private paths, environment values, or raw exceptions.
 
 ## Journey Projection Contract
 

@@ -825,20 +825,32 @@ def list_installed_extensions(mirror_home: Path | None) -> tuple[str, ...]:
 
 
 def _connect_read_only(db_path: Path) -> sqlite3.Connection:
-    uri = f"{db_path.resolve().as_uri()}?mode=ro"
+    resolved_uri = db_path.resolve().as_uri()
+    read_only_uri = f"{resolved_uri}?mode=ro"
     try:
-        return sqlite3.connect(uri, uri=True)
+        conn = sqlite3.connect(read_only_uri, uri=True)
     except sqlite3.OperationalError as exc:
-        if "unable to open database file" not in str(exc):
+        if str(exc) != "unable to open database file":
             raise
-        # SQLite databases in WAL mode can be readable only after SQLite has
-        # created or refreshed the sidecar files. A strict read-only URI can
-        # fail before that happens, which made runtime status report false
-        # migration drift and block updates. Open the existing database in
-        # read-write mode as a bounded recovery so SQLite can create sidecars;
-        # this must not create a missing database file.
-        rw_uri = f"{db_path.resolve().as_uri()}?mode=rw"
-        return sqlite3.connect(rw_uri, uri=True)
+    else:
+        try:
+            conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
+        except sqlite3.Error as exc:
+            conn.close()
+            if not isinstance(exc, sqlite3.OperationalError) or str(exc) != (
+                "unable to open database file"
+            ):
+                raise
+        else:
+            return conn
+
+    # SQLite databases in WAL mode can be readable only after SQLite has
+    # created or refreshed the sidecar files. Opening mode=ro may succeed
+    # lazily and fail on the first schema access. Reopen the existing database
+    # in read-write mode so SQLite can recover its sidecars; mode=rw must not
+    # create a missing database file.
+    read_write_uri = f"{resolved_uri}?mode=rw"
+    return sqlite3.connect(read_write_uri, uri=True)
 
 
 def _table_exists(conn: sqlite3.Connection, table: str) -> bool:

@@ -1102,11 +1102,28 @@ checkpoint. `pay_now` must route through a future Refactor loop before Done.
 Do not advance to Done, commit, push, or release while the debt decision is
 unresolved.
 
+## Check Ariad Coherence
+
+After Debt Review is complete, verify Process, Project, and Product alignment:
+
+```bash
+uv run python -m memory build coherence-item --method ariad \
+  --process "<process alignment evidence>" \
+  --project "<project alignment evidence>" \
+  --product "<product alignment evidence>"
+```
+
+If the user names a specific journey, pass `--journey <slug>`. Render the
+`COHERENCE_CHECKPOINT` surface. If it reports `pending_coherence`, correct the
+missing evidence and rerun the same command. Reentry is valid only for the exact
+`navigator_coherence` / `last_delivery_event=coherence` state. It re-evaluates
+the evidence; it does not bypass Coherence. Unrelated pending confirmations stay
+blocked, and `done-item` never consumes `navigator_coherence`.
+
 ## Close Ariad Done
 
-After Debt Review is complete and the Navigator confirms there is nothing else
-to do in the story, render the Done checkpoint. Coherence is checked inside Done
-after closure materialization:
+After Coherence is complete and the Navigator confirms there is nothing else to
+do in the story, render the Done checkpoint:
 
 ```bash
 uv run python -m memory build done-item --method ariad \

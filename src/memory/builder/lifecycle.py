@@ -740,11 +740,15 @@ def coherence_lifecycle_item(
         raise ValueError("delivery cursor is required before coherence")
     if not existing.active_item:
         raise ValueError("active item is required before coherence")
-    if existing.pending_confirmation:
+    reentering_pending_coherence = (
+        existing.pending_confirmation == "navigator_coherence"
+        and existing.last_delivery_event == "coherence"
+    )
+    if existing.pending_confirmation and not reentering_pending_coherence:
         raise ValueError(
             f"Coherence is blocked: pending confirmation {existing.pending_confirmation}."
         )
-    if existing.last_delivery_event != "review_complete":
+    if existing.last_delivery_event != "review_complete" and not reentering_pending_coherence:
         raise ValueError("Coherence requires completed Debt Review")
     process = (process_alignment or "Process evidence is aligned with the Ariad lifecycle.").strip()
     project = (

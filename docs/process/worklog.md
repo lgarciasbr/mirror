@@ -12,6 +12,79 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-29 — v0.31.13 release candidate prepared locally
+
+Prepared the `v0.31.13 — Explicit Append and Lifecycle Recovery` release
+boundary for CV9.E2.S31 and its two blocking runtime maintenances. The
+release adds the generic atomic/idempotent `conversations append` contract with
+exact Journey ownership and no runtime-session routing or late-append semantic
+refresh; it also integrates bounded Ariad Coherence reentry and pays D-016's lazy
+SQLite WAL recovery defect. `pyproject.toml`, `uv.lock`, the Frame package, the
+Claude plugin manifest, release note, and release index are synchronized at
+`0.31.13`. D-006 remains the pre-existing mypy baseline. No model pin or prompt
+changed, so the model-behavior eval gate is not activated. The 2,639-test
+non-live suite, Ruff, formatting,
+release-note smokes, and diff checks pass; the candidate's mypy diagnostic
+multiset matches clean HEAD exactly. Release doctor passes version/note/index
+metadata and reports only the expected dirty pre-commit tree plus missing tag and
+stable-behind state. Push, tag, stable promotion, GitHub Release, and production
+update remain separate unauthorized gates.
+
+### 2026-08-29 — D-016 WAL read-only fallback maintenance integrated
+
+Implemented the D-016 repair after CV9.E2.S31 exposed SQLite's lazy read-only WAL
+failure. `_connect_read_only()` now forces a minimal schema read, falls back to
+existing-file-only `mode=rw` solely for the exact expected
+`unable to open database file` error, and preserves normal read-only behavior.
+Tests cover the original failing WAL case, missing-file non-creation, unrelated
+error propagation, exact fallback confinement, and the no-fallback normal path.
+The correction completed on `fix/runtime-wal-read-only-fallback` and is now
+integrated into the S31 candidate branch. D-016 is Paid and no longer blocks the
+`v0.31.13` release candidate; release preparation remains a separate gate.
+
+### 2026-08-29 — CV9.E2.S31 completed through Coherence
+
+Implemented the generic explicit conversation append boundary on a dedicated
+feature branch. A strict JSON service contract validates safe external message
+IDs, roles, timestamps, UTF-8 byte limits, metadata envelopes, and request shape
+before storage. One message-store-owned `BEGIN IMMEDIATE` transaction resolves
+only the complete conversation ID, verifies exact Journey equality, classifies
+idempotent retries, rejects cross-conversation or divergent ID reuse, inserts
+missing rows, and commits once. Ended conversations remain eligible without
+reopening or semantic refresh, runtime sessions remain outside the boundary, and
+message reads now have deterministic `created_at, id` ordering.
+
+TDD evidence moved from missing-module collection RED to the first focused
+GREEN, then Navigator Validation added a second RED: pathological metadata
+nesting leaked `RecursionError`, while unpaired Unicode surrogates in content or
+metadata leaked `UnicodeEncodeError`. A minimal parser/CLI containment boundary
+now maps those failures to bounded `malformed_request` before database access,
+without traceback or payload echo; 34 focused tests pass. The isolated CLI smoke
+covers initial append, complete retry, late append to an ended conversation,
+canonical provenance, atomic conflict rejection, unchanged runtime-session
+state, and bounded receipts. Ruff, format, diff checks, and scoped mypy pass.
+The complete non-live suite reaches 2,630 passes with one external-baseline
+runtime read-only/WAL recovery failure. A controlled same-Python/SQLite/TMPDIR
+comparison reproduces it identically in S31 and a clean `origin/main` worktree:
+SQLite 3.51 returns the read-only connection lazily and the first `SELECT` fails
+before the pre-existing connect-time recovery branch can run. Navigator
+Validation was accepted, Debt Review found no S31-created debt, and the authored
+roadmap/worklog gaps identified by Coherence were aligned. D-016 was recorded as
+Carried and blocked preparation of the `v0.31.13` release candidate at story
+closure; the integrated maintenance above subsequently paid it. No commit, push,
+version bump, release note, or release action was executed at that checkpoint.
+
+### 2026-08-29 — Ariad Coherence reentry maintenance
+
+Repaired an unreachable lifecycle state in which Coherence could produce
+`navigator_coherence` but could not run again after evidence correction. Reentry
+is now strictly limited to that pending confirmation paired with
+`last_delivery_event=coherence`; unrelated or inconsistent pending states remain
+blocked. Tests cover pending creation, corrected CLI reentry, checkpoint cleanup,
+`coherence_complete`, unrelated pending guards, and Done remaining unable to
+consume the confirmation. This maintenance was discovered during CV9.E2.S31 but
+is separate from that story's scope.
+
 ### 2026-08-29 — v0.31.12 release candidate prepared
 
 Prepared `v0.31.12 — Bounded Authority and Journey Integrity` as the patch

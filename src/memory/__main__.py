@@ -83,8 +83,9 @@ Commands:
                               python -m memory soul prompt self|wisdom|beauty
   memories             List memories with filters
                        Usage: python -m memory memories [--type T] [--layer L] [--journey J] [--search Q] [--mirror-home PATH]
-  conversations        List recent conversations
+  conversations        List conversations or append an explicit bounded message batch
                        Usage: python -m memory conversations [--limit N] [--journey J] [--persona P] [--mirror-home PATH]
+                              python -m memory conversations append --mirror-home PATH --format json < payload.json
   recall               Load messages from a previous conversation
                        Usage: python -m memory recall <conversation_id> [--limit N] [--mirror-home PATH]
   tasks                Task management

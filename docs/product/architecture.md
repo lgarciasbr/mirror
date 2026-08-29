@@ -223,6 +223,23 @@ lifecycle.
 
 ---
 
+### Explicit conversation append boundary
+
+External callers that already hold one complete conversation ID may append a
+bounded user/assistant batch through `memory conversations append`. Contract
+validation and canonicalization occur before storage; one message-store-owned
+`BEGIN IMMEDIATE` transaction then verifies the exact conversation and Journey,
+classifies globally unique message IDs, rejects all conflicts, inserts missing
+rows, and commits once. Caller IDs provide idempotency, canonical message
+metadata preserves provenance, and reads use `ORDER BY created_at, id`.
+
+This boundary is deliberately separate from runtime logging. It does not read or
+write `runtime_sessions`, infer an active conversation, reuse
+`conversation-logger`, change `ended_at`, or trigger extraction, titles,
+summaries, tags, embeddings, or semantic-memory refresh. A late append therefore
+extends transcript authority only; previously derived intelligence remains
+unchanged.
+
 ## 5. Memory Model
 
 Memories are extracted from conversations automatically at session end, when a
