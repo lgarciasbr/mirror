@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-29 — D-016 WAL read-only fallback maintenance integrated
+
+Implemented the D-016 repair after CV9.E2.S31 exposed SQLite's lazy read-only WAL
+failure. `_connect_read_only()` now forces a minimal schema read, falls back to
+existing-file-only `mode=rw` solely for the exact expected
+`unable to open database file` error, and preserves normal read-only behavior.
+Tests cover the original failing WAL case, missing-file non-creation, unrelated
+error propagation, exact fallback confinement, and the no-fallback normal path.
+The correction completed on `fix/runtime-wal-read-only-fallback` and is now
+integrated into the S31 candidate branch. D-016 is Paid and no longer blocks the
+`v0.31.13` release candidate; release preparation remains a separate gate.
+
 ### 2026-08-29 — CV9.E2.S31 completed through Coherence
 
 Implemented the generic explicit conversation append boundary on a dedicated
@@ -39,9 +51,10 @@ comparison reproduces it identically in S31 and a clean `origin/main` worktree:
 SQLite 3.51 returns the read-only connection lazily and the first `SELECT` fails
 before the pre-existing connect-time recovery branch can run. Navigator
 Validation was accepted, Debt Review found no S31-created debt, and the authored
-roadmap/worklog gaps identified by Coherence were aligned. D-016 remains Carried
-and blocks preparation of the `v0.31.13` release candidate. No commit, push,
-version bump, release note, or release action was executed.
+roadmap/worklog gaps identified by Coherence were aligned. D-016 was recorded as
+Carried and blocked preparation of the `v0.31.13` release candidate at story
+closure; the integrated maintenance above subsequently paid it. No commit, push,
+version bump, release note, or release action was executed at that checkpoint.
 
 ### 2026-08-29 — Ariad Coherence reentry maintenance
 

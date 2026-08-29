@@ -33,7 +33,7 @@ Dropped   no longer relevant or replaced by another item
 | D-013 | `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug` | design | low | Carried | mirror slugify consolidation | The next time transcript-export slug behavior is touched, or a third kebab-slug caller appears |
 | D-014 | Runtime-diagnose web test polling budget is below observed command latency | testing | low | Carried | CV23.DS2 validation | Runtime-diagnose execution, web polling, or that test harness changes, or CI reproduces the failure |
 | D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Paid | CV23.DS7 release installation → local repair 2026-08-25 | Paid by verified removal of empty retired schema and rows 017–019 |
-| D-016 | Read-only WAL recovery assumes SQLite fails eagerly during connect | reliability / testing | medium | Carried | CV9.E2.S31 Navigator Validation baseline comparison | Must be resolved before the v0.31.13 release candidate |
+| D-016 | Read-only WAL recovery assumes SQLite fails eagerly during connect | reliability / testing | medium | Paid | CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance | Paid by the integrated eager schema-probe fallback |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -660,8 +660,8 @@ machine-speed assumption.
 
 **Kind:** reliability / testing
 **Severity:** medium
-**Status:** Carried
-**Source:** CV9.E2.S31 Navigator Validation baseline comparison
+**Status:** Paid
+**Source:** CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance
 
 ### Carrying reason
 
@@ -679,9 +679,18 @@ clean `origin/main` worktree. Both failed at
 the test were byte-identical. The defect is therefore pre-existing and not S31
 debt. S31 received a validation-only waiver; the failure remains visible.
 
+### Resolution
+
+The `fix/runtime-wal-read-only-fallback` repair forces one minimal schema read
+after `mode=ro` opens, closes that connection on failure, and retries with
+existing-file-only `mode=rw` solely for the exact expected error. Missing
+databases and unrelated SQLite failures remain bounded. The repair is integrated
+into the S31 candidate branch, and D-016 no longer blocks the release candidate.
+
 ### Revisit trigger
 
-Mandatory before preparing the `v0.31.13` release candidate.
+Paid by the integrated eager schema-probe fallback before preparing the
+`v0.31.13` release candidate.
 
 ### Closure condition
 

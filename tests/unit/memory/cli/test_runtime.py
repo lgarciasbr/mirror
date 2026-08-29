@@ -4,6 +4,8 @@ import sqlite3
 import zipfile
 from pathlib import Path
 
+import pytest
+
 from memory.cli.runtime import (
     BackupVerification,
     CloneRole,
@@ -377,6 +379,68 @@ def test_connect_read_only_recovers_wal_database_without_sidecars(tmp_path):
         rows = recovered.execute("SELECT id FROM _migrations").fetchall()
 
     assert rows == [(MIGRATIONS[0][0],)]
+
+
+def test_connect_read_only_missing_database_is_never_created(tmp_path):
+    db_path = tmp_path / "missing.db"
+
+    with pytest.raises(sqlite3.OperationalError, match="unable to open database file"):
+        _connect_read_only(db_path)
+
+    assert not db_path.exists()
+
+
+def test_connect_read_only_falls_back_only_after_expected_lazy_wal_failure(mocker, tmp_path):
+    db_path = tmp_path / "memory.db"
+    read_only = mocker.Mock()
+    read_only.execute.side_effect = sqlite3.OperationalError("unable to open database file")
+    read_write = mocker.Mock()
+    connect = mocker.patch(
+        "memory.cli.runtime.sqlite3.connect", side_effect=(read_only, read_write)
+    )
+
+    recovered = _connect_read_only(db_path)
+
+    assert recovered is read_write
+    read_only.execute.assert_called_once_with("SELECT 1 FROM sqlite_master LIMIT 1")
+    read_only.close.assert_called_once_with()
+    base_uri = db_path.resolve().as_uri()
+    assert connect.call_args_list == [
+        mocker.call(f"{base_uri}?mode=ro", uri=True),
+        mocker.call(f"{base_uri}?mode=rw", uri=True),
+    ]
+
+
+def test_connect_read_only_propagates_unrelated_lazy_schema_error(mocker, tmp_path):
+    db_path = tmp_path / "memory.db"
+    read_only = mocker.Mock()
+    read_only.execute.side_effect = sqlite3.OperationalError("database is locked")
+    connect = mocker.patch("memory.cli.runtime.sqlite3.connect", return_value=read_only)
+
+    with pytest.raises(sqlite3.OperationalError, match="database is locked"):
+        _connect_read_only(db_path)
+
+    read_only.close.assert_called_once_with()
+    connect.assert_called_once_with(f"{db_path.resolve().as_uri()}?mode=ro", uri=True)
+
+
+def test_connect_read_only_normal_database_does_not_fall_back(monkeypatch, tmp_path):
+    db_path = tmp_path / "memory.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("CREATE TABLE probe (id INTEGER PRIMARY KEY)")
+    real_connect = sqlite3.connect
+    calls = []
+
+    def tracked_connect(*args, **kwargs):
+        calls.append((args, kwargs))
+        return real_connect(*args, **kwargs)
+
+    monkeypatch.setattr("memory.cli.runtime.sqlite3.connect", tracked_connect)
+
+    with _connect_read_only(db_path) as read_only:
+        assert read_only.execute("SELECT count(*) FROM probe").fetchone() == (0,)
+
+    assert calls == [((f"{db_path.resolve().as_uri()}?mode=ro",), {"uri": True})]
 
 
 def test_inspect_extension_health_reports_database_table_error(monkeypatch, tmp_path):
