@@ -12,6 +12,24 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-29 — v0.31.13 release candidate prepared locally
+
+Prepared the `v0.31.13 — Explicit Append and Lifecycle Recovery` release
+boundary for CV9.E2.S31 and its two blocking runtime maintenances. The
+release adds the generic atomic/idempotent `conversations append` contract with
+exact Journey ownership and no runtime-session routing or late-append semantic
+refresh; it also integrates bounded Ariad Coherence reentry and pays D-016's lazy
+SQLite WAL recovery defect. `pyproject.toml`, `uv.lock`, the Frame package, the
+Claude plugin manifest, release note, and release index are synchronized at
+`0.31.13`. D-006 remains the pre-existing mypy baseline. No model pin or prompt
+changed, so the model-behavior eval gate is not activated. The 2,639-test
+non-live suite, Ruff, formatting,
+release-note smokes, and diff checks pass; the candidate's mypy diagnostic
+multiset matches clean HEAD exactly. Release doctor passes version/note/index
+metadata and reports only the expected dirty pre-commit tree plus missing tag and
+stable-behind state. Push, tag, stable promotion, GitHub Release, and production
+update remain separate unauthorized gates.
+
 ### 2026-08-29 — D-016 WAL read-only fallback maintenance integrated
 
 Implemented the D-016 repair after CV9.E2.S31 exposed SQLite's lazy read-only WAL
