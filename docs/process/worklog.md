@@ -12,6 +12,34 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-30 — v0.31.14 release candidate prepared locally
+
+Prepared the `v0.31.14 — Change Request Resume` patch release boundary for
+CR011 in the file-first Refinement Workbench. The release adds the public Ariad
+Workbench `change-request resume` verb, preserving advanced non-terminal Change
+Request records while restoring only the active Refinement cursor so stranded
+`implemented` CRs can validate and stranded `validated` CRs can receive a Done
+note. Terminal CRs remain closed, `select` remains the captured-CR start verb,
+and no schema migration, model pin, or prompt changed.
+
+`pyproject.toml`, `uv.lock`, the Frame package, the Claude plugin manifest,
+release note, and release index are synchronized at `0.31.14`. CR011 is closed
+in the canonical Refinement Workbench with Navigator validation and no new debt.
+D-014 remains the known Carried baseline for the runtime-diagnose web polling
+budget, reproduced on the parent commit as well as this candidate; the one-off
+process-death lock failure was not reproduced in isolated HEAD or parent reruns
+and is not recorded as new debt without further evidence.
+
+Release-preparation gates: focused Workbench/CLI tests pass, the full non-live
+unit/integration suite reaches one known failure only (D-014), Ruff passes,
+format check passes, changed-source mypy passes, full `mypy src/memory` still
+reports the pre-existing D-006 baseline, documentation links/headings pass,
+`git diff --check` passes, and `runtime release-notes v0.31.14` renders the new
+note. Release doctor verifies version/note/index metadata and reports only the
+expected dirty pre-commit tree plus missing tag and stable-behind state. Push,
+PR, merge, tag, stable promotion, GitHub Release publication, and production
+runtime update remain separate unauthorized gates.
+
 ### 2026-08-29 — v0.31.13 release candidate prepared locally
 
 Prepared the `v0.31.13 — Explicit Append and Lifecycle Recovery` release
