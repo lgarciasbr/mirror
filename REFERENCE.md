@@ -412,6 +412,7 @@ uv run python -m memory build change-request attach --journey <slug> --change-re
 uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
 uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
 uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request resume --journey <slug> --change-request-id <cr-id>
 uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
 uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
 uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
@@ -427,6 +428,13 @@ uv run python -m memory build refinement-story park --journey <slug> --refinemen
 ```
 
 These commands render Ariad Workbench surfaces such as `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, `REFINEMENT_STORY_PULLED`, and `REFINEMENT_FLOW_EVENT`. Composition commands capture or organize Refinement Stories and Change Requests only. Pulling an RS selects active Refinement Work only. CR/RS flow commands update runtime state and evidence only; they do not mutate Delivery cursor state, implement files, commit, push, or release. Review and Coherence do not mutate files directly.
+
+`resume` is a public, explicit recovery verb for a non-terminal Change Request
+inside the active Refinement Story that moved beyond capture but lost the active
+pointer. It preserves the CR status, evidence, timestamps, and RS link, then
+makes the CR active again so `implemented` can proceed to `validate` and
+`validated` can proceed to `done`. Use `select` for `captured` CRs. Terminal CRs
+(`done`, `parked`, `rejected`, and `promoted`) cannot be resumed.
 
 `done`, `park`, `reject`, and `promote` are the four CR terminal verbs (a fifth,
 `discard`, deletes an accidental capture instead of reaching a terminal state).

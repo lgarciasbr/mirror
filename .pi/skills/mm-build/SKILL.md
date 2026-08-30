@@ -529,6 +529,7 @@ mark done a Change Request in active Refinement Work, route to:
 
 ```bash
 uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request resume --journey <slug> --change-request-id <cr-id>
 uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
 uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
 uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
@@ -554,6 +555,13 @@ These are distinct verbs, not synonyms — do not substitute one for another:
 - `discard` — deletes an **accidental capture**; the only one of the four that
   removes the record. If in doubt between `reject` and `discard`, prefer
   `reject`: it preserves the decision instead of erasing it.
+
+Use `change-request resume` only when a non-terminal CR inside the active
+Refinement Story has moved beyond capture and lost the active pointer. It
+preserves status, evidence, timestamps, and RS link, then reactivates the CR so
+`implemented` can proceed to `validate` and `validated` can proceed to `done`.
+Use `select` for captured CRs. Terminal CRs (`done`, `parked`, `rejected`, and
+`promoted`) cannot be resumed.
 
 Render the `CHANGE_REQUEST_PARKED` / `_REJECTED` / `_PROMOTED` events as
 `REFINEMENT_FLOW_EVENT` surfaces verbatim, same as the other CR transitions. If

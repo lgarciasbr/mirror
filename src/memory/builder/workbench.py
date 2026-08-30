@@ -186,6 +186,34 @@ def select_change_request(
     return _flow_event(store, journey, "change_request_selected", story, updated, cr.status, None)
 
 
+def resume_change_request(
+    store: Store, *, journey: str, change_request_id: str
+) -> RefinementFlowEvent:
+    """Resume a non-terminal CR inside the active RS without changing its status."""
+    story, cr = _require_active_story_and_cr(store, journey, change_request_id)
+    if cr.status == "captured":
+        raise ValueError("cannot resume from status 'captured'; use select")
+    if cr.status in TERMINAL_CHANGE_REQUEST_STATUSES:
+        raise ValueError(
+            f"cannot resume from status '{cr.status}'; Change Request is already terminal"
+        )
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=story.id,
+        active_change_request_id=cr.id,
+        last_refinement_event="change_request_resumed",
+    )
+    return _flow_event(
+        store,
+        journey,
+        "change_request_resumed",
+        story,
+        cr,
+        cr.status,
+        "This Change Request returned to the active CR cycle without changing status.",
+    )
+
+
 def confirm_change_request(
     store: Store, *, journey: str, change_request_id: str
 ) -> RefinementFlowEvent:

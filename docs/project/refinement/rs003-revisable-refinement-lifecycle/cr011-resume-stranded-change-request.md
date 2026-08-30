@@ -68,35 +68,31 @@ broad, then penalises the split by making only one of the resulting records comp
 
 ## Plan Or Decision
 
-Pending. Capture does not authorize a lifecycle change.
+Decision: add a distinct public `change-request resume --change-request-id <id>` verb.
+Do not overload `select`, because `select` means "begin a captured CR" and intentionally
+changes `captured` to `active`. `resume` means "restore the active pointer for a CR whose
+status already represents lifecycle progress" and must not mutate the Change Request row.
 
-Two candidate directions, for planning rather than prescription:
+Scope:
 
-1. A verb that makes an existing in-flight Change Request active again without resetting its
-   lifecycle state — `change-request resume --change-request-id <id>` — or relaxing `select`
-   to accept any non-terminal status and move the cursor without changing status. The second
-   is smaller but overloads `select`, whose current meaning is "begin this CR"; a distinct
-   verb reads better in the flow surface.
-2. Relaxing the advancing verbs to accept an explicit `--change-request-id` for any Change
-   Request in the active Refinement Story, treating the cursor as a convenience default
-   rather than a precondition. This matches how `park`, `reject` and `promote` already
-   behave and addresses the whole class at once.
+1. `resume` accepts a Change Request only when its Refinement Story is the active RS for the
+   Journey. This preserves the existing RS/Journey authority guard instead of letting a CR
+   switch active RS implicitly.
+2. `resume` refuses `captured` with guidance to use `select`, because a captured CR has no
+   advanced lifecycle state to preserve.
+3. `resume` refuses terminal CRs (`done`, `parked`, `rejected`, `promoted`) with the same
+   terminal-state boundary used by the terminal verbs.
+4. `resume` preserves status, outcome notes/evidence, timestamps, position, provenance, and
+   RS link by updating only the Refinement cursor: active RS remains the same, active CR
+   becomes the resumed CR, and `last_refinement_event` becomes `change_request_resumed`.
+5. The existing advancing verbs remain status-driven: a resumed `implemented` CR can run
+   `validate`; a resumed `validated` CR can run `done`.
+6. The transition renders the existing deterministic `REFINEMENT_FLOW_EVENT` Ariad surface
+   with a `RESUMED` event, stage-aware ribbon position, and next-move guidance.
 
-Option 2 is the structural fix, but it cannot be done while phase state lives on the cursor.
-If planning confirms that `last_refinement_event` is the real blocker, moving phase state
-onto the Change Request record is a prerequisite, and it overlaps directly with the
-append-only history proposed in [CR010](cr010-replan-with-plan-history.md). The two should
-be planned together.
-
-Open questions for planning:
-
-- Should resuming emit a `REFINEMENT_FLOW_EVENT`, or is cursor movement not a lifecycle
-  fact?
-- Should more than one Change Request be allowed in flight at once, or is the one-active
-  invariant worth preserving with resume as the only way to switch? The latter is simpler
-  and probably right.
-- Does allowing an advancing verb on a non-active Change Request lose the confirmation
-  discipline the cursor currently enforces?
+This is intentionally the narrow recovery primitive. It preserves the one-active-CR
+invariant and does not move phase state onto the Change Request record. The broader
+multi-CR/history redesign remains future work for CR010/RS003 if field evidence demands it.
 
 ## Evidence
 
@@ -130,6 +126,29 @@ Guard line numbers and the `_require_confirmed_cr` body above were re-verified a
 2026-08-14 — Re-verified against `origin/main` @ `688271f`: no resume, unpark, or reopen
 verb exists for Change Requests in `src/memory/`. Still valid.
 
+Additional production reproduction:
+
+**2026-08-30, `nautilus-harness` production** — RS012 had CR028 in `implemented`.
+CR030 was selected, implemented, validated, and marked `done`, clearing the active CR
+pointer. The Navigator then validated CR028, but `change-request validate` refused with
+`Error: active Change Request is required`; trying to reselect CR028 refused with
+`Error: cannot select from status 'implemented'; expected captured`. The Workbench had no
+public operation to make the non-terminal implemented CR active again without direct SQLite
+edits or artificial status regression.
+
+Implementation evidence in Mirror Dev:
+
+- Added `resume_change_request` in `src/memory/builder/workbench.py`.
+- Wired `memory build change-request resume` through `src/memory/cli/build.py`.
+- Extended `REFINEMENT_FLOW_EVENT` rendering for `change_request_resumed` in
+  `src/memory/builder/workbench_surfaces.py`.
+- Added the required two-CR reproduction: CR A reaches `implemented`, CR B reaches `done`
+  and clears the pointer, CR A resumes without row mutation, then validates and reaches
+  `done`.
+- Added coverage that a `validated` stranded CR resumes and reaches `done`, and terminal
+  CRs cannot resume.
+
 ## Outcome
 
-Pending.
+Implemented locally in Mirror Dev. Pending Navigator validation before terminal closure of
+this Change Request.

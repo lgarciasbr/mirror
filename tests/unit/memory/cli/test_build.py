@@ -2927,6 +2927,97 @@ def test_refinement_story_park_command_parks_active_story(mocker, tmp_path, caps
     assert mem.store.get_refinement_cursor("sandbox-pet-store").active_refinement_story_id is None
 
 
+def test_change_request_resume_argparse_wiring(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(
+        journey="sandbox-pet-store", title="RS flow", status="active"
+    )
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        title="Resume CR",
+        body="Body.",
+    )
+    before_resume = mem.store.update_change_request_status(
+        cr.id, "implemented", outcome_notes="Implementation evidence"
+    )
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="change_request_done",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "change-request",
+            "resume",
+            "--journey",
+            "sandbox-pet-store",
+            "--change-request-id",
+            cr.id,
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:REFINEMENT_FLOW_EVENT>>>" in out
+    assert "↩ CR001 RESUMED" in out
+    assert "without changing status" in out
+    assert mem.store.get_change_request(cr.id) == before_resume
+    cursor = mem.store.get_refinement_cursor("sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_change_request_id == cr.id
+    assert cursor.last_refinement_event == "change_request_resumed"
+
+
+def test_change_request_resume_on_terminal_cr_exits_cleanly_without_traceback(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(
+        journey="sandbox-pet-store", title="RS flow", status="active"
+    )
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        title="Done CR",
+        body="Body.",
+    )
+    mem.store.update_change_request_status(cr.id, "done", completed_at="2026-08-30T00:00:00Z")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="change_request_done",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc_info:
+        build.main(
+            [
+                "change-request",
+                "resume",
+                "--journey",
+                "sandbox-pet-store",
+                "--change-request-id",
+                cr.id,
+            ]
+        )
+
+    assert exc_info.value.code == 1
+    err = capsys.readouterr().err
+    assert "Error:" in err
+    assert "already terminal" in err
+    assert "Traceback" not in err
+
+
 def test_change_request_park_reject_promote_argparse_wiring(mocker, tmp_path, capsys):
     """Drive the real argparse path (main()), not just the cmd_* function.
 

@@ -135,6 +135,7 @@ from memory.builder.workbench import (
     pull_refinement_story,
     recommend_next_change_request,
     reject_change_request,
+    resume_change_request,
     review_refinement_story,
     select_change_request,
     validate_change_request,
@@ -1923,6 +1924,12 @@ def cmd_change_request_flow(
                 mem.store, journey=resolved_journey, change_request_id=change_request_id
             )
         )
+    elif action == "resume":
+        _print_refinement_event(
+            lambda: resume_change_request(
+                mem.store, journey=resolved_journey, change_request_id=change_request_id
+            )
+        )
     elif action == "confirm":
         _print_refinement_event(
             lambda: confirm_change_request(
@@ -2774,6 +2781,12 @@ def main(argv: list[str] | None = None) -> None:
         p_cr_flow.add_argument("--journey", default=None, help="Journey slug")
         p_cr_flow.add_argument("--session-id", default=None, help="Runtime session id")
         p_cr_flow.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_resume = change_request_sub.add_parser(
+        "resume", help="Resume a non-terminal Change Request without changing status"
+    )
+    p_cr_resume.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_resume.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_resume.add_argument("--change-request-id", required=True, help="Change Request id")
     p_cr_plan = change_request_sub.add_parser("plan", help="Plan a Change Request")
     p_cr_plan.add_argument("--journey", default=None, help="Journey slug")
     p_cr_plan.add_argument("--session-id", default=None, help="Runtime session id")
@@ -3116,6 +3129,7 @@ def main(argv: list[str] | None = None) -> None:
         elif args.change_request_action in {
             "select",
             "confirm",
+            "resume",
             "plan",
             "mark-implemented",
             "validate",
