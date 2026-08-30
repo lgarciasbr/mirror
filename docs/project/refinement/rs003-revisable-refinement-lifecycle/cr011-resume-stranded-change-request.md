@@ -148,7 +148,21 @@ Implementation evidence in Mirror Dev:
 - Added coverage that a `validated` stranded CR resumes and reaches `done`, and terminal
   CRs cannot resume.
 
+Navigator validation accepted on 2026-08-30 after independent review of commit `e5f2005b`.
+The Navigator re-ran:
+
+```bash
+uv run pytest tests/unit/memory/builder/test_workbench.py tests/unit/memory/cli/test_build.py -q
+uv run ruff check src/memory/builder/workbench.py src/memory/builder/workbench_surfaces.py src/memory/cli/build.py
+git diff --check
+```
+
+All passed. The Navigator confirmed the behavior covers the Nautilus case exactly: an
+`implemented` CR that lost the active pointer can resume without mutating the CR record and
+continue to Validate; a `validated` CR can continue to Done; terminal states remain closed.
+
 ## Outcome
 
-Implemented locally in Mirror Dev. Pending Navigator validation before terminal closure of
-this Change Request.
+Implemented locally in Mirror Dev and validated by the Navigator. Not Done yet: full-suite
+failures observed during Driver verification require baseline/flakiness classification or an
+explicit debt decision before closure.
