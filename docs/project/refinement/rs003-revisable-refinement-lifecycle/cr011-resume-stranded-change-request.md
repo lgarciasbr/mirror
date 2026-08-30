@@ -161,8 +161,25 @@ All passed. The Navigator confirmed the behavior covers the Nautilus case exactl
 `implemented` CR that lost the active pointer can resume without mutating the CR record and
 continue to Validate; a `validated` CR can continue to Done; terminal states remain closed.
 
+Full-suite failure classification before closure:
+
+- `test_operations_run_api_executes_runtime_diagnose_through_controlled_command` failed on
+  HEAD and failed the same way on parent `e5f2005b^` in an isolated worktree/home. This is
+  baseline debt, not a CR011 regression. It remains tracked as
+  [D-014](../../debt.md), with status Carried.
+- `test_process_death_releases_journey_lock` failed once during the complete suite, but passed
+  3/3 isolated on HEAD and 3/3 isolated on parent `e5f2005b^`. This is classified as an
+  environmental flake not reproduced in isolation. No new debt is recorded without further
+  evidence.
+
+Debt Review accepted by the Navigator on 2026-08-30: CR011 introduced no new debt. D-014
+remains carried as pre-existing debt, and the isolated process-death lock evidence does not
+justify a new debt item.
+
 ## Outcome
 
-Implemented locally in Mirror Dev and validated by the Navigator. Not Done yet: full-suite
-failures observed during Driver verification require baseline/flakiness classification or an
-explicit debt decision before closure.
+Done. CR011 adds an explicit public `change-request resume` flow that restores the active
+cursor for a non-terminal advanced Change Request without mutating the Change Request record,
+so stranded `implemented` and `validated` CRs can complete through the ordinary public
+Workbench lifecycle. Terminal CRs remain closed. No push, release, stable promotion, or
+production runtime update was performed.
