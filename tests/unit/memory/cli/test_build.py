@@ -1643,9 +1643,7 @@ def test_build_review_item_reentry_with_pending_decision_stays_pending(mocker, t
     assert cursor.last_delivery_event == "review"
 
 
-def test_build_review_item_still_blocked_by_foreign_pending_confirmation(
-    mocker, tmp_path, capsys
-):
+def test_build_review_item_still_blocked_by_foreign_pending_confirmation(mocker, tmp_path, capsys):
     """The re-entry allowance is exact: any other pending confirmation still blocks."""
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)

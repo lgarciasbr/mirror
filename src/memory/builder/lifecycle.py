@@ -1000,10 +1000,7 @@ def review_lifecycle_item(
         raise ValueError(
             f"Review is blocked: pending confirmation {existing.pending_confirmation}."
         )
-    if (
-        existing.last_delivery_event != "validation_passed"
-        and not reentering_pending_debt_decision
-    ):
+    if existing.last_delivery_event != "validation_passed" and not reentering_pending_debt_decision:
         raise ValueError("Debt Review requires passed Validation")
     normalized_decision = _normalize_validation_choice(
         debt_decision,
